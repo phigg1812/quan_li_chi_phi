@@ -23,7 +23,8 @@
   import {
     getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
     signInWithEmailAndPassword, createUserWithEmailAndPassword,
-    sendPasswordResetEmail, sendEmailVerification, signOut, updateProfile
+    sendPasswordResetEmail, sendEmailVerification, EmailAuthProvider,
+    linkWithCredential, updatePassword, signOut, updateProfile
   } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
@@ -50,7 +51,7 @@
   window.FB = {
     app, auth, db, googleProvider, currentUser: null,
     collection, doc, getDocs, setDoc, deleteDoc, writeBatch,
-    updateProfile
+    EmailAuthProvider, linkWithCredential, updatePassword, updateProfile
   };
 
   let signInInProgress = false;
@@ -65,6 +66,9 @@
     'auth/weak-password':'Mật khẩu phải có ít nhất 6 ký tự.',
     'auth/too-many-requests':'Bạn thử quá nhiều lần. Vui lòng đợi một lúc rồi thử lại.',
     'auth/network-request-failed':'Không thể kết nối mạng. Vui lòng kiểm tra kết nối.',
+    'auth/requires-recent-login':'Vui lòng đăng xuất, đăng nhập lại bằng Google rồi thử ngay lần nữa.',
+    'auth/provider-already-linked':'Tài khoản này đã có mật khẩu.',
+    'auth/credential-already-in-use':'Email và mật khẩu này đang thuộc một tài khoản Firebase khác.',
     'auth/popup-blocked':'Trình duyệt đã chặn cửa sổ đăng nhập Google.',
     'auth/popup-closed-by-user':'Bạn đã đóng cửa sổ đăng nhập Google.'
   };
@@ -971,6 +975,7 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
             </div>
           </div>
           <button class="profile-menu-item" id="editNameBtn"><span data-icon="user"></span>Đổi tên hiển thị</button>
+          <button class="profile-menu-item" id="passwordManageBtn"><span data-icon="user"></span><span id="passwordManageText">Tạo mật khẩu đăng nhập</span></button>
           <button class="profile-menu-item danger" id="signOutBtn"><span data-icon="log-out"></span>Đăng xuất</button>
         </div>
       </div>
@@ -2919,6 +2924,8 @@ function updateProfileUI(user){
   document.getElementById('profileMenuAvatar').src = user.photoURL || ('data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="99" fill="#EAF1FE"/><text x="20" y="27" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="16" fill="#4F8EF7">${initial}</text></svg>`));
   document.getElementById('profileMenuName').textContent = user.displayName || 'Người dùng';
   document.getElementById('profileMenuEmail').textContent = user.email || '';
+  const hasPassword = user.providerData.some(p=>p.providerId==='password');
+  document.getElementById('passwordManageText').textContent = hasPassword ? 'Đổi mật khẩu' : 'Tạo mật khẩu đăng nhập';
 }
 let authMode = 'login';
 window.showAuthMessage = function(message, isError){
@@ -3000,6 +3007,32 @@ document.getElementById('editNameBtn').addEventListener('click', async ()=>{
     renderHero();
     if(typeof showToast==='function') showToast('Đã cập nhật tên hiển thị');
   }catch(err){ alert('Không thể cập nhật tên: '+(err.message||err)); }
+});
+document.getElementById('passwordManageBtn').addEventListener('click', async ()=>{
+  document.getElementById('profileMenu').classList.add('hidden');
+  const user = window.FB.auth.currentUser;
+  if(!user || !user.email){ alert('Tài khoản này không có địa chỉ email.'); return; }
+  const hasPassword = user.providerData.some(p=>p.providerId==='password');
+  const password = prompt(hasPassword ? 'Nhập mật khẩu mới (ít nhất 6 ký tự):' : 'Tạo mật khẩu đăng nhập (ít nhất 6 ký tự):');
+  if(password===null) return;
+  if(password.length<6){ alert('Mật khẩu phải có ít nhất 6 ký tự.'); return; }
+  const confirmPassword = prompt('Nhập lại mật khẩu:');
+  if(confirmPassword===null) return;
+  if(password!==confirmPassword){ alert('Hai mật khẩu chưa trùng khớp.'); return; }
+  try{
+    if(hasPassword){
+      await window.FB.updatePassword(user, password);
+      alert('Đã đổi mật khẩu.');
+    }else{
+      const credential = window.FB.EmailAuthProvider.credential(user.email, password);
+      const result = await window.FB.linkWithCredential(user, credential);
+      updateProfileUI(result.user);
+      alert('Đã liên kết mật khẩu. Từ bây giờ bạn có thể đăng nhập bằng Google hoặc email và mật khẩu; dữ liệu vẫn được giữ chung.');
+    }
+  }catch(err){
+    console.error('[Firebase] password link/update error', err);
+    alert(window.getAuthErrorMessage(err));
+  }
 });
 /* ============================================================
    MODULE — APP INIT
