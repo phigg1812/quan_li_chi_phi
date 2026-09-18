@@ -455,6 +455,13 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:800;letter-spacing:-0.02
 .hero-btn:hover{background:rgba(255,255,255,.28);}
 .hero-btn.solid{background:#fff;color:var(--primary-dark);border-color:transparent;}
 .hero-btn.solid:hover{background:#F0F5FF;}
+.smart-entry{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:14px;padding:9px 10px 9px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-sm);}
+.smart-entry:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+.smart-entry input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;outline:none;padding:4px 0;}
+.smart-entry input::placeholder{color:var(--text-secondary);}
+.smart-entry button{width:38px;height:38px;border:0;border-radius:10px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.smart-entry button:hover{filter:brightness(.96);}
+.smart-entry button:disabled{opacity:.55;cursor:wait;}
 
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);margin-bottom:var(--space-6);}
 .kpi-card{
@@ -806,6 +813,11 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
 
 .manage-list{display:flex;flex-direction:column;gap:8px;}
 .manage-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);}
+.manage-item[draggable="true"]{cursor:grab;user-select:none;}
+.manage-item[draggable="true"]:active{cursor:grabbing;}
+.manage-item.dragging{opacity:.42;border-style:dashed;}
+.manage-item.drag-over{border-color:var(--primary);background:var(--primary-soft);}
+.drag-handle{color:var(--text-secondary);font-size:17px;line-height:1;letter-spacing:-2px;padding-right:2px;}
 .manage-item .m-dot{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;}
 .manage-item .m-name{flex:1;font-weight:600;font-size:13px;}
 .manage-item .m-actions{display:flex;gap:4px;}
@@ -987,6 +999,10 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
            MODULE 03 — DASHBOARD VIEW
            ============================================================ -->
       <section class="view active" id="view-dashboard">
+        <form class="smart-entry" id="smartExpenseForm">
+          <input type="text" id="smartExpenseInput" autocomplete="off" aria-label="Nhập khoản chi bằng câu tự nhiên">
+          <button type="submit" id="smartExpenseSend" aria-label="Phân tích và điền khoản chi" title="Điền khoản chi"><span data-icon="chevron-right"></span></button>
+        </form>
         <div class="hero">
           <div class="hero-eyebrow" id="heroGreeting">Chào buổi sáng, Phi 👋</div>
           <div class="hero-title" id="heroHeadline"><span id="heroPendingText1">Bạn còn</span> <span class="accent" id="heroPendingCount">0 khoản</span> <span id="heroPendingText2">cần thanh toán</span></div>
@@ -1707,7 +1723,7 @@ async function loadAllState(){
   STATE.categories = categories;
   STATE.wallets = wallets;
   STATE.paymentMethods = paymentMethods;
-  await sortAndMigratePaymentMethodsOrder();
+  await sortAndMigrateManageOrder();
   STATE.recurring = recurring;
   STATE.backups = backups.sort((a,b)=> b.createdAt - a.createdAt);
   const appSettings = settingsRows.find(s=>s.key==='app');
@@ -1889,6 +1905,11 @@ function renderHero(){
   document.getElementById('heroPendingText2').textContent = t('hero.needPay2');
   document.getElementById('heroPendingCount').textContent = `${pending.length} ${t('common.unit')}`;
   document.getElementById('heroAmount').textContent = formatCurrency(totalPending);
+  const smartInput = document.getElementById('smartExpenseInput');
+  if(smartInput){
+    const fullName = (window.FB.currentUser && window.FB.currentUser.displayName) || STATE.settings.userName || 'bạn';
+    smartInput.placeholder = `${fullName} ơi, hôm nay bạn đã chi tiêu những gì, mau ghi chép nào ~`;
+  }
 }
 
 function renderKPIs(){
@@ -2060,6 +2081,7 @@ function statusBadgeHTML(exp){
 function expenseCardHTML(exp){
   const cat = catById(exp.categoryId);
   const wal = walById(exp.walletId);
+  const payment = pmById(exp.paymentMethodId);
   return `<div class="expense-card ${exp.paid?'paid':''}" data-id="${exp.id}">
     <div class="row-top">
       <div class="cat-pill">
@@ -2075,9 +2097,13 @@ function expenseCardHTML(exp){
     <div class="exp-meta">
       ${statusBadgeHTML(exp)}
       <span class="dot-sep"></span>
-      <span>${iconSVG('calendar',12)} ${formatDateShort(exp.dueDate)}</span>
+      <span title="Ngày tạo">${iconSVG('calendar',12)} Tạo ${formatDateShort(exp.createdDate)}</span>
+      <span class="dot-sep"></span>
+      <span title="Hạn thanh toán">Hạn ${formatDateShort(exp.dueDate)}</span>
       <span class="dot-sep"></span>
       <span>${wal.icon} ${escapeHTML(wal.name)}</span>
+      <span class="dot-sep"></span>
+      <span>${iconSVG('banknote',12)} ${escapeHTML(payment.name)}</span>
       ${dueSoonTagHTML(exp)}
     </div>
     <div class="exp-actions">
@@ -2274,6 +2300,88 @@ function openExpenseDrawer(id){
   document.getElementById('drawerOverlay').classList.add('show');
   document.getElementById('expenseDrawer').classList.add('show');
   setTimeout(()=>document.getElementById('fName').focus(), 300);
+}
+function normalizeVietnamese(text){
+  return String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
+}
+function parseNaturalAmount(text){
+  const unitMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(triệu|tr|nghìn|ngàn|ngan|k)\b/i);
+  if(unitMatch){
+    const value = Number(unitMatch[1].replace(',','.'));
+    const unit = normalizeVietnamese(unitMatch[2]);
+    return {amount:Math.round(value * (unit==='tr'||unit==='trieu' ? 1000000 : 1000)), token:unitMatch[0]};
+  }
+  const candidates = [...text.matchAll(/\b\d{1,3}(?:[.,]\d{3})+\b/g)];
+  if(candidates.length){
+    const token = candidates[candidates.length-1][0];
+    return {amount:Number(token.replace(/[^\d]/g,'')), token};
+  }
+  return {amount:0, token:''};
+}
+function parseNaturalDate(text){
+  const lower = normalizeVietnamese(text);
+  const now = new Date();
+  if(/\bhom qua\b/.test(lower)){ const d=new Date(now); d.setDate(d.getDate()-1); return {date:dateISO(d),token:'hôm qua'}; }
+  if(/\bhom nay\b/.test(lower)) return {date:todayISO(),token:'hôm nay'};
+  const match = text.match(/(?:ngày\s*)?(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/i);
+  if(!match) return {date:todayISO(),token:''};
+  let year = match[3] ? Number(match[3]) : now.getFullYear();
+  if(year<100) year += 2000;
+  const d = new Date(year, Number(match[2])-1, Number(match[1]));
+  const valid = d.getFullYear()===year && d.getMonth()===Number(match[2])-1 && d.getDate()===Number(match[1]);
+  return {date:valid ? dateISO(d) : todayISO(),token:match[0]};
+}
+function findNaturalCategory(text){
+  const n = normalizeVietnamese(text);
+  const groups = [
+    {targets:['hoa don'],keys:['dien','nuoc','internet','wifi','cuoc','hoa don','truyen hinh']},
+    {targets:['an uong'],keys:['an','com','pho','bun','tra sua','cafe','ca phe','nha hang']},
+    {targets:['di chuyen'],keys:['xang','grab','taxi','gui xe','xe buyt','ve xe']},
+    {targets:['suc khoe'],keys:['thuoc','kham','benh vien','suc khoe']},
+    {targets:['giai tri'],keys:['phim','netflix','game','giai tri','du lich']},
+    {targets:['nha o'],keys:['tien nha','thue nha','noi that','sua nha']},
+    {targets:['mua sam'],keys:['mua','quan ao','giay','my pham','shopping']}
+  ];
+  const group = groups.find(g=>g.keys.some(k=>n.includes(k)));
+  if(group){
+    const found = STATE.categories.find(c=>group.targets.some(target=>normalizeVietnamese(c.name).includes(target)));
+    if(found) return found;
+  }
+  return STATE.categories.find(c=>n.includes(normalizeVietnamese(c.name))) || STATE.categories[0];
+}
+function findNaturalPayment(text){
+  const n = normalizeVietnamese(text);
+  const desired = /(^|\s)(ck|banking)(\s|$)|chuyen khoan/.test(n) ? ['chuyen khoan']
+    : /(^|\s)tm(\s|$)|tien mat/.test(n) ? ['tien mat']
+    : /the ngan hang|quet the/.test(n) ? ['the ngan hang','the']
+    : /vi dien tu|momo|zalopay|shopeepay/.test(n) ? ['vi dien tu'] : [];
+  return STATE.paymentMethods.find(p=>desired.some(k=>normalizeVietnamese(p.name).includes(k))) || STATE.paymentMethods[0];
+}
+function naturalExpenseName(text, amountToken, dateToken){
+  let name = text;
+  if(amountToken) name = name.replace(amountToken,' ');
+  if(dateToken) name = name.replace(dateToken,' ');
+  name = name
+    .replace(/\b(chuyển khoản|ck|banking|tiền mặt|tm|quẹt thẻ|thẻ ngân hàng|ví điện tử)\b/gi,' ')
+    .replace(/\btháng\s+\d{1,2}\b/gi,' ')
+    .replace(/\s+/g,' ').replace(/^[,.;:\-\s]+|[,.;:\-\s]+$/g,'').trim();
+  if(!name) return 'Khoản chi';
+  return name.charAt(0).toUpperCase()+name.slice(1);
+}
+function prefillExpenseFromNaturalText(text){
+  const amountInfo = parseNaturalAmount(text);
+  const dateInfo = parseNaturalDate(text);
+  const category = findNaturalCategory(text);
+  const payment = findNaturalPayment(text);
+  openExpenseDrawer();
+  document.getElementById('fName').value = naturalExpenseName(text, amountInfo.token, dateInfo.token);
+  document.getElementById('fAmount').value = amountInfo.amount ? new Intl.NumberFormat('vi-VN').format(amountInfo.amount) : '';
+  document.getElementById('fCreatedDate').value = dateInfo.date;
+  document.getElementById('fWallet').value = STATE.wallets[0] ? STATE.wallets[0].id : '';
+  if(payment) document.getElementById('fPaymentMethod').value = payment.id;
+  renderCategoryChips(document.getElementById('fCategoryChips'), category && category.id);
+  document.getElementById('fNotes').value = text;
+  if(!amountInfo.amount) showToast('Chưa nhận ra số tiền — bạn hãy bổ sung trước khi lưu');
 }
 function closeExpenseDrawer(){
   document.getElementById('drawerOverlay').classList.remove('show');
@@ -2548,7 +2656,8 @@ function autoIconForCategory(name, existingIcons){
 function renderCategoryManageList(){
   const el = document.getElementById('categoryList');
   el.innerHTML = STATE.categories.map(c=>`
-    <div class="manage-item">
+    <div class="manage-item" draggable="true" data-manage-id="${c.id}">
+      <div class="drag-handle" title="Giữ chuột và kéo để sắp xếp">⠿</div>
       <div class="m-dot" style="background:${c.color}22;">${c.icon}</div>
       <div class="m-name">${escapeHTML(c.name)}</div>
       <div class="m-actions"><button class="icon-btn btn-sm" style="width:30px;height:30px;color:var(--danger);" data-del-cat="${c.id}">${iconSVG('trash-2',13)}</button></div>
@@ -2560,11 +2669,12 @@ function renderCategoryManageList(){
     await dbDelete('categories', id);
     renderCategoryManageList();
   }));
+  enableManageDrag(el, STATE.categories, 'categories', renderCategoryManageList);
 }
 document.getElementById('addCategoryBtn').addEventListener('click', async ()=>{
   const input = document.getElementById('newCategoryInput');
   const name = input.value.trim(); if(!name) return;
-  const c = { id:uid('cat'), name, icon:autoIconForCategory(name, STATE.categories.map(x=>x.icon)), color:pickColor(STATE.categories.length) };
+  const c = { id:uid('cat'), name, icon:autoIconForCategory(name, STATE.categories.map(x=>x.icon)), color:pickColor(STATE.categories.length), order:STATE.categories.length };
   STATE.categories.push(c); await dbPut('categories', c);
   input.value=''; renderCategoryManageList();
 });
@@ -2572,7 +2682,8 @@ document.getElementById('addCategoryBtn').addEventListener('click', async ()=>{
 function renderWalletManageList(){
   const el = document.getElementById('walletList');
   el.innerHTML = STATE.wallets.map(w=>`
-    <div class="manage-item">
+    <div class="manage-item" draggable="true" data-manage-id="${w.id}">
+      <div class="drag-handle" title="Giữ chuột và kéo để sắp xếp">⠿</div>
       <div class="m-dot" style="background:var(--primary-soft);">${w.icon||'👛'}</div>
       <div class="m-name">${escapeHTML(w.name)}</div>
       <div class="m-actions"><button class="icon-btn btn-sm" style="width:30px;height:30px;color:var(--danger);" data-del-wal="${w.id}">${iconSVG('trash-2',13)}</button></div>
@@ -2584,11 +2695,12 @@ function renderWalletManageList(){
     await dbDelete('wallets', id);
     renderWalletManageList();
   }));
+  enableManageDrag(el, STATE.wallets, 'wallets', renderWalletManageList);
 }
 document.getElementById('addWalletBtn').addEventListener('click', async ()=>{
   const input = document.getElementById('newWalletInput');
   const name = input.value.trim(); if(!name) return;
-  const w = { id:uid('wal'), name, icon:'💳' };
+  const w = { id:uid('wal'), name, icon:'💳', order:STATE.wallets.length };
   STATE.wallets.push(w); await dbPut('wallets', w);
   input.value=''; renderWalletManageList();
 });
@@ -2597,15 +2709,51 @@ document.getElementById('addWalletBtn').addEventListener('click', async ()=>{
 // tracked explicitly via an `order` field. This keeps the order the user sets
 // in Settings in sync with the "Phương thức" dropdown in the add-expense form,
 // which simply reads STATE.paymentMethods in array order.
-async function sortAndMigratePaymentMethodsOrder(){
-  let needsMigration = false;
-  STATE.paymentMethods.forEach((p, idx)=>{
-    if(typeof p.order !== 'number'){ p.order = idx; needsMigration = true; }
-  });
-  STATE.paymentMethods.sort((a,b)=> a.order - b.order);
-  if(needsMigration){
-    await Promise.all(STATE.paymentMethods.map(p=> dbPut('paymentMethods', p)));
+async function sortAndMigrateManageOrder(){
+  const groups = [
+    {items:STATE.categories, store:'categories'},
+    {items:STATE.wallets, store:'wallets'},
+    {items:STATE.paymentMethods, store:'paymentMethods'}
+  ];
+  for(const group of groups){
+    let needsMigration = false;
+    group.items.forEach((item, idx)=>{ if(typeof item.order!=='number'){ item.order=idx; needsMigration=true; } });
+    group.items.sort((a,b)=>a.order-b.order);
+    if(needsMigration) await Promise.all(group.items.map(item=>dbPut(group.store,item)));
   }
+}
+function enableManageDrag(container, items, storeName, rerender){
+  let draggedId = null;
+  container.querySelectorAll('[data-manage-id]').forEach(item=>{
+    item.addEventListener('dragstart', e=>{
+      if(e.target.closest('button')){ e.preventDefault(); return; }
+      draggedId = item.dataset.manageId;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+    });
+    item.addEventListener('dragend', ()=>{
+      container.querySelectorAll('.manage-item').forEach(x=>x.classList.remove('dragging','drag-over'));
+    });
+    item.addEventListener('dragover', e=>{
+      e.preventDefault();
+      container.querySelectorAll('.manage-item').forEach(x=>x.classList.remove('drag-over'));
+      if(item.dataset.manageId!==draggedId) item.classList.add('drag-over');
+    });
+    item.addEventListener('drop', async e=>{
+      e.preventDefault();
+      const fromId = draggedId || e.dataTransfer.getData('text/plain');
+      const toId = item.dataset.manageId;
+      const from = items.findIndex(x=>x.id===fromId), to = items.findIndex(x=>x.id===toId);
+      if(from<0 || to<0 || from===to) return;
+      const [moved] = items.splice(from,1);
+      items.splice(to,0,moved);
+      items.forEach((x,idx)=>x.order=idx);
+      await Promise.all(items.map(x=>dbPut(storeName,x)));
+      rerender();
+      showToast('Đã cập nhật thứ tự');
+    });
+  });
 }
 async function movePaymentMethod(id, direction){
   const list = STATE.paymentMethods;
@@ -2620,7 +2768,8 @@ async function movePaymentMethod(id, direction){
 function renderPaymentManageList(){
   const el = document.getElementById('paymentList');
   el.innerHTML = STATE.paymentMethods.map((p,idx)=>`
-    <div class="manage-item">
+    <div class="manage-item" draggable="true" data-manage-id="${p.id}">
+      <div class="drag-handle" title="Giữ chuột và kéo để sắp xếp">⠿</div>
       <div class="m-dot" style="background:var(--primary-soft);">${iconSVG('banknote',14)}</div>
       <div class="m-name">${escapeHTML(p.name)}</div>
       <div class="m-actions">
@@ -2638,6 +2787,7 @@ function renderPaymentManageList(){
     STATE.paymentMethods.forEach((p, idx)=> p.order = idx);
     renderPaymentManageList();
   }));
+  enableManageDrag(el, STATE.paymentMethods, 'paymentMethods', renderPaymentManageList);
 }
 document.getElementById('addPaymentBtn').addEventListener('click', async ()=>{
   const input = document.getElementById('newPaymentInput');
@@ -2881,6 +3031,14 @@ document.getElementById('quickAddBtn').addEventListener('click', ()=>openExpense
 document.getElementById('fabAdd').addEventListener('click', ()=>openExpenseDrawer());
 document.getElementById('heroAddBtn').addEventListener('click', ()=>openExpenseDrawer());
 document.getElementById('dashViewAllBtn').addEventListener('click', toggleDashViewAll);
+document.getElementById('smartExpenseForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const input = document.getElementById('smartExpenseInput');
+  const text = input.value.trim();
+  if(!text){ input.focus(); return; }
+  prefillExpenseFromNaturalText(text);
+  input.value = '';
+});
 
 const globalSearchInput = document.getElementById('globalSearch');
 globalSearchInput.addEventListener('input', debounce((e)=>{
