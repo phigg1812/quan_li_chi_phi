@@ -1156,6 +1156,7 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
             <button data-panel="categories" data-i18n="settings.categories">Danh mục</button>
             <button data-panel="wallets" data-i18n="settings.wallets">Ví</button>
             <button data-panel="payment" data-i18n="settings.payment">Phương thức thanh toán</button>
+            <button data-panel="learning">Quy tắc đã ghi nhớ</button>
             <button data-panel="recurring" data-i18n="settings.recurring">Chi định kỳ</button>
           </div>
 
@@ -1194,6 +1195,12 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
             <div class="desc" data-i18n="settings.paymentDesc">Quản lý các phương thức thanh toán.</div>
             <div class="manage-list" id="paymentList"></div>
             <div class="add-inline"><input type="text" id="newPaymentInput" data-i18n-ph="settings.paymentNew" placeholder="Phương thức mới..."><button class="btn btn-primary btn-sm" id="addPaymentBtn"><span data-icon="plus"></span></button></div>
+          </div>
+
+          <div class="settings-panel hidden" id="panel-learning">
+            <h3>Quy tắc đã ghi nhớ</h3>
+            <div class="desc">Ứng dụng học từ những lần bạn sửa gợi ý nhập nhanh rồi bấm lưu. Bạn có thể xóa quy tắc không còn phù hợp.</div>
+            <div class="manage-list" id="learningRuleList"></div>
           </div>
 
           <div class="settings-panel hidden" id="panel-recurring">
@@ -1595,7 +1602,7 @@ function applyI18n(root){
 <script>
 /* ============================================================
    MODULE 09 — DATABASE (Firestore wrapper, synced across devices)
-   Schema: users/{uid}/{expenses|settings|categories|wallets|backups|paymentMethods|recurring}/{docId}
+   Schema: users/{uid}/{expenses|settings|categories|wallets|backups|paymentMethods|recurring|learningRules}/{docId}
    Keeps the exact same function signatures the rest of the app already
    uses (openDB/dbGetAll/dbPut/dbDelete/dbClear) so nothing else changes.
    Firestore's local cache (enabled in <head>) keeps this working offline
@@ -1640,12 +1647,12 @@ async function dbClear(storeName){
    MODULE 09b — GLOBAL STATE + UTILITIES
    ============================================================ */
 const STATE = {
-  expenses:[], categories:[], wallets:[], paymentMethods:[], recurring:[], backups:[],
+  expenses:[], categories:[], wallets:[], paymentMethods:[], recurring:[], backups:[], learningRules:[],
   settings:{ language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false },
   ui:{ currentView:'dashboard', listViewMode:'card', search:'', sort:{field:'dueDate',dir:'asc'},
        filters:{category:'all', wallet:'all', period:'all', minAmount:'', maxAmount:''},
        calDate:new Date(), calMode:'month', statsRange:'month', pendingDrawerId:null, pendingDeleteId:null,
-       pendingDeleteType:null, dashExpanded:false }
+       pendingDeleteType:null, dashExpanded:false, smartPrediction:null }
 };
 function uid(prefix){ return (prefix||'id')+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1726,9 +1733,9 @@ async function seedIfEmpty(){
 }
 
 async function loadAllState(){
-  const [expenses, categories, wallets, paymentMethods, recurring, backups, settingsRows] = await Promise.all([
+  const [expenses, categories, wallets, paymentMethods, recurring, backups, learningRules, settingsRows] = await Promise.all([
     dbGetAll('expenses'), dbGetAll('categories'), dbGetAll('wallets'), dbGetAll('paymentMethods'),
-    dbGetAll('recurring'), dbGetAll('backups'), dbGetAll('settings')
+    dbGetAll('recurring'), dbGetAll('backups'), dbGetAll('learningRules'), dbGetAll('settings')
   ]);
   STATE.expenses = expenses;
   STATE.categories = categories;
@@ -1737,6 +1744,7 @@ async function loadAllState(){
   await sortAndMigrateManageOrder();
   STATE.recurring = recurring;
   STATE.backups = backups.sort((a,b)=> b.createdAt - a.createdAt);
+  STATE.learningRules = learningRules.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   const appSettings = settingsRows.find(s=>s.key==='app');
   if(appSettings) Object.assign(STATE.settings, appSettings);
 }
@@ -2306,6 +2314,29 @@ function openExpenseDrawer(id){
 function normalizeVietnamese(text){
   return String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
 }
+const NATURAL_STOP_WORDS = new Set(['mua','tra','thanh','toan','bang','ngay','thang','hom','nay','qua','luc','vao','cho','cua','toi','minh','mot','khoan','tien','chi','da','va','voi','theo','vi','tu']);
+function naturalLearningTokens(text){
+  let n = normalizeVietnamese(text)
+    .replace(/vi dien tu|chuyen khoan|the ngan hang|tien mat|banking|momo|zalopay|shopeepay/g,' ')
+    .replace(/\d+(?:[.,]\d+)?\s*(?:trieu|tr|nghin|ngan|k)?/g,' ')
+    .replace(/[^a-z0-9\s]/g,' ');
+  return [...new Set(n.split(/\s+/).filter(x=>x.length>1 && !NATURAL_STOP_WORDS.has(x)))].slice(0,8);
+}
+function findLearnedRule(text){
+  const tokens = naturalLearningTokens(text);
+  if(!tokens.length) return null;
+  let best=null, bestScore=0;
+  for(const rule of STATE.learningRules){
+    const keys = Array.isArray(rule.tokens) ? rule.tokens : [];
+    if(!keys.length) continue;
+    const hits = keys.filter(k=>tokens.includes(k)).length;
+    const coverage = hits / keys.length;
+    const score = hits * 10 + coverage;
+    const enoughEvidence = keys.length===1 ? hits===1 : hits>=2;
+    if(enoughEvidence && coverage>=0.6 && score>bestScore){ best=rule; bestScore=score; }
+  }
+  return best;
+}
 function parseNaturalAmount(text){
   const unitMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(triệu|tr|nghìn|ngàn|ngan|k)\b/i);
   if(unitMatch){
@@ -2339,7 +2370,8 @@ function parseNaturalDate(text){
   return {date:valid ? dateISO(d) : todayISO(),token:match[0]};
 }
 function findNaturalCategory(text){
-  const n = normalizeVietnamese(text);
+  const n = normalizeVietnamese(text)
+    .replace(/vi dien tu|chuyen khoan|the ngan hang|tien mat|banking|momo|zalopay|shopeepay/g,' ');
   const groups = [
     {targets:['hoa don'],keys:['dien','nuoc','internet','wifi','cuoc','hoa don','truyen hinh']},
     {targets:['an uong'],keys:['an','com','pho','bun','tra sua','cafe','ca phe','nha hang']},
@@ -2373,7 +2405,8 @@ function naturalExpenseName(text, amountToken, dateToken){
   if(amountToken) name = name.replace(amountToken,' ');
   if(dateToken) name = name.replace(dateToken,' ');
   name = name
-    .replace(/\b(chuyển khoản|ck|banking|tiền mặt|tm|quẹt thẻ|thẻ ngân hàng|ví điện tử)\b/gi,' ')
+    .replace(/chuyển khoản|ví điện tử|thẻ ngân hàng|quẹt thẻ|tiền mặt|banking/gi,' ')
+    .replace(/(^|\s)(ck|tm)(?=\s|$)/gi,' ')
     .replace(/\btháng\s+\d{1,2}\b/gi,' ')
     .replace(/\s+/g,' ').replace(/^[,.;:\-\s]+|[,.;:\-\s]+$/g,'').trim();
   if(!name) return 'Khoản chi';
@@ -2382,18 +2415,46 @@ function naturalExpenseName(text, amountToken, dateToken){
 function prefillExpenseFromNaturalText(text){
   const amountInfo = parseNaturalAmount(text);
   const dateInfo = parseNaturalDate(text);
-  const category = findNaturalCategory(text);
-  const payment = findNaturalPayment(text);
+  const learned = findLearnedRule(text);
+  const category = (learned && catById(learned.categoryId).name!=='—') ? catById(learned.categoryId) : findNaturalCategory(text);
+  const payment = (learned && pmById(learned.paymentMethodId).name!=='—') ? pmById(learned.paymentMethodId) : findNaturalPayment(text);
   openExpenseDrawer();
-  document.getElementById('fName').value = naturalExpenseName(text, amountInfo.token, dateInfo.token);
+  document.getElementById('fName').value = (learned && learned.preferredName) || naturalExpenseName(text, amountInfo.token, dateInfo.token);
   document.getElementById('fAmount').value = amountInfo.amount ? new Intl.NumberFormat('vi-VN').format(amountInfo.amount) : '';
   document.getElementById('fCreatedDate').value = dateInfo.date;
-  document.getElementById('fWallet').value = STATE.wallets[0] ? STATE.wallets[0].id : '';
+  document.getElementById('fWallet').value = (learned && walById(learned.walletId).name!=='—') ? learned.walletId : (STATE.wallets[0] ? STATE.wallets[0].id : '');
   if(payment) document.getElementById('fPaymentMethod').value = payment.id;
   renderCategoryChips(document.getElementById('fCategoryChips'), category && category.id);
   document.getElementById('fNotes').value = text;
   STATE.ui.expenseDraft = captureExpenseDraft();
+  STATE.ui.smartPrediction = {
+    sourceText:text, ruleId:learned && learned.id,
+    name:document.getElementById('fName').value,
+    categoryId:getSelectedChip(document.getElementById('fCategoryChips')),
+    paymentMethodId:document.getElementById('fPaymentMethod').value,
+    walletId:document.getElementById('fWallet').value
+  };
   if(!amountInfo.amount) showToast('Chưa nhận ra số tiền — bạn hãy bổ sung trước khi lưu');
+}
+async function learnFromSmartCorrection(exp){
+  const prediction = STATE.ui.smartPrediction;
+  if(!prediction || !prediction.sourceText) return false;
+  const changed = prediction.name!==exp.name || prediction.categoryId!==exp.categoryId ||
+    prediction.paymentMethodId!==exp.paymentMethodId || prediction.walletId!==exp.walletId;
+  if(!changed) return false;
+  const tokens = naturalLearningTokens(prediction.sourceText);
+  if(!tokens.length) return false;
+  const id = prediction.ruleId || ('rule_'+tokens.join('_').slice(0,90));
+  const old = STATE.learningRules.find(r=>r.id===id);
+  const rule = {
+    id, sourceText:prediction.sourceText, tokens,
+    preferredName:exp.name, categoryId:exp.categoryId,
+    paymentMethodId:exp.paymentMethodId, walletId:exp.walletId,
+    updatedAt:Date.now(), useCount:(old&&old.useCount||0)+1
+  };
+  if(old) Object.assign(old,rule); else STATE.learningRules.unshift(rule);
+  await dbPut('learningRules',rule);
+  return true;
 }
 function captureExpenseDraft(){
   return {
@@ -2443,10 +2504,12 @@ async function handleExpenseFormSubmit(e){
   const existing = STATE.expenses.find(x=>x.id===id);
   if(existing) Object.assign(existing, exp); else STATE.expenses.push(exp);
   await dbPut('expenses', exp);
+  const learned = !existing && await learnFromSmartCorrection(exp);
   STATE.ui.expenseDraft = null;
+  STATE.ui.smartPrediction = null;
   document.getElementById('smartExpenseInput').value = '';
   closeExpenseDrawer(false);
-  showToast(t('toast.saved'));
+  showToast(learned ? 'Đã lưu khoản chi và ghi nhớ cách bạn chỉnh' : t('toast.saved'));
   renderCurrentView(true);
 }
 async function handleDeleteExpense(id){
@@ -2479,7 +2542,7 @@ async function handleTogglePaid(id, btnEl){
 }
 document.getElementById('expenseForm').addEventListener('submit', handleExpenseFormSubmit);
 document.getElementById('drawerCloseBtn').addEventListener('click', closeExpenseDrawer);
-document.getElementById('drawerCancelBtn').addEventListener('click', ()=>{ STATE.ui.expenseDraft=null; closeExpenseDrawer(false); });
+document.getElementById('drawerCancelBtn').addEventListener('click', ()=>{ STATE.ui.expenseDraft=null; STATE.ui.smartPrediction=null; closeExpenseDrawer(false); });
 document.getElementById('drawerOverlay').addEventListener('click', closeExpenseDrawer);
 document.getElementById('drawerDeleteBtn').addEventListener('click', handleDeleteFromDrawer);
 document.getElementById('confirmCancelBtn').addEventListener('click', ()=>closeConfirm(false));
@@ -2662,7 +2725,26 @@ function renderSettings(){
   renderCategoryManageList();
   renderWalletManageList();
   renderPaymentManageList();
+  renderLearningRules();
   renderRecurringManageList();
+}
+function renderLearningRules(){
+  const el=document.getElementById('learningRuleList');
+  if(!el) return;
+  el.innerHTML=STATE.learningRules.map(rule=>{
+    const cat=catById(rule.categoryId), pm=pmById(rule.paymentMethodId), wal=walById(rule.walletId);
+    return `<div class="manage-item">
+      <div class="m-dot" style="background:${cat.color||'#6B7280'}22;">${cat.icon||'🧠'}</div>
+      <div class="m-name"><div>${escapeHTML(rule.sourceText||rule.tokens.join(' '))}</div>
+      <div style="font-size:11.5px;color:var(--text-secondary);font-weight:500;margin-top:3px;">${escapeHTML(rule.preferredName||'Khoản chi')} · ${escapeHTML(cat.name)} · ${escapeHTML(pm.name)} · ${escapeHTML(wal.name)}</div></div>
+      <div class="m-actions"><button class="icon-btn manage-delete" data-del-rule="${rule.id}" title="Xóa quy tắc">${iconSVG('trash-2',17)}</button></div>
+    </div>`;
+  }).join('') || '<div style="color:var(--text-secondary);font-size:12.5px;padding:12px 0;">Chưa có quy tắc nào. Hãy sửa một gợi ý nhập nhanh rồi bấm lưu để ứng dụng bắt đầu học.</div>';
+  el.querySelectorAll('[data-del-rule]').forEach(btn=>btn.addEventListener('click',async()=>{
+    STATE.learningRules=STATE.learningRules.filter(r=>r.id!==btn.dataset.delRule);
+    await dbDelete('learningRules',btn.dataset.delRule);
+    renderLearningRules(); showToast('Đã xóa quy tắc ghi nhớ');
+  }));
 }
 const EMOJI_POOL = ['🍜','🚗','🏠','🎬','💊','🛍️','🧾','📦','✈️','🎓','🐾','🎮','☕','👕','💡','📱'];
 function pickIcon(idx){ return EMOJI_POOL[idx % EMOJI_POOL.length]; }
@@ -2922,7 +3004,7 @@ function buildBackupPayload(){
   return {
     version:1, exportedAt:new Date().toISOString(),
     expenses:STATE.expenses, categories:STATE.categories, wallets:STATE.wallets,
-    paymentMethods:STATE.paymentMethods, recurring:STATE.recurring, settings:STATE.settings
+    paymentMethods:STATE.paymentMethods, recurring:STATE.recurring, learningRules:STATE.learningRules, settings:STATE.settings
   };
 }
 function downloadJSON(obj, filename){
@@ -2950,12 +3032,13 @@ async function importBackupFile(file){
     if(!data || !Array.isArray(data.expenses)) throw new Error('invalid');
     const ok = await askConfirm(t('backup.restoreTitle'), t('backup.restoreDesc'));
     if(!ok) return;
-    await Promise.all(['expenses','categories','wallets','paymentMethods','recurring'].map(dbClear));
+    await Promise.all(['expenses','categories','wallets','paymentMethods','recurring','learningRules'].map(dbClear));
     for(const e of data.expenses||[]) await dbPut('expenses', e);
     for(const c of data.categories||[]) await dbPut('categories', c);
     for(const w of data.wallets||[]) await dbPut('wallets', w);
     for(const p of data.paymentMethods||[]) await dbPut('paymentMethods', p);
     for(const r of data.recurring||[]) await dbPut('recurring', r);
+    for(const rule of data.learningRules||[]) await dbPut('learningRules', rule);
     if(data.settings){ Object.assign(STATE.settings, data.settings); await saveSettings(); }
     await loadAllState();
     applyTheme(); applyI18n();
