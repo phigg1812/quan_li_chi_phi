@@ -597,6 +597,9 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:800;letter-spacing:-0.02
 .dash-more-grid:empty{margin-top:0;}
 .dash-more-grid:not(:empty){margin-top:var(--space-4);}
 .dash-more-grid .expense-card{animation:cardSlideIn .45s var(--ease) both;}
+.dash-recent-actions{display:flex;align-items:center;gap:8px;min-width:0;max-width:75%;}
+.dash-category-filters{display:flex;gap:6px;overflow-x:auto;min-width:0;white-space:nowrap;scrollbar-width:thin;}
+.dash-category-filters .btn.active{background:var(--primary);color:white;}
 @keyframes cardSlideIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 .expense-card{
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
@@ -1082,7 +1085,7 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
 
         <div class="panel-header" style="margin-bottom:12px;">
           <div class="panel-title" style="font-size:16px;" data-i18n="dash.recent">Khoản chi gần đây</div>
-          <button class="btn btn-sm" id="dashViewAllBtn" data-i18n="dash.viewAll">Xem tất cả</button>
+          <div class="dash-recent-actions"><div id="dashCategoryFilters" class="dash-category-filters" aria-label="Lọc danh mục chưa thanh toán"></div><button class="btn btn-sm" id="dashViewAllBtn" style="flex-shrink:0;" data-i18n="dash.viewAll">Xem tất cả</button></div>
         </div>
         <div id="recentList" class="card-grid"></div>
         <div id="recentListMore" class="card-grid dash-more-grid"></div>
@@ -1652,7 +1655,7 @@ const STATE = {
   ui:{ currentView:'dashboard', listViewMode:'card', search:'', sort:{field:'dueDate',dir:'asc'},
        filters:{category:'all', wallet:'all', period:'all', minAmount:'', maxAmount:''},
        calDate:new Date(), calMode:'month', statsRange:'month', pendingDrawerId:null, pendingDeleteId:null,
-       pendingDeleteType:null, dashExpanded:false, smartPrediction:null }
+       pendingDeleteType:null, dashExpanded:false, dashCategory:'all', smartPrediction:null }
 };
 function uid(prefix){ return (prefix||'id')+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1711,24 +1714,6 @@ async function seedIfEmpty(){
   if(pms.length===0){ for(const p of DEFAULT_PAYMENT_METHODS) await dbPut('paymentMethods', p); }
   if(settingsRows.length===0){
     await dbPut('settings',{key:'app', language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false, userName:'bạn'});
-  }
-  // seed a few sample expenses on very first run so the app doesn't look empty
-  const existingExpenses = await dbGetAll('expenses');
-  if(existingExpenses.length===0){
-    const t = todayISO();
-    const d = parseISO(t);
-    const plus = (n)=> dateISO(new Date(d.getFullYear(),d.getMonth(),d.getDate()+n));
-    const minus = (n)=> plus(-n);
-    const samples = [
-      {name:'Tiền nhà tháng này', amount:4500000, categoryId:'cat_housing', walletId:'wal_bank', paymentMethodId:'pm_transfer', createdDate:minus(3), dueDate:plus(2), paid:false, notes:''},
-      {name:'Ăn trưa văn phòng', amount:45000, categoryId:'cat_food', walletId:'wal_personal', paymentMethodId:'pm_cash', createdDate:t, dueDate:t, paid:true, notes:''},
-      {name:'Gói cước Internet', amount:220000, categoryId:'cat_bill', walletId:'wal_bank', paymentMethodId:'pm_transfer', createdDate:minus(1), dueDate:plus(1), paid:false, notes:''},
-      {name:'Netflix', amount:99000, categoryId:'cat_entertainment', walletId:'wal_personal', paymentMethodId:'pm_ewallet', createdDate:minus(5), dueDate:minus(1), paid:false, notes:''},
-      {name:'Xăng xe', amount:120000, categoryId:'cat_transport', walletId:'wal_personal', paymentMethodId:'pm_cash', createdDate:t, dueDate:t, paid:true, notes:''},
-      {name:'Khám sức khỏe định kỳ', amount:850000, categoryId:'cat_health', walletId:'wal_family', paymentMethodId:'pm_card', createdDate:minus(10), dueDate:minus(4), paid:true, notes:''},
-      {name:'Mua sắm quần áo', amount:650000, categoryId:'cat_shopping', walletId:'wal_personal', paymentMethodId:'pm_card', createdDate:minus(2), dueDate:plus(4), paid:false, notes:''},
-    ];
-    for(const s of samples){ await dbPut('expenses', Object.assign({id:uid('exp')}, s)); }
   }
 }
 
@@ -2011,7 +1996,18 @@ function renderDashboardCharts(){
 }
 
 function renderRecentList(){
-  const recent = [...STATE.expenses].sort((a,b)=> (b.createdDate||'').localeCompare(a.createdDate||'')).slice(0,4);
+  const mStart = startOfMonthISO(), mEnd = endOfMonthISO();
+  const available = new Set(STATE.expenses.filter(e=>!e.paid && e.createdDate>=mStart && e.createdDate<=mEnd).map(e=>e.categoryId));
+  if(STATE.ui.dashCategory!=='all' && !available.has(STATE.ui.dashCategory)) STATE.ui.dashCategory='all';
+  const filterWrap = document.getElementById('dashCategoryFilters');
+  filterWrap.innerHTML = STATE.categories.filter(c=>available.has(c.id)).map(c=>`<button class="btn btn-sm ${STATE.ui.dashCategory===c.id?'active':''}" type="button" data-category="${escapeHTML(c.id)}">${c.icon} ${escapeHTML(c.name)}</button>`).join('');
+  filterWrap.querySelectorAll('[data-category]').forEach(btn=>btn.addEventListener('click',()=>{
+    STATE.ui.dashCategory = STATE.ui.dashCategory===btn.dataset.category ? 'all' : btn.dataset.category;
+    renderRecentList();
+    if(STATE.ui.dashCategory!=='all') toggleDashViewAll();
+  }));
+  const sorted = [...STATE.expenses].sort((a,b)=> (b.createdDate||'').localeCompare(a.createdDate||''));
+  const recent = (STATE.ui.dashCategory==='all' ? sorted : sorted.filter(e=>!e.paid && e.categoryId===STATE.ui.dashCategory && e.createdDate>=mStart && e.createdDate<=mEnd)).slice(0,4);
   document.getElementById('recentList').innerHTML = recent.map(exp=>expenseCardHTML(exp)).join('') || emptyStateHTML();
   bindCardEvents(document.getElementById('recentList'));
   document.getElementById('recentListMore').innerHTML = '';
@@ -2036,8 +2032,9 @@ function toggleDashViewAll(){
   const mStart = startOfMonthISO(), mEnd = endOfMonthISO();
   const shownIds = new Set(Array.from(document.querySelectorAll('#recentList .expense-card')).map(c=>c.dataset.id));
   const monthList = STATE.expenses
-    .filter(e=> e.dueDate>=mStart && e.dueDate<=mEnd && !shownIds.has(e.id))
-    .sort((a,b)=> (a.dueDate||'').localeCompare(b.dueDate||''));
+    .filter(e=> e.createdDate>=mStart && e.createdDate<=mEnd && !shownIds.has(e.id)
+      && (STATE.ui.dashCategory==='all' || (!e.paid && e.categoryId===STATE.ui.dashCategory)))
+    .sort((a,b)=> (b.createdDate||'').localeCompare(a.createdDate||''));
   moreWrap.innerHTML = monthList.length
     ? monthList.map((exp,i)=> expenseCardHTML(exp).replace('class="expense-card', `style="animation-delay:${Math.min(i*35,350)}ms" class="expense-card`)).join('')
     : `<div class="empty-state" style="grid-column:1/-1;"><div class="e-sub">${t('month.noMore')}</div></div>`;
@@ -3152,6 +3149,20 @@ document.getElementById('quickAddBtn').addEventListener('click', ()=>openExpense
 document.getElementById('fabAdd').addEventListener('click', ()=>openExpenseDrawer());
 document.getElementById('heroAddBtn').addEventListener('click', ()=>openExpenseDrawer());
 document.getElementById('dashViewAllBtn').addEventListener('click', toggleDashViewAll);
+// Capitalize the first letter of free-text entries while preserving the caret.
+document.addEventListener('input', e=>{
+  const el=e.target;
+  if(e.isComposing || !(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return;
+  if(el instanceof HTMLInputElement && el.type!=='text' && el.type!=='search') return;
+  if(['authEmail','fAmount','rAmount'].includes(el.id)) return;
+  const original=el.value;
+  const capitalized=original.replace(/^(\s*)(\p{L})/u,(_,space,letter)=>space+letter.toLocaleUpperCase('vi-VN'));
+  if(capitalized!==original){
+    const start=el.selectionStart, end=el.selectionEnd;
+    el.value=capitalized;
+    if(start!==null && end!==null) el.setSelectionRange(start,end);
+  }
+},true);
 document.getElementById('smartExpenseForm').addEventListener('submit', e=>{
   e.preventDefault();
   const input = document.getElementById('smartExpenseInput');
