@@ -3377,7 +3377,7 @@ window.onFirebaseAuthChange = async function(user){
 };
 </script>
 <style>
-.qrx-fab{position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:900;width:54px;height:54px;border-radius:50%;border:0;background:var(--primary);color:#fff;font-size:24px;box-shadow:var(--shadow-lg);cursor:pointer}
+#fabAdd{display:none!important}.qrx-fab svg{display:block}
 body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qrx-ov{position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.55);display:flex;align-items:flex-end;justify-content:center}
 .qrx-sheet{background:var(--card);color:var(--text);width:100%;max-width:480px;max-height:92vh;overflow:auto;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
@@ -3420,31 +3420,47 @@ function buildLink(app,p){
 }
 
 let stream=null, raf=0, cur=null;
-function loadJsQR(){return window.jsQR?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';s.onload=ok;s.onerror=()=>no(new Error('Không tải được bộ đọc QR'));document.head.appendChild(s);});}
+function loadJsQR(){ if(window.jsQR) return Promise.resolve();
+  const urls=['https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js','https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js'];
+  return urls.reduce((p,u)=>p.catch(()=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=u;s.onload=()=>window.jsQR?ok():no();s.onerror=no;document.head.appendChild(s);})),Promise.reject());
+}
+let det=null;
+async function decode(c){
+  if(window.BarcodeDetector){ try{ det=det||new BarcodeDetector({formats:['qr_code']}); const r=await det.detect(c); if(r&&r[0]) return r[0].rawValue; }catch(e){} }
+  if(window.jsQR){ const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height); const r=jsQR(d.data,d.width,d.height); return r?r.data:null; }
+  return null;
+}
 function stopCam(){cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
 function close(){stopCam();const o=document.getElementById('qrxOv');if(o)o.remove();}
 function overlay(html){close();const o=document.createElement('div');o.className='qrx-ov';o.id='qrxOv';o.innerHTML='<div class="qrx-sheet">'+html+'</div>';o.addEventListener('click',e=>{if(e.target===o)close();});document.body.appendChild(o);return o.firstChild;}
 
 async function openScan(){
   let payees=[]; try{payees=await dbGetAll('payees');}catch(e){}
-  const sh=overlay('<h3>Quét QR thanh toán</h3><video id="qrxV" playsinline muted></video><div class="qrx-row"><button class="qrx-btn" id="qrxImg">Chọn ảnh QR</button><button class="qrx-btn" id="qrxX">Đóng</button></div>'
+  const sh=overlay('<h3>Quét QR thanh toán</h3><video id="qrxV" playsinline muted></video><div class="qrx-note" id="qrxMsg" style="color:var(--danger)"></div><div class="qrx-row"><button class="qrx-btn" id="qrxImg">Chọn ảnh QR</button><button class="qrx-btn" id="qrxX">Đóng</button></div>'
     +(payees.length?'<label>Hoặc chọn người nhận đã lưu</label><div class="qrx-chips">'+payees.map(p=>'<button data-id="'+esc(p.id)+'">'+esc(p.name)+'</button>').join('')+'</div>':'')
     +'<input type="file" accept="image/*" id="qrxF" hidden>');
+  const say=t=>{const m=sh.querySelector('#qrxMsg');if(m)m.textContent=t;};
   sh.querySelector('#qrxX').onclick=close;
   sh.querySelectorAll('.qrx-chips button').forEach(b=>b.onclick=()=>{const p=payees.find(x=>x.id===b.dataset.id);if(p)openForm(Object.assign({},p));});
-  const handle=raw=>{const p=parseVietQR(raw);if(!p){showToast('Đây không phải mã VietQR chuyển khoản');return false;}openForm(p);return true;};
-  try{ await loadJsQR(); }catch(e){ showToast(e.message); return; }
+  const handle=raw=>{const p=parseVietQR(raw);if(!p){say('Đây không phải mã VietQR chuyển khoản.');return false;}openForm(p);return true;};
+  const lib=loadJsQR().catch(()=>null);
   const f=sh.querySelector('#qrxF'); sh.querySelector('#qrxImg').onclick=()=>f.click();
-  f.onchange=()=>{const file=f.files[0];if(!file)return;const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height);const r=jsQR(d.data,d.width,d.height);if(!r||!handle(r.data))showToast('Không đọc được QR trong ảnh');};img.src=URL.createObjectURL(file);};
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-    const v=sh.querySelector('#qrxV');v.srcObject=stream;await v.play();
-    const c=document.createElement('canvas'),x=c.getContext('2d',{willReadFrequently:true});
-    const tick=()=>{ if(!stream) return;
-      if(v.readyState>=2&&v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;x.drawImage(v,0,0);const d=x.getImageData(0,0,c.width,c.height);const r=jsQR(d.data,d.width,d.height);if(r&&r.data&&handle(r.data))return;}
-      raf=setTimeout(tick,150);};
-    tick();
-  }catch(e){ showToast('Không mở được camera — hãy cho phép camera hoặc chọn ảnh QR'); }
+  f.onchange=()=>{const file=f.files[0];if(!file)return;const img=new Image();
+    img.onload=async()=>{await lib;const c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d',{willReadFrequently:true}).drawImage(img,0,0);
+      const raw=await decode(c); if(!raw) say(window.jsQR||window.BarcodeDetector?'Không đọc được QR trong ảnh này.':'Không tải được bộ đọc QR (kiểm tra mạng).'); else handle(raw);};
+    img.onerror=()=>say('Không mở được ảnh này.'); img.src=URL.createObjectURL(file);};
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){say('Kết nối này không cho dùng camera (cần HTTPS). Hãy chọn ảnh QR.');return;}
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}); }
+  catch(e){ say(e&&e.name==='NotAllowedError'?'Camera đang bị chặn. Hãy cho phép camera cho trang này trong cài đặt trình duyệt rồi mở lại.':'Không mở được camera ('+((e&&e.name)||'lỗi')+'). Hãy chọn ảnh QR.'); return; }
+  if(!document.getElementById('qrxOv')){stopCam();return;}
+  const v=sh.querySelector('#qrxV'); v.srcObject=stream; try{await v.play();}catch(e){}
+  await lib;
+  if(!window.jsQR&&!window.BarcodeDetector){say('Không tải được bộ đọc QR (kiểm tra mạng).');return;}
+  const c=document.createElement('canvas');
+  const tick=async()=>{ if(!stream) return;
+    if(v.readyState>=2&&v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d',{willReadFrequently:true}).drawImage(v,0,0);const raw=await decode(c);if(raw&&handle(raw))return;}
+    raf=setTimeout(tick,200);};
+  tick();
 }
 
 function openForm(p){
@@ -3493,7 +3509,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pageshow',()=>setTimeout(checkPending,1500));
 setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
 
-const fab=document.createElement('button');fab.className='qrx-fab';fab.type='button';fab.setAttribute('aria-label','Quét QR thanh toán');fab.textContent='⌗';fab.onclick=openScan;document.body.appendChild(fab);
+const ICON='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><g fill="currentColor" stroke="none"><rect x="5.5" y="5.5" width="2" height="2"/><rect x="16.5" y="5.5" width="2" height="2"/><rect x="5.5" y="16.5" width="2" height="2"/><rect x="14" y="14" width="2.6" height="2.6"/><rect x="18.4" y="14" width="2.6" height="2.6"/><rect x="16.2" y="17" width="2.6" height="2.6"/><rect x="14" y="19" width="2.6" height="2"/><rect x="18.4" y="19" width="2.6" height="2"/></g></svg>';
+const fab=document.createElement('button');fab.className='fab qrx-fab';fab.type='button';fab.setAttribute('aria-label','Quét QR thanh toán');fab.innerHTML=ICON;fab.onclick=openScan;document.body.appendChild(fab);
 })();
 </script>
 
