@@ -3475,10 +3475,12 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+Object.keys(APPS).map(k=>'<option value="'+k+'"'+(k===app?' selected':'')+'>'+APPS[k]+'</option>').join('')+'</select>'
    +'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="qrxSave" style="width:auto"'+(p.id?'':' checked')+'> Lưu người nhận này</label>'
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
+   +'<div class="qrx-row"><button class="qrx-btn" id="qrxLk">Sao chép link (để thử trong Safari)</button></div>'
    +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận.</div>');
   const read=()=>Object.assign(cur,{label:sh.querySelector('#qrxName').value.trim(),name:sh.querySelector('#qrxPN').value.trim(),amount:num(sh.querySelector('#qrxAmt').value),content:sh.querySelector('#qrxMsg').value.trim()});
   sh.querySelector('#qrxAmt').oninput=e=>{const n=num(e.target.value);e.target.value=n?n.toLocaleString('vi-VN'):'';};
   sh.querySelector('#qrxCp').onclick=()=>{read();navigator.clipboard&&navigator.clipboard.writeText(cur.account+' | '+cur.amount+' | '+noAccent(cur.content)).then(()=>showToast('Đã sao chép: STK | số tiền | nội dung'));};
+  sh.querySelector('#qrxLk').onclick=()=>{read();const a=sh.querySelector('#qrxApp').value;const l=buildLink(a,cur);if(!l){showToast('Chưa hỗ trợ ngân hàng này');return;}navigator.clipboard&&navigator.clipboard.writeText(l).then(()=>showToast('Đã sao chép link'));};
   sh.querySelector('#qrxGo').onclick=async()=>{
     read(); const a=sh.querySelector('#qrxApp').value; localStorage.setItem(AKEY,a);
     if(!cur.amount){showToast('Hãy nhập số tiền');return;}
