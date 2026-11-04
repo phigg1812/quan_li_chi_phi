@@ -3412,11 +3412,11 @@ function parseVietQR(raw){
 }
 function buildLink(app,p){
   const code=BANKS[p.bin]; if(!code) return null;
-  let u='https://dl.vietqr.io/pay?app='+encodeURIComponent(app)+'&ba='+encodeURIComponent(p.account+'@'+code);
-  if(p.amount>0) u+='&am='+p.amount;
-  const tn=noAccent(p.content).slice(0,40); if(tn) u+='&tn='+encodeURIComponent(tn);
-  const bn=noAccent(p.name).toUpperCase(); if(bn) u+='&bn='+encodeURIComponent(bn);
-  return u;
+  const tn=noAccent(p.content).slice(0,40)||'chuyen khoan';
+  const bn=noAccent(p.name).toUpperCase();
+  return 'https://dl.vietqr.io/pay?app='+encodeURIComponent(app)+'&am='+p.amount+'&tn='+encodeURIComponent(tn)
+    +'&ba='+encodeURIComponent(p.account+'@'+code)+(bn?'&bn='+encodeURIComponent(bn):'')
+    +'&url='+encodeURIComponent(location.origin+location.pathname);
 }
 
 let stream=null, raf=0, cur=null;
