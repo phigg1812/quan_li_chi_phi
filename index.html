@@ -2664,7 +2664,7 @@ function renderCalendar(){
       const iso = cell.dataset.date;
       const list = expensesByDate(iso);
       if(list.length===1){ openExpenseDrawer(list[0].id); }
-      else if(list.length>1){ STATE.ui.filters={...STATE.ui.filters}; STATE.ui.search=''; switchView('pending'); }
+      else if(list.length>1){ window.qrxDayList(iso, list); }
       else { openExpenseDrawer(); document.getElementById('fCreatedDate').value = iso; }
     });
   });
@@ -3567,17 +3567,18 @@ function commitPending(p,amt){
     clearInterval(t);
     try{
       if(STATE.expenses.some(x=>x.id===p.id)) return;
-      const text=(p.name+' '+(p.content||'')).trim(); let catId=confident(text,{categoryId:p.categoryId}), note='';
+      const text=(p.name+' '+(p.content||'')).trim(); let catId=(p.manual&&STATE.categories.some(c=>c.id===p.categoryId))?p.categoryId:confident(text,null), note='';
       if(!catId){ const r=await aiCat(text); if(r.id) catId=r.id; else note=' (AI lỗi: '+r.err+')'; }
       if(!catId) catId=STATE.categories[0].id;
       const exp={id:p.id,name:p.name,amount:amt||p.amount,categoryId:catId,walletId:p.walletId,paymentMethodId:p.paymentMethodId,createdDate:todayISO(),dueDate:endOfMonthISO(),paid:false,notes:p.content||''};
       STATE.expenses.push(exp);
       const jobs=[dbPut('expenses',exp)];
-      if(p.payee) jobs.push(dbPut('payees',Object.assign({id:uid('payee')},p.payee)));
+      if(p.manual) jobs.push(window.qrxLearnCat({name:p.name,notes:p.content||'',categoryId:catId,paymentMethodId:p.paymentMethodId,walletId:p.walletId}));
+      if(p.payee) jobs.push(dbPut('payees',Object.assign({id:uid('payee')},p.payee,p.manual?{categoryId:catId}:{})));
       await Promise.all(jobs);
       try{renderCurrentView(true);}catch(x){}
       const cn=(STATE.categories.find(c=>c.id===catId)||{}).name||'';
-      showToast('Đã ghi: '+exp.name+' · '+cn+note);
+      showToast('Đã ghi: '+exp.name+' · '+cn+(p.manual?' · đã ghi nhớ':'')+note);
     }catch(x){showToast('Lưu thất bại, thử lại sau');}
   },500);
 }
@@ -3591,11 +3592,17 @@ function openForm(p){
    +'<label>Số tiền (đ)</label><input id="qrxAmt" inputmode="numeric" value="'+(p.amount?p.amount.toLocaleString('vi-VN'):'')+'">'
    +'<label>Nội dung chuyển khoản</label><input id="qrxMsg" value="'+esc(p.content||'')+'">'
    +(p.content?'<div class="qrx-note">QR này có sẵn nội dung — nên giữ nguyên để người nhận đối soát. "Tên khoản chi" ở trên là ghi chú riêng của bạn, sửa thoải mái.</div>':'')
+   +'<label>Danh mục (để trống = tự phân loại)</label><select id="qrxCat"></select>'
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v13)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v14)</div>');
   const $=s=>sh.querySelector(s);
+  let touched=false;
+  const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
+  const suggest=()=>{ if(touched) return; $('#qrxCat').innerHTML=catOpts(confident($('#qrxName').value+' '+$('#qrxMsg').value,p)||''); };
+  suggest(); $('#qrxCat').onchange=()=>{touched=true;};
+  ['#qrxName','#qrxMsg'].forEach(x=>$(x).addEventListener('change',suggest));
   if($('#qrxSave')) $('#qrxSave').onchange=e=>{$('#qrxSaveBox').style.display=e.target.checked?'block':'none';};
   const read=()=>Object.assign(cur,{label:$('#qrxName').value.trim(),amount:num($('#qrxAmt').value),content:$('#qrxMsg').value.trim()});
   $('#qrxAmt').oninput=e=>{const n=num(e.target.value);e.target.value=n?n.toLocaleString('vi-VN'):'';};
@@ -3605,9 +3612,9 @@ function openForm(p){
     const link=buildLink(a,cur); if(!link){showToast('Chưa hỗ trợ ngân hàng này — dùng nút Sao chép');return;}
     const save=$('#qrxSave')&&$('#qrxSave').checked, pn=$('#qrxPN')?$('#qrxPN').value.trim():'';
     if(save&&!pn){showToast('Hãy nhập tên người nhận để lưu');return;}
-    const w=STATE.wallets[0], catId=cur.categoryId||'';
+    const w=STATE.wallets[0], catId=$('#qrxCat').value;
     const pm=STATE.paymentMethods.find(m=>/chuyển khoản/i.test(m.name||''));
-    localStorage.setItem(PKEY,JSON.stringify({id:uid('exp'),name:cur.label||'Chuyển khoản',amount:cur.amount,categoryId:catId,walletId:w?w.id:'',paymentMethodId:pm?pm.id:'',content:cur.content,payee:save?{name:pn,bin:cur.bin,account:cur.account}:null,ts:Date.now()}));
+    localStorage.setItem(PKEY,JSON.stringify({id:uid('exp'),name:cur.label||'Chuyển khoản',amount:cur.amount,categoryId:catId,manual:!!catId,walletId:w?w.id:'',paymentMethodId:pm?pm.id:'',content:cur.content,payee:save?{name:pn,bin:cur.bin,account:cur.account}:null,ts:Date.now()}));
     location.href=link;
   };
 }
@@ -3644,6 +3651,15 @@ setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
   addEventListener('touchend',()=>{ if(!on) return; on=false;
     if(pull>=80){ind.textContent='Đang làm mới...';ind.style.opacity=1;setTimeout(()=>location.reload(),150);} else ind.style.opacity=0; pull=0; },{passive:true});
 })();
+window.qrxDayList=function(iso,list){
+  const [y,m,d]=iso.split('-');
+  const rows=list.map(e=>{const st=e.paid?'Đã thanh toán':(isOverdue(e)?'Quá hạn':'Chưa thanh toán');
+    return '<button class="qrx-btn" data-id="'+esc(e.id)+'" style="text-align:left;width:100%;margin-top:8px"><b>'+esc(e.name)+'</b><br><span style="font-size:13px;color:var(--text-secondary)">'+esc(formatCurrency(e.amount))+' · '+st+'</span></button>';}).join('');
+  const sh=overlay('<h3>Khoản chi ngày '+d+'/'+m+'/'+y+'</h3>'+rows+'<div class="qrx-row"><button class="qrx-btn" id="qrxAddDay">Thêm khoản chi ngày này</button><button class="qrx-btn" id="qrxDayX">Đóng</button></div>');
+  sh.querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>{close();openExpenseDrawer(b.dataset.id);});
+  sh.querySelector('#qrxDayX').onclick=close;
+  sh.querySelector('#qrxAddDay').onclick=()=>{close();openExpenseDrawer();const f=document.getElementById('fCreatedDate');if(f)f.value=iso;};
+};
 const ICON='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><g fill="currentColor" stroke="none"><rect x="5.5" y="5.5" width="2" height="2"/><rect x="16.5" y="5.5" width="2" height="2"/><rect x="5.5" y="16.5" width="2" height="2"/><rect x="14" y="14" width="2.6" height="2.6"/><rect x="18.4" y="14" width="2.6" height="2.6"/><rect x="16.2" y="17" width="2.6" height="2.6"/><rect x="14" y="19" width="2.6" height="2"/><rect x="18.4" y="19" width="2.6" height="2"/></g></svg>';
 const qa=document.getElementById('quickAddBtn');
 const tb=document.createElement('button'); tb.type='button'; tb.id='qrxTopBtn'; tb.className=qa?'icon-btn':'fab qrx-fab';
