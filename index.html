@@ -1631,13 +1631,40 @@ async function dbGetAll(storeName){
   snap.forEach(d=> rows.push(d.data()));
   return rows;
 }
+const dbWait = ms => new Promise(r=>setTimeout(r,ms));
+function dbFail(err){ console.error(err); try{ showToast('Lưu thất bại: '+((err&&err.code)||(err&&err.message)||'lỗi')); }catch(e){} }
 async function dbPut(storeName, value){
   const kf = keyFieldFor(storeName);
-  await window.FB.setDoc(storeDoc(storeName, value[kf]), value);
+  const p = window.FB.setDoc(storeDoc(storeName, value[kf]), value);
+  p.catch(dbFail);
+  await Promise.race([p.catch(()=>{}), dbWait(2500)]);
   return value;
 }
+async function dbPutMany(storeName, rows){
+  const FB = window.FB, kf = keyFieldFor(storeName);
+  for(let i=0;i<rows.length;i+=400){
+    const b = FB.writeBatch(FB.db);
+    rows.slice(i,i+400).forEach(r=> b.set(storeDoc(storeName, r[kf]), r));
+    await b.commit();
+  }
+}
+async function dbReplaceAll(storeName, rows){
+  const FB = window.FB, kf = keyFieldFor(storeName);
+  const valid = (rows||[]).filter(r=> r && r[kf]!=null);
+  const keep = new Set(valid.map(r=>String(r[kf])));
+  await dbPutMany(storeName, valid);
+  const snap = await FB.getDocs(storeCollection(storeName));
+  const dels = []; snap.forEach(d=>{ if(!keep.has(d.id)) dels.push(d.ref); });
+  for(let i=0;i<dels.length;i+=400){
+    const b = FB.writeBatch(FB.db);
+    dels.slice(i,i+400).forEach(ref=> b.delete(ref));
+    await b.commit();
+  }
+}
 async function dbDelete(storeName, key){
-  await window.FB.deleteDoc(storeDoc(storeName, key));
+  const p = window.FB.deleteDoc(storeDoc(storeName, key));
+  p.catch(dbFail);
+  await Promise.race([p.catch(()=>{}), dbWait(2500)]);
 }
 async function dbClear(storeName){
   const snap = await window.FB.getDocs(storeCollection(storeName));
@@ -1759,12 +1786,14 @@ async function processRecurring(){
       shouldGenerate = !lastRun || lastRun.getFullYear() !== today.getFullYear();
     }
     if(shouldGenerate){
+      const pkey = r.cycle==='monthly' ? t.slice(0,7) : r.cycle==='yearly' ? t.slice(0,4) : t;
+      const expId = 'exp_rec_'+r.id+'_'+pkey;
+      const dup = STATE.expenses.some(x=>x.id===expId);
       const exp = {
-        id:uid('exp'), name:r.name, amount:r.amount, categoryId:r.categoryId, walletId:r.walletId,
+        id:expId, name:r.name, amount:r.amount, categoryId:r.categoryId, walletId:r.walletId,
         paymentMethodId:'', createdDate:t, dueDate:t, paid:false, notes:'Tự động sinh từ khoản định kỳ', recurringId:r.id
       };
-      await dbPut('expenses', exp);
-      STATE.expenses.push(exp);
+      if(!dup){ STATE.expenses.push(exp); await dbPut('expenses', exp); }
       r.lastGeneratedDate = t;
       await dbPut('recurring', r);
       changed = true;
@@ -2139,8 +2168,8 @@ function escapeHTML(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&'
 function getFilteredExpenses(status){
   let list = STATE.expenses.filter(e=> status==='paid' ? e.paid : !e.paid);
   const f = STATE.ui.filters;
-  const q = STATE.ui.search.trim().toLowerCase();
-  if(q) list = list.filter(e=> e.name.toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q));
+  const q = normalizeVietnamese(STATE.ui.search.trim());
+  if(q) list = list.filter(e=> normalizeVietnamese(e.name).includes(q) || normalizeVietnamese(e.notes).includes(q));
   if(f.category!=='all') list = list.filter(e=>e.categoryId===f.category);
   if(f.wallet!=='all') list = list.filter(e=>e.walletId===f.wallet);
   if(f.minAmount) list = list.filter(e=>Number(e.amount)>=Number(f.minAmount));
@@ -2186,8 +2215,8 @@ function listToolbarHTML(status){
       <option value="today" ${STATE.ui.filters.period==='today'?'selected':''}>${t('dueSoon.today')}</option>
       <option value="overdue" ${STATE.ui.filters.period==='overdue'?'selected':''}>${t('kpi.overdue')}</option>
     </select>`:''}
-    <input type="number" class="filter-select" placeholder="${t('filter.amountFrom')}" style="width:100px;" data-filter="minAmount" value="${STATE.ui.filters.minAmount}">
-    <input type="number" class="filter-select" placeholder="${t('filter.amountTo')}" style="width:100px;" data-filter="maxAmount" value="${STATE.ui.filters.maxAmount}">
+    <input type="text" inputmode="numeric" class="filter-select" placeholder="${t('filter.amountFrom')}" style="width:100px;" data-filter="minAmount" value="${STATE.ui.filters.minAmount}">
+    <input type="text" inputmode="numeric" class="filter-select" placeholder="${t('filter.amountTo')}" style="width:100px;" data-filter="maxAmount" value="${STATE.ui.filters.maxAmount}">
     <select class="filter-select" data-filter="sortField" id="sortField-${status}">
       <option value="dueDate" ${STATE.ui.sort.field==='dueDate'?'selected':''}>${t('sort.due')}</option>
       <option value="createdDate" ${STATE.ui.sort.field==='createdDate'?'selected':''}>${t('sort.created')}</option>
@@ -2243,10 +2272,13 @@ function bindListToolbarEvents(section, status){
   section.querySelector('[data-action="export-list"]').addEventListener('click', ()=>exportExcel(getFilteredExpenses(status), status));
   section.querySelectorAll('[data-filter]').forEach(el=>{
     const key = el.dataset.filter;
+    const isAmt = key==='minAmount'||key==='maxAmount';
     const handler = debounce(()=>{
-      if(key==='sortField'){ STATE.ui.sort.field = el.value; } else { STATE.ui.filters[key] = el.value; }
+      const keep = isAmt && document.activeElement===el;
+      if(key==='sortField'){ STATE.ui.sort.field = el.value; } else { STATE.ui.filters[key] = isAmt ? el.value.replace(/[^\d]/g,'') : el.value; }
       renderListView(status, true);
-    }, key==='minAmount'||key==='maxAmount' ? 400 : 0);
+      if(keep){ const n=document.querySelector(`[data-filter="${key}"]`); if(n){ n.focus(); try{ n.setSelectionRange(n.value.length,n.value.length); }catch(x){} } }
+    }, isAmt ? 400 : 0);
     el.addEventListener(key==='minAmount'||key==='maxAmount' ? 'input' : 'change', handler);
   });
   const sortBtn = section.querySelector(`#sortDirBtn-${status}`);
@@ -2346,6 +2378,8 @@ function parseNaturalAmount(text){
     const token = candidates[candidates.length-1][0];
     return {amount:Number(token.replace(/[^\d]/g,'')), token};
   }
+  const plain = [...text.matchAll(/\d{5,9}/g)].filter(m=>{ const a=text[m.index-1]||'', b=text[m.index+m[0].length]||''; return !/[\d\/:\-.,]/.test(a) && !/[\d\/:\-.,]/.test(b); });
+  if(plain.length){ const token = plain[plain.length-1][0]; return {amount:Number(token), token}; }
   return {amount:0, token:''};
 }
 function parseNaturalDate(text){
@@ -2977,7 +3011,7 @@ document.getElementById('recurForm').addEventListener('submit', async (e)=>{
     cycle: document.getElementById('rCycle').value,
     dayOfMonth: Number(document.getElementById('rDay').value)||1,
     walletId: document.getElementById('rWallet').value,
-    lastGeneratedDate: null,
+    lastGeneratedDate: (STATE.recurring.find(x=>x.id===id)||{}).lastGeneratedDate || null,
   };
   const existing = STATE.recurring.find(x=>x.id===id);
   if(existing) Object.assign(existing, r); else STATE.recurring.push(r);
@@ -3032,20 +3066,16 @@ async function importBackupFile(file){
     if(!data || !Array.isArray(data.expenses)) throw new Error('invalid');
     const ok = await askConfirm(t('backup.restoreTitle'), t('backup.restoreDesc'));
     if(!ok) return;
-    await Promise.all(['expenses','categories','wallets','paymentMethods','recurring','learningRules'].map(dbClear));
-    for(const e of data.expenses||[]) await dbPut('expenses', e);
-    for(const c of data.categories||[]) await dbPut('categories', c);
-    for(const w of data.wallets||[]) await dbPut('wallets', w);
-    for(const p of data.paymentMethods||[]) await dbPut('paymentMethods', p);
-    for(const r of data.recurring||[]) await dbPut('recurring', r);
-    for(const rule of data.learningRules||[]) await dbPut('learningRules', rule);
+    for(const [store,rows] of [['expenses',data.expenses],['categories',data.categories],['wallets',data.wallets],['paymentMethods',data.paymentMethods],['recurring',data.recurring],['learningRules',data.learningRules]]){
+      if(Array.isArray(rows)) await dbReplaceAll(store, rows);
+    }
     if(data.settings){ Object.assign(STATE.settings, data.settings); await saveSettings(); }
     await loadAllState();
     applyTheme(); applyI18n();
     showToast(t('toast.imported'));
     switchView('dashboard');
   } catch(err){
-    showToast(t('excel.invalidFile'));
+    showToast((err instanceof SyntaxError || (err&&err.message==='invalid')) ? t('excel.invalidFile') : 'Khôi phục thất bại: '+((err&&err.code)||(err&&err.message)||'lỗi'));
   }
 }
 function renderBackupView(){
@@ -3094,6 +3124,15 @@ function findCategoryByName(name){
 function findWalletByName(name){
   return STATE.wallets.find(w=>w.name.toLowerCase()===String(name||'').toLowerCase());
 }
+function xlsDate(v){
+  if(v==null||v==='') return todayISO();
+  if(typeof v==='number'){ const d=new Date(Math.round((v-25569)*86400000)); return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0'); }
+  const x=String(v).trim(); let m;
+  if((m=x.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  if((m=x.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/))) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return todayISO();
+}
+function xlsAmount(v){ return typeof v==='number' ? Math.round(v) : (Number(String(v==null?'':v).replace(/[^\d]/g,''))||0); }
 async function importExcelFile(file){
   try{
     const buf = await file.arrayBuffer();
@@ -3101,23 +3140,26 @@ async function importExcelFile(file){
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws);
     if(rows.length===0){ showToast(t('excel.noData')); return; }
-    let count = 0;
+    const keyOf = e=>[e.name,e.amount,e.createdDate,e.dueDate].join('|');
+    const seen = new Set(STATE.expenses.map(keyOf));
+    const fresh = []; let skipped = 0;
     for(const row of rows){
       const name = row['Tên khoản chi'] || row['Ten khoan chi'] || row['Name'];
       if(!name) continue;
       const cat = findCategoryByName(row['Danh mục']) || STATE.categories[0];
       const wal = findWalletByName(row['Ví']) || STATE.wallets[0];
       const exp = {
-        id: uid('exp'), name: String(name), amount: Number(row['Số tiền']||row['Amount']||0),
+        id: uid('exp'), name: String(name), amount: xlsAmount(row['Số tiền']!=null ? row['Số tiền'] : row['Amount']),
         categoryId: cat.id, walletId: wal.id, paymentMethodId: STATE.paymentMethods[0]?.id||'',
-        createdDate: row['Ngày tạo'] || todayISO(), dueDate: row['Hạn thanh toán'] || todayISO(),
-        paid: String(row['Trạng thái']||'').includes('Đã'), notes: row['Ghi chú']||''
+        createdDate: xlsDate(row['Ngày tạo']), dueDate: xlsDate(row['Hạn thanh toán']),
+        paid: String(row['Trạng thái']||'').includes('Đã'), notes: String(row['Ghi chú']||'')
       };
-      STATE.expenses.push(exp);
-      await dbPut('expenses', exp);
-      count++;
+      const k = keyOf(exp);
+      if(seen.has(k)){ skipped++; continue; }
+      seen.add(k); fresh.push(exp);
     }
-    showToast(`${t('toast.imported')} (${count})`);
+    if(fresh.length){ await dbPutMany('expenses', fresh); STATE.expenses.push(...fresh); }
+    showToast(`${t('toast.imported')} (${fresh.length}${skipped?`, bỏ qua ${skipped} khoản trùng`:''})`);
     renderCurrentView(true);
   } catch(err){
     showToast(t('excel.readError'));
@@ -3552,7 +3594,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v12.2)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v13)</div>');
   const $=s=>sh.querySelector(s);
   if($('#qrxSave')) $('#qrxSave').onchange=e=>{$('#qrxSaveBox').style.display=e.target.checked?'block':'none';};
   const read=()=>Object.assign(cur,{label:$('#qrxName').value.trim(),amount:num($('#qrxAmt').value),content:$('#qrxMsg').value.trim()});
