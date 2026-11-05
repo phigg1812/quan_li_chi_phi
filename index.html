@@ -2499,14 +2499,17 @@ async function handleExpenseFormSubmit(e){
     notes: document.getElementById('fNotes').value.trim(),
   };
   const existing = STATE.expenses.find(x=>x.id===id);
+  const qrxOldCat = existing ? existing.categoryId : null;
   if(existing) Object.assign(existing, exp); else STATE.expenses.push(exp);
   await dbPut('expenses', exp);
+  let qrxL = false;
+  if(existing && qrxOldCat!==exp.categoryId && window.qrxLearnCat) qrxL = await window.qrxLearnCat(exp);
   const learned = !existing && await learnFromSmartCorrection(exp);
   STATE.ui.expenseDraft = null;
   STATE.ui.smartPrediction = null;
   document.getElementById('smartExpenseInput').value = '';
   closeExpenseDrawer(false);
-  showToast(learned ? 'Đã lưu khoản chi và ghi nhớ cách bạn chỉnh' : t('toast.saved'));
+  showToast((learned||qrxL) ? 'Đã lưu khoản chi và ghi nhớ cách bạn chỉnh' : t('toast.saved'));
   renderCurrentView(true);
 }
 async function handleDeleteExpense(id){
@@ -3404,7 +3407,7 @@ body{max-width:100vw;touch-action:manipulation}
 /* ===== QR THANH TOÁN: quét VietQR -> mở app ngân hàng điền sẵn -> hỏi "Đã chuyển xong?" ===== */
 (function(){
 const BANKS = {'970415':'icb','970436':'vcb','970418':'bidv','970422':'mb','970407':'tcb','970432':'vpb','970423':'tpb','970416':'acb','970441':'vib','970403':'stb','970405':'agribank','970448':'ocb','970426':'msb','970437':'hdb','970443':'shb','970440':'seab'};
-const APPS = {icb:'Vietinbank iPay',vib:'MyVIB',vpb:'VPBank NEO'};
+const APPS = {icb:'Vietinbank iPay (tự điền)','vib-2':'MyVIB (chỉ mở app)',vpb:'VPBank NEO (chỉ mở app)'};
 const PKEY='qrx_pending', AKEY='qrx_app';
 const esc = s=>escapeHTML(s);
 const noAccent = s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^A-Za-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
@@ -3549,7 +3552,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v12)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v12.2)</div>');
   const $=s=>sh.querySelector(s);
   if($('#qrxSave')) $('#qrxSave').onchange=e=>{$('#qrxSaveBox').style.display=e.target.checked?'block':'none';};
   const read=()=>Object.assign(cur,{label:$('#qrxName').value.trim(),amount:num($('#qrxAmt').value),content:$('#qrxMsg').value.trim()});
