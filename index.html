@@ -3395,7 +3395,7 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 /* ===== QR THANH TOÁN: quét VietQR -> mở app ngân hàng điền sẵn -> hỏi "Đã chuyển xong?" ===== */
 (function(){
 const BANKS = {'970415':'icb','970436':'vcb','970418':'bidv','970422':'mb','970407':'tcb','970432':'vpb','970423':'tpb','970416':'acb','970441':'vib','970403':'stb','970405':'agribank','970448':'ocb','970426':'msb','970437':'hdb','970443':'shb','970440':'seab'};
-const APPS = {icb:'Vietinbank iPay',mb:'MB Bank',bidv:'BIDV SmartBanking',acb:'ACB ONE',ocb:'OCB Omni'};
+const APPS = {icb:'Vietinbank iPay',vib:'MyVIB',vpb:'VPBank NEO'};
 const PKEY='qrx_pending', AKEY='qrx_app';
 const esc = s=>escapeHTML(s);
 const noAccent = s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').replace(/[^A-Za-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
@@ -3412,10 +3412,9 @@ function parseVietQR(raw){
 }
 function buildLink(app,p){
   const code=BANKS[p.bin]; if(!code) return null;
-  const tn=noAccent(p.content).slice(0,40)||'chuyen khoan';
-  return 'https://dl.vietqr.io/pay?app='+encodeURIComponent(app)+'&am='+p.amount+'&tn='+encodeURIComponent(tn)
-    +'&ba='+encodeURIComponent(p.account+'@'+code)
-    +'&url='+encodeURIComponent(location.origin+location.pathname);
+  const tn=noAccent(p.content).slice(0,40);
+  return 'https://dl.vietqr.io/pay?app='+encodeURIComponent(app)+(p.amount>0?'&am='+p.amount:'')+(tn?'&tn='+encodeURIComponent(tn):'')
+    +'&ba='+encodeURIComponent(p.account+'@'+code)+'&url='+encodeURIComponent(location.origin+location.pathname);
 }
 
 let stream=null, raf=0, cur=null;
@@ -3462,52 +3461,84 @@ async function openScan(){
   tick();
 }
 
+function guessCat(text,p){
+  const ok=id=>id&&STATE.categories.some(c=>c.id===id);
+  if(p&&ok(p.categoryId)) return p.categoryId;
+  try{const r=findLearnedRule(text); if(r&&ok(r.categoryId)) return r.categoryId;}catch(e){}
+  return STATE.categories[0]?STATE.categories[0].id:'';
+}
+function commitPending(p,amt){
+  let n=0; const t=setInterval(async()=>{
+    let ready=false; try{ready=STATE.categories.length>0;}catch(x){}
+    if(!ready){ if(++n>120) clearInterval(t); return; }
+    clearInterval(t);
+    try{
+      if(STATE.expenses.some(x=>x.id===p.id)) return;
+      const exp={id:p.id,name:p.name,amount:amt||p.amount,categoryId:p.categoryId,walletId:p.walletId,paymentMethodId:p.paymentMethodId,createdDate:todayISO(),dueDate:endOfMonthISO(),paid:false,notes:p.content||''};
+      STATE.expenses.push(exp);
+      const jobs=[dbPut('expenses',exp)];
+      if(p.payee) jobs.push(dbPut('payees',Object.assign({id:uid('payee'),categoryId:p.categoryId},p.payee)));
+      try{const tk=naturalLearningTokens(p.name+' '+(p.content||''));
+        if(tk.length&&p.categoryId){const id='rule_'+tk.join('_').slice(0,90),old=STATE.learningRules.find(r=>r.id===id);
+          const rule={id,sourceText:p.name+' '+(p.content||''),tokens:tk,preferredName:p.name,categoryId:p.categoryId,paymentMethodId:p.paymentMethodId,walletId:p.walletId,updatedAt:Date.now(),useCount:(old&&old.useCount||0)+1};
+          if(old)Object.assign(old,rule);else STATE.learningRules.unshift(rule); jobs.push(dbPut('learningRules',rule));}}catch(x){}
+      await Promise.all(jobs);
+      try{renderCurrentView(true);}catch(x){}
+    }catch(x){showToast('Lưu thất bại, thử lại sau');}
+  },500);
+}
 function openForm(p){
   stopCam(); cur=p;
-  const app=localStorage.getItem(AKEY)||'icb';
+  let app=localStorage.getItem(AKEY); if(!APPS[app]) app='icb';
+  const opts=(list,sel)=>list.map(([v,l])=>'<option value="'+esc(v)+'"'+(v===sel?' selected':'')+'>'+esc(l)+'</option>').join('');
   const sh=overlay('<h3>Thông tin thanh toán</h3>'
-   +'<label>Tên khoản chi</label><input id="qrxName" value="'+esc(p.label||'')+'" placeholder="VD: Tiền điện">'
-   +'<label>Người nhận</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="Tên người nhận">'
-   +'<label>Số tài khoản ('+esc(BANKS[p.bin]?BANKS[p.bin].toUpperCase():'ngân hàng lạ')+')</label><input value="'+esc(p.account)+'" readonly>'
+   +'<label>Tên khoản chi</label><input id="qrxName" value="'+esc(p.label||p.name||'')+'" placeholder="VD: Tiền điện">'
+   +'<label>Số tài khoản nhận ('+esc(BANKS[p.bin]?BANKS[p.bin].toUpperCase():'ngân hàng lạ')+')</label><input value="'+esc(p.account)+'" readonly>'
    +'<label>Số tiền (đ)</label><input id="qrxAmt" inputmode="numeric" value="'+(p.amount?p.amount.toLocaleString('vi-VN'):'')+'">'
    +'<label>Nội dung chuyển khoản</label><input id="qrxMsg" value="'+esc(p.content||'')+'">'
-   +'<label>Thanh toán bằng</label><select id="qrxApp">'+Object.keys(APPS).map(k=>'<option value="'+k+'"'+(k===app?' selected':'')+'>'+APPS[k]+'</option>').join('')+'</select>'
-   +'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="qrxSave" style="width:auto"'+(p.id?'':' checked')+'> Lưu người nhận này</label>'
+   +(p.content?'<div class="qrx-note">QR này có sẵn nội dung — nên giữ nguyên để người nhận đối soát. "Tên khoản chi" ở trên là ghi chú riêng của bạn, sửa thoải mái.</div>':'')
+   +'<label>Danh mục</label><select id="qrxCat"></select>'
+   +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
+   +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxLk">Sao chép link (để thử trong Safari)</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v3)</div>');
-  const read=()=>Object.assign(cur,{label:sh.querySelector('#qrxName').value.trim(),name:sh.querySelector('#qrxPN').value.trim(),amount:num(sh.querySelector('#qrxAmt').value),content:sh.querySelector('#qrxMsg').value.trim()});
-  sh.querySelector('#qrxAmt').oninput=e=>{const n=num(e.target.value);e.target.value=n?n.toLocaleString('vi-VN'):'';};
-  sh.querySelector('#qrxCp').onclick=()=>{read();navigator.clipboard&&navigator.clipboard.writeText(cur.account+' | '+cur.amount+' | '+noAccent(cur.content)).then(()=>showToast('Đã sao chép: STK | số tiền | nội dung'));};
-  sh.querySelector('#qrxLk').onclick=()=>{read();const a=sh.querySelector('#qrxApp').value;const l=buildLink(a,cur);if(!l){showToast('Chưa hỗ trợ ngân hàng này');return;}navigator.clipboard&&navigator.clipboard.writeText(l).then(()=>showToast('Đã sao chép link'));};
-  sh.querySelector('#qrxGo').onclick=async()=>{
-    read(); const a=sh.querySelector('#qrxApp').value; localStorage.setItem(AKEY,a);
-    if(!cur.amount){showToast('Hãy nhập số tiền');return;}
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v8)</div>');
+  const $=s=>sh.querySelector(s);
+  let userCat=false;
+  const refreshCat=()=>{ if(userCat) return; $('#qrxCat').innerHTML=opts(STATE.categories.map(c=>[c.id,c.name]),guessCat($('#qrxName').value+' '+$('#qrxMsg').value,p)); };
+  refreshCat(); $('#qrxCat').onchange=()=>{userCat=true;};
+  ['#qrxName','#qrxMsg'].forEach(s=>$(s).addEventListener('change',refreshCat));
+  if($('#qrxSave')) $('#qrxSave').onchange=e=>{$('#qrxSaveBox').style.display=e.target.checked?'block':'none';};
+  const read=()=>Object.assign(cur,{label:$('#qrxName').value.trim(),amount:num($('#qrxAmt').value),content:$('#qrxMsg').value.trim()});
+  $('#qrxAmt').oninput=e=>{const n=num(e.target.value);e.target.value=n?n.toLocaleString('vi-VN'):'';};
+  $('#qrxCp').onclick=()=>{read();navigator.clipboard&&navigator.clipboard.writeText(cur.account+' | '+cur.amount+' | '+noAccent(cur.content)).then(()=>showToast('Đã sao chép: STK | số tiền | nội dung'));};
+  $('#qrxLk').onclick=()=>{read();const l=buildLink($('#qrxApp').value,cur);if(!l){showToast('Chưa hỗ trợ ngân hàng này');return;}navigator.clipboard&&navigator.clipboard.writeText(l).then(()=>showToast('Đã sao chép link'));};
+  $('#qrxGo').onclick=async()=>{
+    read(); const a=$('#qrxApp').value; localStorage.setItem(AKEY,a);
     const link=buildLink(a,cur); if(!link){showToast('Chưa hỗ trợ ngân hàng này — dùng nút Sao chép');return;}
-    const t=todayISO(), cat=STATE.categories[0], w=STATE.wallets[0];
-    const exp={id:uid('exp'),name:cur.label||('Chuyển khoản '+(cur.name||'')).trim(),amount:cur.amount,categoryId:cat?cat.id:'',walletId:w?w.id:'',paymentMethodId:'',createdDate:t,dueDate:t,paid:false,notes:cur.content};
-    STATE.expenses.push(exp);
-    const jobs=[dbPut('expenses',exp)];
-    if(sh.querySelector('#qrxSave').checked&&cur.name){const pid=cur.id||uid('payee');jobs.push(dbPut('payees',{id:pid,name:cur.name,bin:cur.bin,account:cur.account}));}
-    localStorage.setItem(PKEY,JSON.stringify({id:exp.id,ts:Date.now()}));
-    try{await Promise.race([Promise.all(jobs),new Promise(r=>setTimeout(r,700))]);}catch(e){}
-    renderCurrentView(true); location.href=link;
+    const save=$('#qrxSave')&&$('#qrxSave').checked, pn=$('#qrxPN')?$('#qrxPN').value.trim():'';
+    if(save&&!pn){showToast('Hãy nhập tên người nhận để lưu');return;}
+    const w=STATE.wallets[0], catId=$('#qrxCat').value;
+    const pm=STATE.paymentMethods.find(m=>/chuyển khoản/i.test(m.name||''));
+    localStorage.setItem(PKEY,JSON.stringify({id:uid('exp'),name:cur.label||'Chuyển khoản',amount:cur.amount,categoryId:catId,walletId:w?w.id:'',paymentMethodId:pm?pm.id:'',content:cur.content,payee:save?{name:pn,bin:cur.bin,account:cur.account}:null,ts:Date.now()}));
+    location.href=link;
   };
 }
 
-/* Popup "Đã chuyển xong?" khi quay lại web app */
+/* Popup "Đã chuyển xong?" — hiện ngay khi quay lại, không chờ tải dữ liệu */
 function checkPending(){
   if(document.getElementById('qrxOv')||document.visibilityState==='hidden') return;
   let p; try{p=JSON.parse(localStorage.getItem(PKEY)||'null');}catch(e){}
   if(!p) return;
-  if(Date.now()-p.ts>30*60*1000){localStorage.removeItem(PKEY);return;}
-  const exp=STATE.expenses.find(x=>x.id===p.id); if(!exp){ if(STATE.expenses.length) localStorage.removeItem(PKEY); return; }
-  const sh=overlay('<h3>Đã chuyển xong chưa?</h3><div>'+esc(exp.name)+' — <b>'+esc(formatCurrency(exp.amount))+'</b></div><div class="qrx-row"><button class="qrx-btn" id="qrxNo">Chưa chuyển</button><button class="qrx-btn p" id="qrxYes">Đã chuyển</button></div><div class="qrx-note">Chọn "Chưa chuyển" để giữ khoản này ở trạng thái chưa thanh toán.</div>');
+  if(Date.now()-p.ts>24*60*60*1000){localStorage.removeItem(PKEY);return;}
+  const sh=overlay('<h3>Đã chuyển xong chưa?</h3><div>'+esc(p.name||'Khoản chi')+' — <b>'+esc((p.amount||0).toLocaleString('vi-VN'))+'đ</b></div>'+(p.amount?'':'<input id="qrxPA" inputmode="numeric" placeholder="Số tiền đã chuyển (đ)" style="margin-top:10px">')+'<div class="qrx-row"><button class="qrx-btn" id="qrxNo">Chưa chuyển</button><button class="qrx-btn p" id="qrxYes">Đã chuyển</button></div><div class="qrx-note">Chọn "Chưa chuyển" thì khoản này sẽ không được ghi lại.</div>');
   sh.querySelector('#qrxNo').onclick=()=>{localStorage.removeItem(PKEY);close();};
-  sh.querySelector('#qrxYes').onclick=async()=>{localStorage.removeItem(PKEY);exp.paid=true;close();showToast('Đã đánh dấu đã thanh toán');renderCurrentView(true);try{await dbPut('expenses',exp);}catch(e){showToast('Lưu thất bại, thử lại sau');}};
+  const pa=sh.querySelector('#qrxPA'); if(pa) pa.oninput=e=>{const n=num(e.target.value);e.target.value=n?n.toLocaleString('vi-VN'):'';};
+  sh.querySelector('#qrxYes').onclick=()=>{const amt=pa?num(pa.value):0; if(pa&&!amt){showToast('Hãy nhập số tiền đã chuyển');return;} localStorage.removeItem(PKEY);close();showToast('Đang ghi khoản chi...');commitPending(p,amt);};
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(checkPending,400);});
-window.addEventListener('pageshow',()=>setTimeout(checkPending,1500));
+window.addEventListener('pageshow',()=>setTimeout(checkPending,300));
+setTimeout(checkPending,0);
 setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
 
 const ICON='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><g fill="currentColor" stroke="none"><rect x="5.5" y="5.5" width="2" height="2"/><rect x="16.5" y="5.5" width="2" height="2"/><rect x="5.5" y="16.5" width="2" height="2"/><rect x="14" y="14" width="2.6" height="2.6"/><rect x="18.4" y="14" width="2.6" height="2.6"/><rect x="16.2" y="17" width="2.6" height="2.6"/><rect x="14" y="19" width="2.6" height="2"/><rect x="18.4" y="19" width="2.6" height="2"/></g></svg>';
