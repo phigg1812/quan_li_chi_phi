@@ -3407,15 +3407,14 @@ function parseVietQR(raw){
     const m=tlv(String(raw).trim()); if(!m['38']) return null;
     const acc=tlv(m['38'])['01']; if(!acc) return null;
     const a=tlv(acc); if(!a['00']||!a['01']) return null;
-    return {bin:a['00'], account:a['01'], amount:Math.round(Number(m['54']||0))||0, content:m['62']?(tlv(m['62'])['08']||''):''};
+    return {bin:a['00'], account:a['01'], name:(m['59']||'').trim(), amount:Math.round(Number(m['54']||0))||0, content:m['62']?(tlv(m['62'])['08']||''):''};
   }catch(e){return null;}
 }
 function buildLink(app,p){
   const code=BANKS[p.bin]; if(!code) return null;
   const tn=noAccent(p.content).slice(0,40)||'chuyen khoan';
-  const bn=noAccent(p.name).toUpperCase();
   return 'https://dl.vietqr.io/pay?app='+encodeURIComponent(app)+'&am='+p.amount+'&tn='+encodeURIComponent(tn)
-    +'&ba='+encodeURIComponent(p.account+'@'+code)+(bn?'&bn='+encodeURIComponent(bn):'')
+    +'&ba='+encodeURIComponent(p.account+'@'+code)
     +'&url='+encodeURIComponent(location.origin+location.pathname);
 }
 
@@ -3476,7 +3475,7 @@ function openForm(p){
    +'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="qrxSave" style="width:auto"'+(p.id?'':' checked')+'> Lưu người nhận này</label>'
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxLk">Sao chép link (để thử trong Safari)</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận.</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v3)</div>');
   const read=()=>Object.assign(cur,{label:sh.querySelector('#qrxName').value.trim(),name:sh.querySelector('#qrxPN').value.trim(),amount:num(sh.querySelector('#qrxAmt').value),content:sh.querySelector('#qrxMsg').value.trim()});
   sh.querySelector('#qrxAmt').oninput=e=>{const n=num(e.target.value);e.target.value=n?n.toLocaleString('vi-VN'):'';};
   sh.querySelector('#qrxCp').onclick=()=>{read();navigator.clipboard&&navigator.clipboard.writeText(cur.account+' | '+cur.amount+' | '+noAccent(cur.content)).then(()=>showToast('Đã sao chép: STK | số tiền | nội dung'));};
