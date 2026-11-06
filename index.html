@@ -3353,6 +3353,34 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qrx-btn.p{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
 .qrx-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.qrx-chips button{padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--primary-soft);color:var(--text);cursor:pointer}
 .qrx-note{font-size:12px;color:var(--text-secondary);margin-top:8px}
+.qrx-large{display:none}
+.qrx-tab{display:none}
+.qrx-sheet{border-radius:28px 28px 0 0}
+.qrx-sheet::before{content:"";display:block;width:38px;height:5px;border-radius:3px;background:var(--border);margin:-6px auto 12px}
+@media (max-width:820px){
+  .qrx-large{display:block;font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.4px;margin:2px 4px 14px;color:var(--text)}
+  .topbar{background:rgba(242,242,247,.72);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid rgba(60,60,67,.12)}
+  [data-theme="dark"] .topbar{background:rgba(0,0,0,.6);border-bottom-color:rgba(255,255,255,.1)}
+  .topbar-title{opacity:0;transition:opacity .2s}.qrx-scrolled .topbar-title{opacity:1}
+  #quickAddBtn{background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.85);color:var(--primary);border-radius:50%;box-shadow:0 4px 16px rgba(20,30,60,.12)}
+  [data-theme="dark"] #quickAddBtn{background:rgba(44,44,46,.7);border-color:rgba(255,255,255,.12)}
+  #qrxTopBtn{display:none}
+  .main-content{padding-bottom:calc(var(--space-6) + 110px + env(safe-area-inset-bottom,0px))}
+  .toast-region{bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  .qrx-tab{display:flex;position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));height:64px;z-index:40;align-items:center;justify-content:space-around;padding:0 6px;border-radius:32px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.85);box-shadow:0 8px 32px rgba(20,30,60,.14)}
+  [data-theme="dark"] .qrx-tab{background:rgba(28,28,30,.66);border-color:rgba(255,255,255,.12)}
+  .qtb{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;width:62px;border:0;background:transparent;color:var(--text-secondary);font-size:11px;font-weight:500;font-family:inherit;padding:4px 0}
+  .qtb.on{color:var(--primary)}
+  .qbd{display:none;position:absolute;top:0;right:8px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;font-style:normal;font-weight:600;line-height:18px;text-align:center}
+  .qrx-tab .qrb{width:54px;height:54px;border-radius:27px;border:0;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,98,214,.4)}
+  .qrx-tab .qrb svg{width:26px;height:26px}
+  /* tấm trượt thay ngăn kéo bên cạnh */
+  .drawer{top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;height:auto;max-height:92vh;border-radius:28px 28px 0 0;transform:translateY(100%)}
+  .drawer.show{transform:translateY(0)}
+  .drawer::before{content:"";display:block;flex:none;width:38px;height:5px;border-radius:3px;background:var(--border);margin:8px auto 0}
+  .drawer-body{flex:1 1 auto;min-height:0;overscroll-behavior:contain}
+}
+@media (prefers-reduced-transparency:reduce){.qrx-tab,.topbar,#quickAddBtn{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--card)}}
 html{overflow-x:hidden}
 body{max-width:100vw;touch-action:manipulation}
 @media (hover:none) and (pointer:coarse){input,select,textarea{font-size:16px!important}}
@@ -3514,7 +3542,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v15 · giao diện bước 1-2)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v16 · giao diện bước 1-4)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3583,6 +3611,30 @@ const qa=document.getElementById('quickAddBtn');
 const tb=document.createElement('button'); tb.type='button'; tb.id='qrxTopBtn'; tb.className=qa?'icon-btn':'fab qrx-fab';
 tb.title='Quét QR thanh toán'; tb.setAttribute('aria-label','Quét QR thanh toán'); tb.innerHTML=ICON; tb.onclick=openScan;
 if(qa) qa.parentNode.insertBefore(tb,qa); else document.body.appendChild(tb);
+
+/* Thanh tab nổi + tiêu đề lớn (điện thoại) */
+(function(){
+  const shell=document.getElementById('appShell'), mc=document.querySelector('.main-content'), tt=document.getElementById('topbarTitle'), nav=document.querySelector('.sidebar-nav');
+  if(!shell||!mc||!tt||!nav) return;
+  const ic=(p)=>'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+  const T=[['dashboard','Tổng quan',ic('<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>')],['pending','Chưa TT',ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')],null,['paid','Đã TT',ic('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>')],['stats','Thống kê',ic('<path d="M5 20V10M12 20V4M19 20v-7"/>')]];
+  const big=document.createElement('h1'); big.className='qrx-large'; mc.insertBefore(big,mc.firstChild);
+  const syncTitle=()=>{big.textContent=tt.textContent;};
+  new MutationObserver(syncTitle).observe(tt,{childList:true,characterData:true,subtree:true}); syncTitle();
+  const bar=document.createElement('nav'); bar.className='qrx-tab'; bar.setAttribute('aria-label','Điều hướng');
+  bar.innerHTML=T.map(t=>t?'<button class="qtb" data-v="'+t[0]+'">'+t[2]+'<span>'+t[1]+'</span>'+(t[0]==='pending'?'<i class="qbd" id="qrxBadge"></i>':'')+'</button>':'<button class="qrb" id="qrxTabQR" aria-label="Quét QR thanh toán">'+ICON+'</button>').join('');
+  shell.appendChild(bar);
+  bar.querySelectorAll('.qtb').forEach(b=>b.onclick=()=>switchView(b.dataset.v));
+  bar.querySelector('#qrxTabQR').onclick=openScan;
+  const sync=()=>{
+    const a=document.querySelector('.nav-item.active'), v=a&&a.dataset.view;
+    bar.querySelectorAll('.qtb').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+    const pb=document.getElementById('pendingBadge'), qb=document.getElementById('qrxBadge');
+    if(pb&&qb){const n=(pb.textContent||'').trim(); qb.textContent=n; qb.style.display=(n&&n!=='0')?'block':'none';}
+  };
+  new MutationObserver(sync).observe(nav,{attributes:true,childList:true,characterData:true,subtree:true}); sync();
+  addEventListener('scroll',()=>document.body.classList.toggle('qrx-scrolled',scrollY>40),{passive:true});
+})();
 })();
 </script>
 
