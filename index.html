@@ -219,8 +219,8 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:800;letter-spacing:-0.02
 /* Utility */
 .hidden{display:none !important;}
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
-</style>
-<style>
+
+
 /* ============================================================
    MODULE 02 — APP SHELL / SIDEBAR / HEADER
    ============================================================ */
@@ -418,8 +418,8 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:800;letter-spacing:-0.02
   .main-content{padding:var(--space-4);}
   .topbar{padding:env(safe-area-inset-top) var(--space-4) 0;}
 }
-</style>
-<style>
+
+
 /* ============================================================
    MODULE 03 — DASHBOARD (Hero, KPI, Charts)
    ============================================================ */
@@ -541,8 +541,8 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:800;letter-spacing:-0.02
   .kpi-card{padding:11px;}
   .kpi-value{font-size:16px;}
 }
-</style>
-<style>
+
+
 /* ============================================================
    MODULE 04 — EXPENSE LIST (toolbar, card view, table view)
    ============================================================ */
@@ -675,8 +675,8 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
 @media (max-width:640px){
   .card-grid{grid-template-columns:1fr;}
 }
-</style>
-<style>
+
+
 /* ============================================================
    MODULE 05 — DRAWER / FAB / TOAST / MODAL CONFIRM
    ============================================================ */
@@ -775,8 +775,8 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
 @media (max-width:640px){
   .field-row{grid-template-columns:1fr;}
 }
-</style>
-<style>
+
+
 /* ============================================================
    MODULE 06 — CALENDAR
    ============================================================ */
@@ -855,6 +855,28 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
   .settings-nav{flex-direction:row;overflow-x:auto;}
   .backup-actions{grid-template-columns:1fr;}
 }
+
+/* ===== GIAO DIỆN MỚI (bước 1-2): bảng màu iOS, phông hệ thống, thẻ ===== */
+:root{
+  --bg:#F2F2F7;--card:#FFFFFF;--primary:#0062D6;--primary-dark:#004FB0;--primary-soft:#E6F0FC;--border:#E3E3E8;
+  --text:#1C1C1E;--text-secondary:#6C6C70;--success:#1E8E4E;--success-soft:#E3F6EA;--warning:#D17A00;--warning-soft:#FFF1D6;
+  --danger:#D92D20;--danger-soft:#FDE8E7;--radius-sm:10px;--radius:18px;--radius-lg:26px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);--shadow:0 4px 18px rgba(20,30,60,.07);--shadow-lg:0 14px 40px rgba(20,30,60,.14);
+  --font-display:-apple-system,"SF Pro Display","SF Pro Text",system-ui,"Helvetica Neue",Arial,sans-serif;
+  --font-body:-apple-system,"SF Pro Text",system-ui,"Helvetica Neue",Arial,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#000000;--card:#1C1C1E;--primary:#4DA3FF;--primary-dark:#0A84FF;--primary-soft:#0F2A4A;--border:#2C2C2E;
+  --text:#F2F2F7;--text-secondary:#98989F;--success:#32D74B;--success-soft:#0F3320;--warning:#FF9F0A;--warning-soft:#3A2A0A;
+  --danger:#FF6961;--danger-soft:#3A1517;--shadow-sm:0 1px 2px rgba(0,0,0,.4);--shadow:0 4px 18px rgba(0,0,0,.5);--shadow-lg:0 16px 44px rgba(0,0,0,.6);
+}
+[data-theme="dark"] .topbar{background:rgba(0,0,0,.72);}
+h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo-text,.auth-card h1{font-weight:700;}
+.hero{background:linear-gradient(145deg,#0A6CF0,#0050B8);border-radius:var(--radius-lg);box-shadow:0 10px 28px rgba(0,80,184,.32);}
+[data-theme="dark"] .hero{background:linear-gradient(145deg,#0A5FD0,#0A3E94);}
+.expense-card,.kpi-card,.panel,.insight-card,.timeline-card,.settings-panel,.modal-box,.auth-card{border-color:transparent;box-shadow:var(--shadow-sm);}
+[data-theme="dark"] .expense-card,[data-theme="dark"] .kpi-card,[data-theme="dark"] .panel,[data-theme="dark"] .insight-card,[data-theme="dark"] .timeline-card,[data-theme="dark"] .settings-panel{border-color:var(--border);}
+.expense-card:hover{transform:none;box-shadow:var(--shadow);}
 </style>
 </head>
 <body>
@@ -1485,110 +1507,6 @@ const I18N = {
     'backup.noItems':'Chưa có bản sao lưu nào.','backup.restoreTitle':'Khôi phục dữ liệu?','backup.restoreDesc':'Dữ liệu hiện tại sẽ được thay thế bằng dữ liệu trong file backup. Hành động này không thể hoàn tác.',
     'excel.invalidFile':'File không hợp lệ','excel.noData':'File không có dữ liệu','excel.readError':'Không thể đọc file Excel',
   },
-  en:{
-    'nav.menu':'Menu','nav.dashboard':'Dashboard','nav.pending':'Unpaid','nav.paid':'Paid',
-    'nav.stats':'Statistics','nav.calendar':'Calendar','nav.system':'System','nav.settings':'Settings','nav.backup':'Backup','nav.collapse':'Collapse',
-    'search.placeholder':'Search expenses...',
-    'hero.totalPending':'Total amount unpaid',
-    'quick.add':'Add expense','quick.exportExcel':'Export Excel','quick.importExcel':'Import Excel','quick.backup':'Backup',
-    'kpi.totalPending':'Total unpaid','kpi.totalPaid':'Total paid','kpi.today':'Today','kpi.overdue':'Overdue',
-    'timeline.today':'Today','timeline.tomorrow':'Tomorrow','timeline.week':'This week',
-    'chart.status':'Paid / Unpaid','chart.category':'Spending by category','chart.monthly':'Spending by month',
-    'dash.recent':'Recent expenses','dash.viewAll':'View all','dash.collapse':'Collapse',
-    'cal.today':'Today','cal.month':'Month','cal.week':'Week',
-    'stats.day':'Day','stats.week':'Week','stats.month':'Month','stats.year':'Year','stats.trend':'Spending trend','stats.wallet':'By wallet',
-    'settings.general':'General','settings.generalDesc':'Language, currency and app appearance.',
-    'settings.language':'Language','settings.languageSub':'Change display language','settings.currency':'Currency','settings.theme':'Theme',
-    'settings.categories':'Categories','settings.categoriesDesc':'Manage your expense categories.',
-    'settings.wallets':'Wallets','settings.walletsDesc':'Manage your wallets / money sources.',
-    'settings.payment':'Payment methods','settings.paymentDesc':'Manage your payment methods.','settings.paymentNew':'New payment method...',
-    'settings.recurring':'Recurring expenses','settings.recurringDesc':'Items generated automatically on a cycle (rent, internet, Netflix...).',
-    'recurring.add':'Add recurring expense','recurring.cycle':'Repeat cycle','recurring.monthly':'Monthly','recurring.weekly':'Weekly','recurring.yearly':'Yearly','recurring.dayOfMonth':'Generate on day (of month)',
-    'backup.title':'Backup & Restore','backup.desc':'All data is stored locally on your device (IndexedDB). Back up regularly.',
-    'backup.export':'Export JSON file','backup.exportDesc':'Download all your data as a .json file','backup.exportBtn':'Export backup',
-    'backup.import':'Restore data','backup.importDesc':'Restore data from a previously saved .json file','backup.importBtn':'Choose file to restore',
-    'backup.history':'Backup history',
-    'drawer.add':'Add expense','drawer.edit':'Edit expense',
-    'field.name':'Expense name','field.namePh':'E.g. Electricity bill July','field.amount':'Amount','field.category':'Category',
-    'field.createdDate':'Created date','field.dueDate':'Due date','field.wallet':'Wallet','field.paymentMethod':'Payment method',
-    'field.markPaid':'Mark as paid','field.notes':'Notes','field.notesPh':'Additional notes (optional)...',
-    'action.cancel':'Cancel','action.save':'Save expense','action.delete':'Delete',
-    'toast.saved':'Saved','toast.deleted':'Deleted','toast.paid':'Marked as paid','toast.unpaid':'Marked as unpaid','toast.undo':'Undo',
-    'toast.exported':'File exported','toast.imported':'Data imported','toast.backupDone':'Backup complete',
-    'empty.title':'No expenses yet','empty.sub':'Tap the + button to add your first expense',
-    'confirm.deleteTitle':'Delete this expense?','confirm.deleteDesc':'This action cannot be undone.',
-    'greet.morning':'Good morning','greet.noon':'Good noon','greet.afternoon':'Good afternoon','greet.evening':'Good evening',
-    'view.pendingTitle':'Unpaid','view.paidTitle':'Paid',
-    'table.name':'Name','table.category':'Category','table.amount':'Amount','table.due':'Due','table.status':'Status','table.wallet':'Wallet',
-    'common.unit':'items',
-    'hero.needPay1':'You still have','hero.needPay2':'to pay',
-    'timeline.empty':'No items',
-    'insight.spent':"You've spent",'insight.for':'on','insight.upcoming':'In the next 7 days you need to set aside',
-    'status.pendingShort':'Unpaid','status.paidShort':'Paid',
-    'dueSoon.today':'Due today','dueSoon.oneDay':'1 day left','dueSoon.days':'{n} days left',
-    'action.edit':'Edit','recurring.tag':'Recurring','action.moveUp':'Move up','action.moveDown':'Move down',
-    'filter.allCategories':'All categories','filter.allWallets':'All wallets','filter.allTime':'Any time',
-    'filter.amountFrom':'From','filter.amountTo':'To',
-    'sort.due':'Sort: Due date','sort.created':'Sort: Created date','sort.amount':'Sort: Amount','sort.name':'Sort: Name','sort.toggleTitle':'Toggle sort direction',
-    'list.loadMore':'Load more',
-    'month.noMore':'No more expenses this month.',
-    'category.cannotDelete':'Cannot delete a category currently in use','wallet.cannotDelete':'Cannot delete a wallet currently in use',
-    'recurring.noItems':'No recurring expenses yet.',
-    'backup.noItems':'No backups yet.','backup.restoreTitle':'Restore data?','backup.restoreDesc':'Your current data will be replaced with the data from the backup file. This action cannot be undone.',
-    'excel.invalidFile':'Invalid file','excel.noData':'File has no data','excel.readError':'Could not read Excel file',
-  },
-  zh:{
-    'nav.menu':'菜单','nav.dashboard':'概览','nav.pending':'未付款','nav.paid':'已付款',
-    'nav.stats':'统计','nav.calendar':'日历','nav.system':'系统','nav.settings':'设置','nav.backup':'备份','nav.collapse':'收起',
-    'search.placeholder':'搜索支出...',
-    'hero.totalPending':'未付款总额',
-    'quick.add':'添加支出','quick.exportExcel':'导出 Excel','quick.importExcel':'导入 Excel','quick.backup':'备份',
-    'kpi.totalPending':'未付款总额','kpi.totalPaid':'已付款','kpi.today':'今天','kpi.overdue':'已逾期',
-    'timeline.today':'今天','timeline.tomorrow':'明天','timeline.week':'本周',
-    'chart.status':'已付款 / 未付款','chart.category':'按类别支出','chart.monthly':'按月支出',
-    'dash.recent':'最近支出','dash.viewAll':'查看全部','dash.collapse':'收起',
-    'cal.today':'今天','cal.month':'月','cal.week':'周',
-    'stats.day':'日','stats.week':'周','stats.month':'月','stats.year':'年','stats.trend':'支出趋势','stats.wallet':'按钱包',
-    'settings.general':'通用','settings.generalDesc':'语言、货币和应用外观。',
-    'settings.language':'语言','settings.languageSub':'更改显示语言','settings.currency':'货币','settings.theme':'外观',
-    'settings.categories':'类别','settings.categoriesDesc':'管理你的支出类别。',
-    'settings.wallets':'钱包','settings.walletsDesc':'管理你的钱包 / 资金来源。',
-    'settings.payment':'支付方式','settings.paymentDesc':'管理你的支付方式。','settings.paymentNew':'新的支付方式...',
-    'settings.recurring':'定期支出','settings.recurringDesc':'按周期自动生成的项目（房租、网费、Netflix 等）。',
-    'recurring.add':'添加定期支出','recurring.cycle':'重复周期','recurring.monthly':'每月','recurring.weekly':'每周','recurring.yearly':'每年','recurring.dayOfMonth':'生成日（每月）',
-    'backup.title':'备份与恢复','backup.desc':'所有数据均本地存储在你的设备上（IndexedDB）。请定期备份。',
-    'backup.export':'导出 JSON 文件','backup.exportDesc':'将全部数据下载为 .json 文件','backup.exportBtn':'导出备份',
-    'backup.import':'恢复数据','backup.importDesc':'从之前保存的 .json 文件恢复数据','backup.importBtn':'选择要恢复的文件',
-    'backup.history':'备份历史',
-    'drawer.add':'添加支出','drawer.edit':'编辑支出',
-    'field.name':'支出名称','field.namePh':'例如：7 月电费','field.amount':'金额','field.category':'类别',
-    'field.createdDate':'创建日期','field.dueDate':'到期日','field.wallet':'钱包','field.paymentMethod':'支付方式',
-    'field.markPaid':'标记为已付款','field.notes':'备注','field.notesPh':'补充备注（可选）...',
-    'action.cancel':'取消','action.save':'保存支出','action.delete':'删除',
-    'toast.saved':'已保存','toast.deleted':'已删除','toast.paid':'已标记为已付款','toast.unpaid':'已取消标记','toast.undo':'撤销',
-    'toast.exported':'文件已导出','toast.imported':'数据已导入','toast.backupDone':'备份完成',
-    'empty.title':'暂无支出','empty.sub':'点击 + 按钮添加你的第一笔支出',
-    'confirm.deleteTitle':'删除该支出？','confirm.deleteDesc':'此操作无法撤销。',
-    'greet.morning':'早上好','greet.noon':'中午好','greet.afternoon':'下午好','greet.evening':'晚上好',
-    'view.pendingTitle':'未付款','view.paidTitle':'已付款',
-    'table.name':'名称','table.category':'类别','table.amount':'金额','table.due':'到期日','table.status':'状态','table.wallet':'钱包',
-    'common.unit':'笔',
-    'hero.needPay1':'你还有','hero.needPay2':'待付款',
-    'timeline.empty':'没有项目',
-    'insight.spent':'你已花费','insight.for':'在','insight.upcoming':'未来 7 天需准备',
-    'status.pendingShort':'未付','status.paidShort':'已付',
-    'dueSoon.today':'今天到期','dueSoon.oneDay':'剩 1 天','dueSoon.days':'剩 {n} 天',
-    'action.edit':'编辑','recurring.tag':'定期','action.moveUp':'上移','action.moveDown':'下移',
-    'filter.allCategories':'全部类别','filter.allWallets':'全部钱包','filter.allTime':'任意时间',
-    'filter.amountFrom':'从','filter.amountTo':'到',
-    'sort.due':'排序：到期日','sort.created':'排序：创建日期','sort.amount':'排序：金额','sort.name':'排序：名称','sort.toggleTitle':'切换排序方向',
-    'list.loadMore':'加载更多',
-    'month.noMore':'本月没有更多支出了。',
-    'category.cannotDelete':'无法删除正在使用的类别','wallet.cannotDelete':'无法删除正在使用的钱包',
-    'recurring.noItems':'暂无定期支出。',
-    'backup.noItems':'暂无备份。','backup.restoreTitle':'恢复数据？','backup.restoreDesc':'当前数据将被备份文件中的数据替换。此操作无法撤销。',
-    'excel.invalidFile':'文件无效','excel.noData':'文件没有数据','excel.readError':'无法读取 Excel 文件',
-  }
 };
 function t(key){
   return I18N.vi[key] || key;
@@ -3596,7 +3514,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v14)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v15 · giao diện bước 1-2)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
