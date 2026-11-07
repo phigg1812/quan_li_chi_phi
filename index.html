@@ -3387,13 +3387,16 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
   #qrxTopBtn{display:none}
   .main-content{padding-bottom:calc(var(--space-6) + 76px + max(10px,calc(env(safe-area-inset-bottom,0px) - 14px)))}
   .toast-region{bottom:calc(76px + max(10px,calc(env(safe-area-inset-bottom,0px) - 14px)))}
-  .qrx-tab{display:flex;position:fixed;left:16px;right:16px;bottom:max(10px,calc(env(safe-area-inset-bottom,0px) - 14px));height:64px;z-index:35;align-items:center;justify-content:space-around;padding:0 8px;border-radius:32px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.85);box-shadow:0 8px 32px rgba(20,30,60,.14)}
+  .qrx-tab{display:flex;position:fixed;left:12px;right:12px;bottom:max(10px,calc(env(safe-area-inset-bottom,0px) - 14px));height:66px;z-index:35;align-items:center;justify-content:space-around;padding:0 8px;border-radius:32px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.85);box-shadow:0 8px 32px rgba(20,30,60,.14)}
   [data-theme="dark"] .qrx-tab{background:rgba(28,28,30,.66);border-color:rgba(255,255,255,.12)}
-  .qtb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:68px;height:52px;border:0;border-radius:26px;white-space:nowrap;line-height:1.2;background:transparent;color:var(--text-secondary);font-size:10.5px;font-weight:500;font-family:inherit;padding:0;transition:background .2s,color .2s}
-  .qtb.on{color:var(--primary);background:rgba(0,98,214,.12);font-weight:600}
-  [data-theme="dark"] .qtb.on{background:rgba(77,163,255,.22)}
+  .qtb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:54px;height:54px;padding:0 12px;border:0;border-radius:27px;white-space:nowrap;line-height:1.2;background:transparent;color:var(--text-secondary);font-size:10.5px;font-weight:600;font-family:inherit;transition:background .2s,color .2s}
+  .qtb{z-index:1}
+  .qtb.on{color:var(--primary)}
+  .qpill{position:absolute;left:0;top:50%;margin-top:-27px;height:54px;width:0;border-radius:27px;background:rgba(0,98,214,.12);opacity:0;pointer-events:none;z-index:0;transition:transform .32s cubic-bezier(.3,.9,.3,1),width .32s cubic-bezier(.3,.9,.3,1),opacity .2s}
+  [data-theme="dark"] .qpill{background:rgba(77,163,255,.22)}
+  @media (prefers-reduced-motion:reduce){.qpill{transition:none}}
   .qbd{display:none;position:absolute;top:0;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;font-style:normal;font-weight:600;line-height:18px;text-align:center}
-  .qrx-tab .qrb{width:54px;height:54px;border-radius:27px;border:0;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,98,214,.4)}
+  .qrx-tab .qrb{width:52px;height:52px;border-radius:26px;border:0;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,98,214,.4)}
   .qrx-tab .qrb svg{width:26px;height:26px}
   /* tấm trượt thay ngăn kéo bên cạnh */
   .drawer{top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;height:auto;max-height:92vh;border-radius:28px 28px 0 0;transform:translateY(100%)}
@@ -3563,7 +3566,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v23 · gọn hơn)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v25 · nền tab trượt)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3719,18 +3722,25 @@ try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body)
   const syncTitle=()=>{big.textContent=tt.textContent;};
   new MutationObserver(syncTitle).observe(tt,{childList:true,characterData:true,subtree:true}); syncTitle();
   const bar=document.createElement('nav'); bar.className='qrx-tab'; bar.setAttribute('aria-label','Điều hướng');
-  bar.innerHTML=T.map(t=>t?'<button class="qtb" data-v="'+t[0]+'">'+t[2]+'<span>'+t[1]+'</span>'+(t[0]==='pending'?'<i class="qbd" id="qrxBadge"></i>':'')+'</button>':'<button class="qrb" id="qrxTabQR" aria-label="Quét QR thanh toán">'+ICON+'</button>').join('');
+  bar.innerHTML='<span class="qpill" aria-hidden="true"></span>'+T.map(t=>t?'<button class="qtb" data-v="'+t[0]+'">'+t[2]+'<span>'+t[1]+'</span>'+(t[0]==='pending'?'<i class="qbd" id="qrxBadge"></i>':'')+'</button>':'<button class="qrb" id="qrxTabQR" aria-label="Quét QR thanh toán">'+ICON+'</button>').join('');
   shell.appendChild(bar);
   bar.querySelectorAll('.qtb').forEach(b=>b.onclick=()=>switchView(b.dataset.v));
   bar.querySelector('#qrxTabQR').onclick=openScan;
   const sync=()=>{
     const a=document.querySelector('.nav-item.active'), v=a&&a.dataset.view;
     bar.querySelectorAll('.qtb').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+    const on=bar.querySelector('.qtb.on'), pill=bar.querySelector('.qpill');
+    if(on&&on.offsetWidth){
+      const first=!pill._ok; if(first) pill.style.transition='none';
+      pill.style.opacity=1; pill.style.width=on.offsetWidth+'px'; pill.style.transform='translateX('+on.offsetLeft+'px)';
+      if(first){ pill._ok=true; void pill.offsetWidth; requestAnimationFrame(()=>{pill.style.transition='';}); }
+    } else pill.style.opacity=0;
     const pb=document.getElementById('pendingBadge'), qb=document.getElementById('qrxBadge');
     if(pb&&qb){const n=(pb.textContent||'').trim(); qb.textContent=n; qb.style.display=(n&&n!=='0')?'block':'none';}
   };
   new MutationObserver(sync).observe(nav,{attributes:true,childList:true,characterData:true,subtree:true}); sync();
   addEventListener('scroll',()=>document.body.classList.toggle('qrx-scrolled',scrollY>40),{passive:true});
+  addEventListener('resize',sync); addEventListener('orientationchange',sync); requestAnimationFrame(sync); setTimeout(sync,400);
 })();
 })();
 </script>
