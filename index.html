@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Sổ theo dõi</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4F8EF7">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ Theo Dõi">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='11' fill='%23EAF1FE'/%3E%3Cg transform='translate(14.3730,33.0168) scale(0.039416,-0.039416)'%3E%3Cpath d='M141%20-63C234%20-63%20346%20-12%20389%2072C404%20101%20412%20130%20412%20157C412%20201%20389%20239%20336%20260C421%20290%20490%20377%20491%20469V470C491%20591%20350%20621%20251%20622H247C116%20622%20-6%20577%20-88%20505C-99%20496%20-104%20478%20-104%20458C-104%20410%20-79%20347%20-52%20341L-48%20340C-41%20340%20-34%20344%20-33%20350C-22%20399%209%20432%2045%20461C116%20518%20196%20554%20280%20554C290%20554%20299%20554%20308%20553C361%20548%20377%20517%20377%20484C377%20472%20374%20459%20371%20447C353%20379%20303%20328%20231%20316C235%20326%20268%20415%20283%20450L284%20454C284%20471%20241%20487%20209%20487C194%20487%20181%20483%20177%20474C151%20415%2071%20181%2071%2098L73%2081C79%2057%20116%2052%20146%2052H155C160%2052%20167%2058%20167%2064C167%20107%20189%20189%20209%20249C267%20249%20293%20221%20293%20182C293%20165%20288%20146%20279%20126C239%2042%20194%2013%20135%208L117%207C72%207%2025%2021%20-17%2054C-19%2056%20-21%2057%20-23%2057C-27%2057%20-31%2054%20-34%2049C-37%2044%20-39%2038%20-39%2032C-39%2028%20-38%2024%20-36%2021C10%20-36%2088%20-62%20133%20-63Z' fill='%234F8EF7'/%3E%3C/g%3E%3C/svg%3E">
 <!--
   ============================================================
@@ -102,7 +107,7 @@
   });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>(function(){var u=['https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js','https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'],i=0;function n(){if(i>=u.length)return;var s=document.createElement('script');s.src=u[i++];s.onerror=n;document.head.appendChild(s);}n();})();</script>
 <style>
 @font-face{
   font-family:'Cream Cake';
@@ -2516,7 +2521,7 @@ function monthNames(){ return MONTH_NAMES[STATE.settings.language] || MONTH_NAME
 function dowNames(){ return DOW_NAMES[STATE.settings.language] || DOW_NAMES.vi; }
 
 function expensesByDate(dateISOStr){
-  return STATE.expenses.filter(e=> e.createdDate===dateISOStr );
+  return STATE.expenses.filter(e=> (localStorage.getItem('qrx_calby')==='due' ? e.dueDate : e.createdDate)===dateISOStr );
 }
 function calendarDotsForDay(list){
   let dots = [];
@@ -3387,11 +3392,13 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
   #qrxTopBtn{display:none}
   .main-content{padding-bottom:calc(var(--space-6) + 80px + max(10px,calc(env(safe-area-inset-bottom,0px) - 14px)))}
   .toast-region{bottom:calc(80px + max(10px,calc(env(safe-area-inset-bottom,0px) - 14px)))}
-  .qrx-tab{display:flex;position:fixed;left:12px;right:12px;bottom:max(10px,calc(env(safe-area-inset-bottom,0px) - 14px));height:70px;z-index:35;align-items:center;justify-content:space-around;padding:0 8px;border-radius:32px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.85);box-shadow:0 8px 32px rgba(20,30,60,.14)}
+  .qrx-tab{display:flex;position:fixed;left:12px;right:12px;bottom:max(10px,calc(env(safe-area-inset-bottom,0px) - 14px));height:70px;z-index:35;align-items:center;justify-content:space-between;padding:0 6px;border-radius:35px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.85);box-shadow:0 8px 32px rgba(20,30,60,.14)}
   [data-theme="dark"] .qrx-tab{background:rgba(28,28,30,.66);border-color:rgba(255,255,255,.12)}
-  .qtb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:48px;height:56px;padding:0 9px;border:0;border-radius:28px;white-space:nowrap;line-height:1.2;background:transparent;color:var(--text-secondary);font-size:10.5px;font-weight:600;font-family:inherit;transition:background .2s,color .2s}
+  .qtb{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;flex:0 1 72px;min-width:60px;height:56px;padding:0;border:0;border-radius:28px;outline:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;white-space:nowrap;line-height:1.2;background:transparent;color:var(--text-secondary);font-size:10.5px;font-weight:600;font-family:inherit;transition:background .2s,color .2s}
   .qtb{z-index:1}
   .qtb.on{color:var(--primary)}
+  .qrx-tab,.qrx-tab *,.topbar .icon-btn{-webkit-tap-highlight-color:transparent}
+  .qtb:active,.qtb:focus{background:transparent;outline:none}
   .qpill{position:absolute;left:0;top:50%;margin-top:-28px;height:56px;width:0;border-radius:28px;background:rgba(0,98,214,.12);opacity:0;pointer-events:none;z-index:0;transition:transform .32s cubic-bezier(.3,.9,.3,1),width .32s cubic-bezier(.3,.9,.3,1),opacity .2s}
   [data-theme="dark"] .qpill{background:rgba(77,163,255,.22)}
   @media (prefers-reduced-motion:reduce){.qpill{transition:none}}
@@ -3577,7 +3584,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v26 · blur, viền)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v29 · tab cân đối)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3639,7 +3646,7 @@ window.qrxDayList=function(iso,list){
   const sh=overlay('<h3>Khoản chi ngày '+d+'/'+m+'/'+y+'</h3>'+rows+'<div class="qrx-row"><button class="qrx-btn" id="qrxAddDay">Thêm khoản chi ngày này</button><button class="qrx-btn" id="qrxDayX">Đóng</button></div>');
   sh.querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>{close();openExpenseDrawer(b.dataset.id);});
   sh.querySelector('#qrxDayX').onclick=close;
-  sh.querySelector('#qrxAddDay').onclick=()=>{close();openExpenseDrawer();const f=document.getElementById('fCreatedDate');if(f)f.value=iso;};
+  sh.querySelector('#qrxAddDay').onclick=()=>{close();openExpenseDrawer();const f=document.getElementById(localStorage.getItem('qrx_calby')==='due'?'fDueDate':'fCreatedDate');if(f)f.value=iso;};
 };
 const ICON='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><g fill="currentColor" stroke="none"><rect x="5.5" y="5.5" width="2" height="2"/><rect x="16.5" y="5.5" width="2" height="2"/><rect x="5.5" y="16.5" width="2" height="2"/><rect x="14" y="14" width="2.6" height="2.6"/><rect x="18.4" y="14" width="2.6" height="2.6"/><rect x="16.2" y="17" width="2.6" height="2.6"/><rect x="14" y="19" width="2.6" height="2"/><rect x="18.4" y="19" width="2.6" height="2"/></g></svg>';
 const qa=document.getElementById('quickAddBtn');
@@ -3722,6 +3729,36 @@ function openSettle(){
       const step=t=>{ const p=Math.min(1,(t-t0)/600), v=Math.round(from+(to-from)*(1-Math.pow(1-p,3))); el.textContent=new Intl.NumberFormat('vi-VN').format(v)+'đ'; if(p<1) requestAnimationFrame(step); else busy=false; };
       requestAnimationFrame(step); }).observe(el,{childList:true,characterData:true,subtree:true}); }
 })();
+/* Lịch: chuyển giữa "theo ngày chi" và "theo hạn thanh toán" */
+(function(){
+  const tg=document.getElementById('calModeToggle'); if(!tg) return;
+  const c=tg.cloneNode(true); c.id='qrxCalBy';
+  const bs=[...c.querySelectorAll('button')]; bs.slice(2).forEach(b=>b.remove());
+  const cur=()=>localStorage.getItem('qrx_calby')==='due'?'due':'created';
+  [['created','Theo ngày chi'],['due','Theo hạn TT']].forEach((x,i)=>{const b=bs[i]; if(!b) return; b.removeAttribute('data-cal-mode'); b.dataset.by=x[0]; b.textContent=x[1];
+    b.onclick=e=>{e.stopPropagation(); localStorage.setItem('qrx_calby',x[0]); c.querySelectorAll('button').forEach(y=>y.classList.toggle('active',y.dataset.by===x[0])); try{renderCalendar();}catch(err){}};});
+  c.querySelectorAll('button').forEach(y=>y.classList.toggle('active',y.dataset.by===cur()));
+  c.style.marginLeft='8px'; tg.insertAdjacentElement('afterend',c);
+})();
+/* Nhắc sao lưu: lần cuối sao lưu quá 30 ngày */
+(function(){
+  let n=0; const t=setInterval(()=>{
+    let ok=false; try{ok=STATE.categories.length>0&&document.getElementById('appShell')&&!document.getElementById('appShell').classList.contains('hidden');}catch(e){}
+    if(!ok){ if(++n>90) clearInterval(t); return; }
+    clearInterval(t);
+    const last=Number(localStorage.getItem('qrx_bkask')||0); if(Date.now()-last<3*86400000) return;
+    const lastBk=STATE.backups.length?Math.max(...STATE.backups.map(b=>Number(b.createdAt||0))):0;
+    if(STATE.expenses.length<10) return;
+    const days=lastBk?Math.floor((Date.now()-lastBk)/86400000):null;
+    if(days!==null&&days<30) return;
+    localStorage.setItem('qrx_bkask',String(Date.now()));
+    const sh=overlay('<h3>Nên sao lưu dữ liệu</h3><div>'+(days===null?'Bạn chưa sao lưu lần nào.':'Lần sao lưu gần nhất cách đây <b>'+days+' ngày</b>.')+' Tải một file sao lưu để phòng khi cần khôi phục.</div><div class="qrx-row"><button class="qrx-btn" id="qbL">Để sau</button><button class="qrx-btn p" id="qbG">Mở trang Sao lưu</button></div>');
+    sh.querySelector('#qbL').onclick=close; sh.querySelector('#qbG').onclick=()=>{close(); try{switchView('backup');}catch(e){}};
+  },1000);
+})();
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
+}
 try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body).fontFamily; }catch(e){}
 /* Thanh tab nổi + tiêu đề lớn (điện thoại) */
 (function(){
