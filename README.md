@@ -29,6 +29,9 @@ Không lưu mật khẩu trong Firestore. Firebase Authentication chịu trách 
 ## Cập nhật bản mới
 Trang tải từ mạng trước nên thường có bản mới ngay sau khi triển khai (có thể cần đợi 1–2 phút). Nếu vẫn thấy bản cũ, mở địa chỉ kèm `?v=số-bất-kỳ`, hoặc xóa icon rồi ghim lại. Dòng "bản QR vXX" ở cuối cửa sổ thanh toán cho biết bạn đang chạy bản nào.
 
+## Hạn mức chi tiêu
+Mở menu, chọn **Hạn mức** để đặt hạn mức cho cả tháng và cho từng danh mục (tính theo ngày tạo khoản chi). App nhắc khi chi tiêu đạt 80% và khi vượt 100%, mỗi mốc nhắc một lần trong tháng.
+
 ## Lưu ý
 - Khóa Gemini (phân loại tự động) chỉ lưu trên thiết bị của bạn, không nằm trong mã nguồn.
 - Sao lưu và khôi phục dùng file JSON; hãy tự tải một bản sao lưu trước khi khôi phục.

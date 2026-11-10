@@ -2463,7 +2463,7 @@ async function handleExpenseFormSubmit(e){
   STATE.ui.smartPrediction = null;
   document.getElementById('smartExpenseInput').value = '';
   closeExpenseDrawer(false);
-  showToast((learned||qrxL) ? 'Đã lưu khoản chi và ghi nhớ cách bạn chỉnh' : t('toast.saved'));
+  showToast((learned||qrxL) ? 'Đã lưu khoản chi và ghi nhớ cách bạn chỉnh' : t('toast.saved')); setTimeout(()=>{ if(window.qrxCheckBudget) window.qrxCheckBudget(true); },2200);
   renderCurrentView(true);
 }
 async function handleDeleteExpense(id){
@@ -3356,6 +3356,7 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qrx-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.qrx-chips button{padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:var(--primary-soft);color:var(--text);cursor:pointer}
 .qrx-note{font-size:12px;color:var(--text-secondary);margin-top:8px}
 .qs-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--border);font-size:15px}.qrx-sheet .qs-row input{width:22px;height:22px;padding:0;flex:none}.qs-row .t{flex:1;min-width:0}.qs-row small{display:block;color:var(--text-secondary);font-size:12px}.qs-cat{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text-secondary)}.qs-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 2px 4px}
+.qb-row{padding:10px 2px;border-top:1px solid var(--border)}.qb-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}.qb-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden}.qb-bar i{display:block;height:100%;border-radius:3px}
 .qrx-more{display:none}
 .sidebar{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border-right:1px solid rgba(255,255,255,.6)}
 [data-theme="dark"] .sidebar{background:rgba(28,28,30,.72);border-right-color:rgba(255,255,255,.08)}
@@ -3566,7 +3567,7 @@ function commitPending(p,amt){
       await Promise.all(jobs);
       try{renderCurrentView(true);}catch(x){}
       const cn=(STATE.categories.find(c=>c.id===catId)||{}).name||'';
-      showToast('Đã ghi: '+exp.name+' · '+cn+(p.manual?' · đã ghi nhớ':'')+note);
+      showToast('Đã ghi: '+exp.name+' · '+cn+(p.manual?' · đã ghi nhớ':'')+note); setTimeout(()=>{ if(window.qrxCheckBudget) window.qrxCheckBudget(true); },2800);
     }catch(x){showToast('Lưu thất bại, thử lại sau');}
   },500);
 }
@@ -3584,7 +3585,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v29 · tab cân đối)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v30 · hạn mức)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3755,6 +3756,51 @@ function openSettle(){
     const sh=overlay('<h3>Nên sao lưu dữ liệu</h3><div>'+(days===null?'Bạn chưa sao lưu lần nào.':'Lần sao lưu gần nhất cách đây <b>'+days+' ngày</b>.')+' Tải một file sao lưu để phòng khi cần khôi phục.</div><div class="qrx-row"><button class="qrx-btn" id="qbL">Để sau</button><button class="qrx-btn p" id="qbG">Mở trang Sao lưu</button></div>');
     sh.querySelector('#qbL').onclick=close; sh.querySelector('#qbG').onclick=()=>{close(); try{switchView('backup');}catch(e){}};
   },1000);
+})();
+/* Hạn mức chi tiêu */
+(function(){
+  const fmt=n=>formatCurrency(n), ymNow=()=>todayISO().slice(0,7);
+  const budgets=()=>{const b=(STATE.settings&&STATE.settings.budgets)||{}; return {total:Number(b.total)||0,cats:b.cats||{}};};
+  const spent=()=>{const ym=ymNow(), by={}; let total=0; STATE.expenses.forEach(e=>{ if((e.createdDate||'').slice(0,7)!==ym) return; const a=Number(e.amount)||0; total+=a; by[e.categoryId]=(by[e.categoryId]||0)+a; }); return {total,by};};
+  const color=p=>p>=100?'var(--danger)':p>=80?'var(--warning)':'var(--success)';
+  window.qrxCheckBudget=function(toast){
+    try{
+      const b=budgets(), sp=spent(), ym=ymNow(), items=[];
+      if(b.total>0) items.push({key:'total',name:'Tổng cả tháng',used:sp.total,limit:b.total});
+      STATE.categories.forEach(c=>{const l=Number(b.cats[c.id])||0; if(l>0) items.push({key:c.id,name:c.name,used:sp.by[c.id]||0,limit:l});});
+      let seen={}; try{seen=JSON.parse(localStorage.getItem('qrx_bud')||'{}');}catch(e){}
+      Object.keys(seen).forEach(k=>{ if(!k.startsWith(ym+'|')) delete seen[k]; });
+      const fresh=[];
+      items.forEach(i=>{const pct=i.used/i.limit*100, lvl=pct>=100?2:pct>=80?1:0, k=ym+'|'+i.key; if(lvl>(seen[k]||0)){fresh.push(Object.assign(i,{pct,lvl})); seen[k]=lvl;}});
+      localStorage.setItem('qrx_bud',JSON.stringify(seen));
+      if(!fresh.length) return;
+      fresh.sort((a,b)=>b.lvl-a.lvl); const f=fresh[0];
+      showToast((f.lvl===2?'Đã vượt hạn mức ':'Sắp đạt hạn mức ')+f.name+' ('+Math.round(f.pct)+'%: '+fmt(f.used)+'/'+fmt(f.limit)+')'+(fresh.length>1?' và '+(fresh.length-1)+' mục khác':''));
+    }catch(e){}
+  };
+  function openBudget(){
+    const b=budgets(), sp=spent(), m=Number(ymNow().slice(5))+'/'+ymNow().slice(0,4);
+    const row=(id,name,limit,used)=>{const p=limit>0?used/limit*100:0; return '<div class="qb-row"><div class="qb-top"><b>'+esc(name)+'</b><span>'+esc(fmt(used))+(limit>0?' / '+esc(fmt(limit)):'')+'</span></div><input data-b="'+esc(id)+'" inputmode="numeric" placeholder="Hạn mức tháng (đ), để trống nếu không đặt" value="'+(limit>0?limit.toLocaleString('vi-VN'):'')+'" style="margin-top:6px">'+(limit>0?'<div class="qb-bar"><i style="width:'+Math.min(100,p)+'%;background:'+color(p)+'"></i></div>':'')+'</div>';};
+    const sh=overlay('<h3>Hạn mức chi tiêu · tháng '+m+'</h3><div class="qrx-note" style="margin-top:0">Tính theo ngày tạo khoản chi. App nhắc khi đạt 80% và khi vượt 100% hạn mức.</div>'
+      +row('total','Tổng cả tháng',b.total,sp.total)+STATE.categories.map(c=>row(c.id,c.name,Number(b.cats[c.id])||0,sp.by[c.id]||0)).join('')
+      +'<div class="qrx-row"><button class="qrx-btn" id="qbX">Đóng</button><button class="qrx-btn p" id="qbS">Lưu hạn mức</button></div>');
+    sh.querySelectorAll('input[data-b]').forEach(i=>i.oninput=()=>{const n=num(i.value); i.value=n?n.toLocaleString('vi-VN'):'';});
+    sh.querySelector('#qbX').onclick=close;
+    sh.querySelector('#qbS').onclick=async()=>{
+      const nb={total:0,cats:{}};
+      sh.querySelectorAll('input[data-b]').forEach(i=>{const v=num(i.value); if(i.dataset.b==='total') nb.total=v; else if(v>0) nb.cats[i.dataset.b]=v;});
+      STATE.settings.budgets=nb; close();
+      try{ await saveSettings(); showToast('Đã lưu hạn mức'); }catch(e){ showToast('Lưu hạn mức thất bại'); }
+      localStorage.removeItem('qrx_bud'); window.qrxCheckBudget(true);
+    };
+  }
+  const sn=document.querySelector('.nav-item[data-view="stats"]');
+  if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active');
+    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; }
+    c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openBudget();};
+    sn.insertAdjacentElement('afterend',c);}
+  let t0=0; const iv=setInterval(()=>{ let ok=false; try{ok=STATE.categories.length>0&&!document.getElementById('appShell').classList.contains('hidden');}catch(e){}
+    if(!ok){ if(++t0>90) clearInterval(iv); return; } clearInterval(iv); setTimeout(()=>window.qrxCheckBudget(true),3500); },1000);
 })();
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
