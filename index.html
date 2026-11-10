@@ -3358,6 +3358,13 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qs-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--border);font-size:15px}.qrx-sheet .qs-row input{width:22px;height:22px;padding:0;flex:none}.qs-row .t{flex:1;min-width:0}.qs-row small{display:block;color:var(--text-secondary);font-size:12px}.qs-cat{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text-secondary)}.qs-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 2px 4px}
 .qb-row{padding:10px 2px;border-top:1px solid var(--border)}.qb-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}.qb-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden}.qb-bar i{display:block;height:100%;border-radius:3px}
 .qrx-more{display:none}
+.sidebar-collapse-btn{height:40px;border:0;border-radius:12px;background:rgba(120,120,128,.12);color:var(--text);font-weight:600;font-size:14px}
+.sidebar-collapse-btn:hover{background:rgba(120,120,128,.2);color:var(--text)}
+.sidebar-collapse-btn:active{background:rgba(120,120,128,.28)}
+.sidebar-collapse-btn svg{color:var(--text-secondary)}
+[data-theme="dark"] .sidebar-collapse-btn{background:rgba(235,235,245,.12)}
+.qrx-bud{background:var(--card);border-radius:var(--radius);padding:16px;margin:var(--space-4) 0;box-shadow:var(--shadow-sm)}
+[data-theme="dark"] .qrx-bud{border:1px solid var(--border)}
 @media (min-width:821px){
   .sidebar-brand{border-bottom:0}
   .topbar{background:color-mix(in srgb,var(--bg) 85%,transparent);border-bottom:0}
@@ -3392,8 +3399,10 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
   .hero-title{font-size:17px;margin-bottom:4px;line-height:1.3}
   .hero-amount{font-size:32px}
   .hero-amount-label{display:none}
-  .hero-actions{margin-top:12px;gap:8px}
-  .hero-btn{height:38px;padding:0 12px;font-size:13.5px}
+  .hero-actions{margin-top:12px;gap:8px;flex-wrap:nowrap}
+  .hero-actions.more-open{flex-wrap:wrap}
+  .hero-btn{height:38px;padding:0 10px;font-size:13px;white-space:nowrap;flex:0 1 auto;min-width:0}
+  #heroAddBtn [data-icon]{display:none}
   .expense-card{padding:12px 14px}
   .expense-card .exp-actions{display:none}
   .expense-card .exp-amount{margin:2px 0}
@@ -3608,7 +3617,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v34 · hạn mức mới)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v35 · tổng quan, hệ thống)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3832,11 +3841,26 @@ function openSettle(){
         const nb={total:draft.total||0,cats:{}}; Object.keys(draft.cats).forEach(k=>{ if(Number(draft.cats[k])>0) nb.cats[k]=Number(draft.cats[k]); });
         STATE.settings.budgets=nb; close();
         try{ await saveSettings(); showToast('Đã lưu hạn mức'); }catch(e){ showToast('Lưu hạn mức thất bại'); }
-        localStorage.removeItem('qrx_bud'); window.qrxCheckBudget(true);
+        localStorage.removeItem('qrx_bud'); window.qrxCheckBudget(true); if(window.qrxRenderBud) window.qrxRenderBud();
       };
     };
     draw();
   }
+  function renderBudCard(){
+    const host=document.getElementById('qrxBudCard'); if(!host) return;
+    const b=budgets(), sp=spent(), has=b.total>0||Object.keys(b.cats).some(k=>Number(b.cats[k])>0);
+    if(!has){ host.innerHTML='<div class="qb-top"><b>Hạn mức chi tiêu</b></div><div class="qrx-note" style="margin:6px 0 12px">Đặt hạn mức theo tháng hoặc theo danh mục để app nhắc khi gần vượt.</div><button class="qrx-btn p" id="qbOpen">Đặt hạn mức</button>'; host.querySelector('#qbOpen').onclick=openBudget; return; }
+    const rows=[]; if(b.total>0) rows.push({n:'Tổng cả tháng',u:sp.total,l:b.total,big:1});
+    const cats=[]; STATE.categories.forEach(c=>{const l=Number(b.cats[c.id])||0; if(l>0) cats.push({n:c.name,u:sp.by[c.id]||0,l});});
+    cats.sort((x,y)=>y.u/y.l-x.u/x.l).slice(0,3).forEach(r=>rows.push(r));
+    const line=r=>{const p=r.u/r.l*100,c=color(p); return '<div style="margin-top:12px"><div class="qb-top"><span'+(r.big?' style="font-weight:700"':'')+'>'+esc(r.n)+'</span><span style="color:'+c+';font-weight:600">'+Math.round(p)+'%</span></div><div class="qb-bar"><i style="width:'+Math.min(100,p)+'%;background:'+c+'"></i></div><div class="qrx-note" style="margin-top:4px">'+esc(fmt(r.u))+' / '+esc(fmt(r.l))+'</div></div>';};
+    host.innerHTML='<div class="qb-top"><b>Hạn mức tháng '+Number(ymNow().slice(5))+'</b><a href="#" id="qbOpen" style="color:var(--primary);font-size:13px">Chi tiết</a></div>'+rows.map(line).join('');
+    host.querySelector('#qbOpen').onclick=e=>{e.preventDefault(); openBudget();};
+  }
+  window.qrxRenderBud=renderBudCard;
+  { const kg=document.querySelector('.kpi-grid'), kp=document.getElementById('kpiPending');
+    if(kg&&kp){ const h=document.createElement('div'); h.id='qrxBudCard'; h.className='qrx-bud'; kg.insertAdjacentElement('afterend',h);
+      new MutationObserver(renderBudCard).observe(kp,{childList:true,characterData:true,subtree:true}); renderBudCard(); } }
   const sn=document.querySelector('.nav-item[data-view="stats"]');
   if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
     const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; } c.dataset.qrx='budget';
@@ -3857,7 +3881,27 @@ function openSettle(){
     const lb=el.querySelector('.nav-label'); if(lb&&lb.textContent!==f.label){ lb.removeAttribute('data-i18n'); lb.textContent=f.label; }
   });
   fix(); new MutationObserver(fix).observe(nav,{childList:true,subtree:true,characterData:true,attributes:true});
-  const ft=document.querySelector('.sidebar-footer'); if(ft&&!ft.querySelector('.qrx-ver')){ const v=document.createElement('div'); v.className='qrx-ver'; v.textContent='Bản v34'; ft.appendChild(v); }
+})();
+/* Cài đặt → Thông tin hệ thống */
+(function(){
+  window.QRX_VER='v35';
+  const nav=document.getElementById('settingsNav'), last=document.getElementById('panel-recurring'); if(!nav||!last) return;
+  const btn=document.createElement('button'); btn.dataset.panel='sysinfo'; btn.textContent='Thông tin hệ thống'; nav.appendChild(btn);
+  const pn=document.createElement('div'); pn.className='settings-panel hidden'; pn.id='panel-sysinfo'; last.insertAdjacentElement('afterend',pn);
+  const row=(l,v)=>'<div class="settings-row"><div><div class="s-label">'+esc(l)+'</div></div><div style="font-size:13px;text-align:right">'+esc(v)+'</div></div>';
+  const render=async()=>{
+    let sw='Không hỗ trợ'; try{ if('serviceWorker' in navigator){ const r=await navigator.serviceWorker.getRegistration(); sw=r?(navigator.serviceWorker.controller?'Đang chạy':'Đã đăng ký, chờ kích hoạt'):'Chưa đăng ký'; } }catch(e){}
+    let mail='—'; try{ mail=window.FB.auth.currentUser.email||'—'; }catch(e){}
+    pn.innerHTML='<h3>Thông tin hệ thống</h3><div class="desc">Dùng để kiểm tra khi app chạy chưa đúng.</div>'
+      +row('Phiên bản ứng dụng',QRX_VER)+row('Chế độ chạy',(matchMedia('(display-mode: standalone)').matches||navigator.standalone)?'Đã ghim màn hình chính':'Trình duyệt')
+      +row('Service worker (chạy offline)',sw)+row('Kết nối',navigator.onLine?'Có mạng':'Mất mạng')+row('Tài khoản',mail)
+      +row('Dữ liệu',STATE.expenses.length+' khoản chi · '+STATE.categories.length+' danh mục · '+STATE.learningRules.length+' quy tắc đã học')
+      +row('Thư viện Excel',(window.XLSX&&XLSX.version)?('SheetJS '+XLSX.version):'Chưa tải')
+      +row('Khóa Gemini (phân loại tự động)',localStorage.getItem('qrx_gkey')?'Đã lưu trên máy này':'Chưa có')
+      +'<div class="settings-row"><div><div class="s-label">Làm mới ứng dụng</div><div class="s-sub">Xóa bộ nhớ đệm và tải lại, dùng khi app còn ở bản cũ. Dữ liệu của bạn không bị xóa.</div></div><button class="qrx-btn" id="qsysR">Làm mới</button></div>';
+    pn.querySelector('#qsysR').onclick=async()=>{ try{ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){} location.reload(); };
+  };
+  btn.addEventListener('click',render);
 })();
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
