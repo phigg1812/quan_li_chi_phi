@@ -3358,6 +3358,10 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qs-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--border);font-size:15px}.qrx-sheet .qs-row input{width:22px;height:22px;padding:0;flex:none}.qs-row .t{flex:1;min-width:0}.qs-row small{display:block;color:var(--text-secondary);font-size:12px}.qs-cat{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text-secondary)}.qs-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 2px 4px}
 .qb-row{padding:10px 2px;border-top:1px solid var(--border)}.qb-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}.qb-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden}.qb-bar i{display:block;height:100%;border-radius:3px}
 .qrx-more{display:none}
+.sidebar-nav{overflow-x:hidden}
+.sidebar.collapsed .nav-item{justify-content:center;gap:0;padding:10px 0}
+.sidebar.collapsed .nav-label{display:none}
+.sidebar.collapsed .nav-badge{position:absolute;top:1px;right:5px;margin:0;padding:0 4px;min-width:16px;font-size:9.5px}
 .sidebar{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border-right:1px solid rgba(255,255,255,.6)}
 [data-theme="dark"] .sidebar{background:rgba(28,28,30,.72);border-right-color:rgba(255,255,255,.08)}
 .nav-item{border-radius:14px}
@@ -3418,8 +3422,10 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
   .topbar .icon-btn{box-shadow:0 0 0 .5px rgba(60,60,67,.14)}
   [data-theme="dark"] .topbar .icon-btn{box-shadow:0 0 0 .5px rgba(255,255,255,.14)}
 }
-.sidebar{border-right:1px solid rgba(60,60,67,.14);box-shadow:0 0 0 .5px rgba(60,60,67,.1),8px 0 40px rgba(0,0,0,.14)}
-[data-theme="dark"] .sidebar{border-right-color:rgba(255,255,255,.12);box-shadow:0 0 0 .5px rgba(255,255,255,.1),8px 0 40px rgba(0,0,0,.5)}
+.sidebar{border-right:1px solid rgba(60,60,67,.14);box-shadow:none}
+.sidebar.mobile-open{box-shadow:0 0 0 .5px rgba(60,60,67,.1),8px 0 40px rgba(0,0,0,.14)}
+[data-theme="dark"] .sidebar{border-right-color:rgba(255,255,255,.12)}
+[data-theme="dark"] .sidebar.mobile-open{box-shadow:0 0 0 .5px rgba(255,255,255,.1),8px 0 40px rgba(0,0,0,.5)}
 .qrx-ov,.modal-overlay,.sidebar-overlay{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .toast{background:rgba(28,28,30,.72);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.12)}
 @media (prefers-reduced-transparency:reduce){.qrx-ov,.modal-overlay,.sidebar-overlay,.toast{-webkit-backdrop-filter:none;backdrop-filter:none}.toast{background:#1F2937}}
@@ -3585,7 +3591,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v30 · hạn mức)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v32 · sửa tên menu)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3693,9 +3699,10 @@ function openSettle(){
   const hb=document.getElementById('heroAddBtn');
   if(hb){const b=document.createElement('button'); b.className='hero-btn'; b.id='heroSettleBtn'; b.textContent='Quyết toán'; b.onclick=openSettle; hb.insertAdjacentElement('afterend',b);}
   const pn=document.querySelector('.nav-item[data-view="paid"]');
-  if(pn){const c=pn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active');
+  if(pn){const c=pn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
     const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Đã thanh toán') n.nodeValue='Quyết toán'; }
     c.querySelectorAll('.nav-badge,.badge').forEach(x=>x.remove());
+    { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openSettle();};
     pn.insertAdjacentElement('afterend',c);}
 })();
@@ -3795,8 +3802,9 @@ function openSettle(){
     };
   }
   const sn=document.querySelector('.nav-item[data-view="stats"]');
-  if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active');
+  if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
     const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; }
+    { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openBudget();};
     sn.insertAdjacentElement('afterend',c);}
   let t0=0; const iv=setInterval(()=>{ let ok=false; try{ok=STATE.categories.length>0&&!document.getElementById('appShell').classList.contains('hidden');}catch(e){}
