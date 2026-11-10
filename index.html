@@ -3358,6 +3358,8 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qs-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--border);font-size:15px}.qrx-sheet .qs-row input{width:22px;height:22px;padding:0;flex:none}.qs-row .t{flex:1;min-width:0}.qs-row small{display:block;color:var(--text-secondary);font-size:12px}.qs-cat{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text-secondary)}.qs-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 2px 4px}
 .qb-row{padding:10px 2px;border-top:1px solid var(--border)}.qb-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}.qb-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden}.qb-bar i{display:block;height:100%;border-radius:3px}
 .qrx-more{display:none}
+.qrx-ver{font-size:10px;color:var(--text-secondary);text-align:center;margin-top:8px}
+.sidebar.collapsed .qrx-ver{display:none}
 .sidebar-nav{overflow-x:hidden}
 .sidebar.collapsed .nav-item{justify-content:center;gap:0;padding:10px 0}
 .sidebar.collapsed .nav-label{display:none}
@@ -3591,7 +3593,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v32 · sửa tên menu)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v33 · menu)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3700,7 +3702,7 @@ function openSettle(){
   if(hb){const b=document.createElement('button'); b.className='hero-btn'; b.id='heroSettleBtn'; b.textContent='Quyết toán'; b.onclick=openSettle; hb.insertAdjacentElement('afterend',b);}
   const pn=document.querySelector('.nav-item[data-view="paid"]');
   if(pn){const c=pn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
-    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Đã thanh toán') n.nodeValue='Quyết toán'; }
+    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Đã thanh toán') n.nodeValue='Quyết toán'; } c.dataset.qrx='settle';
     c.querySelectorAll('.nav-badge,.badge').forEach(x=>x.remove());
     { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openSettle();};
@@ -3803,12 +3805,25 @@ function openSettle(){
   }
   const sn=document.querySelector('.nav-item[data-view="stats"]');
   if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
-    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; }
+    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; } c.dataset.qrx='budget';
     { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openBudget();};
     sn.insertAdjacentElement('afterend',c);}
   let t0=0; const iv=setInterval(()=>{ let ok=false; try{ok=STATE.categories.length>0&&!document.getElementById('appShell').classList.contains('hidden');}catch(e){}
     if(!ok){ if(++t0>90) clearInterval(iv); return; } clearInterval(iv); setTimeout(()=>window.qrxCheckBudget(true),3500); },1000);
+})();
+/* Giữ đúng tên + biểu tượng cho 2 mục menu thêm, kể cả khi app vẽ lại menu; hiện số bản */
+(function(){
+  const nav=document.querySelector('.sidebar-nav'); if(!nav) return;
+  const sv=p=>'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
+  const FIX=[{k:'settle',label:'Quyết toán',svg:sv('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>')},{k:'budget',label:'Hạn mức',svg:sv('<path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/>')}];
+  const fix=()=>FIX.forEach(f=>{
+    const el=nav.querySelector('.nav-item[data-qrx="'+f.k+'"]'); if(!el) return;
+    const ni=el.querySelector('.nav-icon'); if(ni&&ni.dataset.qrx!==f.k){ ni.removeAttribute('data-icon'); ni.innerHTML=f.svg; ni.dataset.qrx=f.k; }
+    const lb=el.querySelector('.nav-label'); if(lb&&lb.textContent!==f.label){ lb.removeAttribute('data-i18n'); lb.textContent=f.label; }
+  });
+  fix(); new MutationObserver(fix).observe(nav,{childList:true,subtree:true,characterData:true,attributes:true});
+  const ft=document.querySelector('.sidebar-footer'); if(ft&&!ft.querySelector('.qrx-ver')){ const v=document.createElement('div'); v.className='qrx-ver'; v.textContent='Bản v33'; ft.appendChild(v); }
 })();
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
