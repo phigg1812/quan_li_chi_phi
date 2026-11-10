@@ -3358,6 +3358,21 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qs-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--border);font-size:15px}.qrx-sheet .qs-row input{width:22px;height:22px;padding:0;flex:none}.qs-row .t{flex:1;min-width:0}.qs-row small{display:block;color:var(--text-secondary);font-size:12px}.qs-cat{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text-secondary)}.qs-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 2px 4px}
 .qb-row{padding:10px 2px;border-top:1px solid var(--border)}.qb-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}.qb-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden}.qb-bar i{display:block;height:100%;border-radius:3px}
 .qrx-more{display:none}
+@media (min-width:821px){
+  .sidebar-brand{border-bottom:0}
+  .topbar{background:color-mix(in srgb,var(--bg) 85%,transparent);border-bottom:0}
+}
+.qrx-sheet.qb-sheet{display:flex;flex-direction:column;padding:0;overflow:hidden;max-height:90vh;max-height:90dvh}
+.qb-sheet::before{flex:none;margin:8px auto 0}
+.qb-h{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 8px;flex:none}.qb-h h3{margin:0}
+.qb-x{border:0;background:var(--bg);color:var(--text);width:34px;height:34px;border-radius:17px;font-size:16px;cursor:pointer}
+.qb-body{flex:1;min-height:0;overflow:auto;padding:4px 16px 12px;-webkit-overflow-scrolling:touch}
+.qb-f{flex:none;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border)}
+.qb-card{background:var(--bg);border-radius:16px;padding:14px;margin-bottom:14px}
+.qb-big{font-size:26px;font-weight:700;letter-spacing:-.3px;margin:2px 0 4px}
+.qb-edit{display:flex;align-items:center;gap:6px;margin-top:8px}.qb-edit span{color:var(--text-secondary)}
+.qb-st{font-size:12px;margin-top:6px}
+.qb-sec{font-size:12px;color:var(--text-secondary);margin:4px 2px 4px;text-transform:uppercase;letter-spacing:.4px}
 .qrx-ver{font-size:10px;color:var(--text-secondary);text-align:center;margin-top:8px}
 .sidebar.collapsed .qrx-ver{display:none}
 .sidebar-nav{overflow-x:hidden}
@@ -3593,7 +3608,7 @@ function openForm(p){
    +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
    +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v33 · menu)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v34 · hạn mức mới)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
@@ -3788,25 +3803,44 @@ function openSettle(){
     }catch(e){}
   };
   function openBudget(){
-    const b=budgets(), sp=spent(), m=Number(ymNow().slice(5))+'/'+ymNow().slice(0,4);
-    const row=(id,name,limit,used)=>{const p=limit>0?used/limit*100:0; return '<div class="qb-row"><div class="qb-top"><b>'+esc(name)+'</b><span>'+esc(fmt(used))+(limit>0?' / '+esc(fmt(limit)):'')+'</span></div><input data-b="'+esc(id)+'" inputmode="numeric" placeholder="Hạn mức tháng (đ), để trống nếu không đặt" value="'+(limit>0?limit.toLocaleString('vi-VN'):'')+'" style="margin-top:6px">'+(limit>0?'<div class="qb-bar"><i style="width:'+Math.min(100,p)+'%;background:'+color(p)+'"></i></div>':'')+'</div>';};
-    const sh=overlay('<h3>Hạn mức chi tiêu · tháng '+m+'</h3><div class="qrx-note" style="margin-top:0">Tính theo ngày tạo khoản chi. App nhắc khi đạt 80% và khi vượt 100% hạn mức.</div>'
-      +row('total','Tổng cả tháng',b.total,sp.total)+STATE.categories.map(c=>row(c.id,c.name,Number(b.cats[c.id])||0,sp.by[c.id]||0)).join('')
-      +'<div class="qrx-row"><button class="qrx-btn" id="qbX">Đóng</button><button class="qrx-btn p" id="qbS">Lưu hạn mức</button></div>');
-    sh.querySelectorAll('input[data-b]').forEach(i=>i.oninput=()=>{const n=num(i.value); i.value=n?n.toLocaleString('vi-VN'):'';});
-    sh.querySelector('#qbX').onclick=close;
-    sh.querySelector('#qbS').onclick=async()=>{
-      const nb={total:0,cats:{}};
-      sh.querySelectorAll('input[data-b]').forEach(i=>{const v=num(i.value); if(i.dataset.b==='total') nb.total=v; else if(v>0) nb.cats[i.dataset.b]=v;});
-      STATE.settings.budgets=nb; close();
-      try{ await saveSettings(); showToast('Đã lưu hạn mức'); }catch(e){ showToast('Lưu hạn mức thất bại'); }
-      localStorage.removeItem('qrx_bud'); window.qrxCheckBudget(true);
+    const b0=budgets(), sp=spent(), m=Number(ymNow().slice(5))+'/'+ymNow().slice(0,4);
+    const draft={total:b0.total,cats:Object.assign({},b0.cats)};
+    const shown=new Set(STATE.categories.filter(c=>(Number(draft.cats[c.id])||0)>0||(sp.by[c.id]||0)>0).map(c=>c.id));
+    const stat=(u,l)=>{ if(!(l>0)) return {p:0,t:'Chưa đặt hạn mức',c:'var(--text-secondary)'}; const p=u/l*100; return {p,t:(u>l?'Vượt '+fmt(u-l):'Còn '+fmt(l-u))+' · '+Math.round(p)+'%',c:color(p)}; };
+    const val=k=>k==='total'?draft.total:(Number(draft.cats[k])||0);
+    const blk=(k,name,used)=>{ const l=val(k), s=stat(used,l);
+      return '<div class="'+(k==='total'?'qb-card':'qb-row')+'" data-k="'+esc(k)+'"><div class="qb-top"><b>'+esc(name)+'</b><span>Đã chi</span></div>'
+        +(k==='total'?'<div class="qb-big">'+esc(fmt(used))+'</div>':'<div style="font-size:18px;font-weight:600">'+esc(fmt(used))+'</div>')
+        +'<div class="qb-edit"><input inputmode="numeric" placeholder="Đặt hạn mức tháng" value="'+(l>0?l.toLocaleString('vi-VN'):'')+'"><span>đ</span></div>'
+        +'<div class="qb-bar"><i style="width:'+Math.min(100,s.p)+'%;background:'+s.c+'"></i></div><div class="qb-st" style="color:'+s.c+'">'+esc(s.t)+'</div></div>'; };
+    const draw=focus=>{
+      const rest=STATE.categories.filter(c=>!shown.has(c.id));
+      const sh=overlay('<div class="qb-h"><h3>Hạn mức · tháng '+m+'</h3><button class="qb-x" id="qbX" aria-label="Đóng">✕</button></div><div class="qb-body">'
+        +blk('total','Tổng cả tháng',sp.total)+'<div class="qb-sec">Theo danh mục</div>'
+        +STATE.categories.filter(c=>shown.has(c.id)).map(c=>blk(c.id,c.name,sp.by[c.id]||0)).join('')
+        +(rest.length?'<select id="qbAdd" style="margin-top:12px"><option value="">＋ Thêm hạn mức cho danh mục khác...</option>'+rest.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select>':'')
+        +'<div class="qrx-note">Tính theo ngày tạo khoản chi. App nhắc khi đạt 80% và khi vượt 100%.</div></div>'
+        +'<div class="qb-f"><button class="qrx-btn p" id="qbS" style="width:100%">Lưu hạn mức</button></div>');
+      sh.classList.add('qb-sheet');
+      sh.querySelector('#qbX').onclick=close;
+      sh.querySelectorAll('[data-k]').forEach(el=>{ const k=el.dataset.k, inp=el.querySelector('input'); const used=k==='total'?sp.total:(sp.by[k]||0);
+        inp.oninput=()=>{ const n=num(inp.value); inp.value=n?n.toLocaleString('vi-VN'):''; if(k==='total') draft.total=n; else draft.cats[k]=n;
+          const s=stat(used,n); const i=el.querySelector('.qb-bar i'), st=el.querySelector('.qb-st'); i.style.width=Math.min(100,s.p)+'%'; i.style.background=s.c; st.textContent=s.t; st.style.color=s.c; }; });
+      const add=sh.querySelector('#qbAdd'); if(add) add.onchange=()=>{ if(add.value){ shown.add(add.value); draw(add.value); } };
+      if(focus){ const e=sh.querySelector('[data-k="'+focus+'"] input'); if(e){ e.focus(); e.scrollIntoView({block:'center'}); } }
+      sh.querySelector('#qbS').onclick=async()=>{
+        const nb={total:draft.total||0,cats:{}}; Object.keys(draft.cats).forEach(k=>{ if(Number(draft.cats[k])>0) nb.cats[k]=Number(draft.cats[k]); });
+        STATE.settings.budgets=nb; close();
+        try{ await saveSettings(); showToast('Đã lưu hạn mức'); }catch(e){ showToast('Lưu hạn mức thất bại'); }
+        localStorage.removeItem('qrx_bud'); window.qrxCheckBudget(true);
+      };
     };
+    draw();
   }
   const sn=document.querySelector('.nav-item[data-view="stats"]');
   if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
     const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; } c.dataset.qrx='budget';
-    { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/></svg>'; } }
+    { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openBudget();};
     sn.insertAdjacentElement('afterend',c);}
   let t0=0; const iv=setInterval(()=>{ let ok=false; try{ok=STATE.categories.length>0&&!document.getElementById('appShell').classList.contains('hidden');}catch(e){}
@@ -3816,14 +3850,14 @@ function openSettle(){
 (function(){
   const nav=document.querySelector('.sidebar-nav'); if(!nav) return;
   const sv=p=>'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
-  const FIX=[{k:'settle',label:'Quyết toán',svg:sv('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>')},{k:'budget',label:'Hạn mức',svg:sv('<path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/>')}];
+  const FIX=[{k:'settle',label:'Quyết toán',svg:sv('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>')},{k:'budget',label:'Hạn mức',svg:sv('<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>')}];
   const fix=()=>FIX.forEach(f=>{
     const el=nav.querySelector('.nav-item[data-qrx="'+f.k+'"]'); if(!el) return;
     const ni=el.querySelector('.nav-icon'); if(ni&&ni.dataset.qrx!==f.k){ ni.removeAttribute('data-icon'); ni.innerHTML=f.svg; ni.dataset.qrx=f.k; }
     const lb=el.querySelector('.nav-label'); if(lb&&lb.textContent!==f.label){ lb.removeAttribute('data-i18n'); lb.textContent=f.label; }
   });
   fix(); new MutationObserver(fix).observe(nav,{childList:true,subtree:true,characterData:true,attributes:true});
-  const ft=document.querySelector('.sidebar-footer'); if(ft&&!ft.querySelector('.qrx-ver')){ const v=document.createElement('div'); v.className='qrx-ver'; v.textContent='Bản v33'; ft.appendChild(v); }
+  const ft=document.querySelector('.sidebar-footer'); if(ft&&!ft.querySelector('.qrx-ver')){ const v=document.createElement('div'); v.className='qrx-ver'; v.textContent='Bản v34'; ft.appendChild(v); }
 })();
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
