@@ -1930,7 +1930,7 @@ function renderDashboardCharts(){
   chartInstances.category = new Chart(document.getElementById('chartCategory'), {
     type:'bar',
     data:{ labels:catEntries.map(([id])=>catById(id).name), datasets:[{ data:catEntries.map(([,v])=>v), backgroundColor:catEntries.map(([id])=>catById(id).color), borderRadius:6, maxBarThickness:26 }] },
-    options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{ ticks:{color:c.text,font:{size:10}}, grid:{color:c.border} }, y:{ ticks:{color:c.text,font:{size:11}}, grid:{display:false} } }, maintainAspectRatio:false }
+    options:{ onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0]); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{ ticks:{color:c.text,font:{size:10}}, grid:{color:c.border} }, y:{ ticks:{color:c.text,font:{size:11}}, grid:{display:false} } }, maintainAspectRatio:false }
   });
 
   const monthly = {};
@@ -2094,6 +2094,7 @@ function getFilteredExpenses(status){
   if(f.wallet!=='all') list = list.filter(e=>e.walletId===f.wallet);
   if(f.minAmount) list = list.filter(e=>Number(e.amount)>=Number(f.minAmount));
   if(f.maxAmount) list = list.filter(e=>Number(e.amount)<=Number(f.maxAmount));
+  if(f.month) list = list.filter(e=>(e.createdDate||'').slice(0,7)===f.month);
   if(status==='pending' && f.period && f.period!=='all'){
     const t0=todayISO();
     if(f.period==='overdue') list = list.filter(isOverdue);
@@ -2113,6 +2114,7 @@ function getFilteredExpenses(status){
 function listToolbarHTML(status){
   return `
   <div class="list-toolbar">
+    ${window.qrxMonthHTML?window.qrxMonthHTML(status):''}
     <div class="seg-toggle" id="viewModeToggle-${status}">
       <button data-mode="card" class="${STATE.ui.listViewMode==='card'?'active':''}">${iconSVG('grid',14)}</button>
       <button data-mode="table" class="${STATE.ui.listViewMode==='table'?'active':''}">${iconSVG('list',14)}</button>
@@ -2644,7 +2646,7 @@ function renderStats(){
   chartInstances.statsCategory = new Chart(document.getElementById('chartStatsCategory'), {
     type:'doughnut',
     data:{ labels:catEntries.map(([id])=>catById(id).name), datasets:[{ data:catEntries.map(([,v])=>v), backgroundColor:catEntries.map(([id])=>catById(id).color), borderWidth:0 }] },
-    options:{ cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
+    options:{ onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0], inRange); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
   });
 
   const byWal = {}; inRange.forEach(e=>{ byWal[e.walletId]=(byWal[e.walletId]||0)+Number(e.amount||0); });
@@ -3358,6 +3360,26 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qs-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--border);font-size:15px}.qrx-sheet .qs-row input{width:22px;height:22px;padding:0;flex:none}.qs-row .t{flex:1;min-width:0}.qs-row small{display:block;color:var(--text-secondary);font-size:12px}.qs-cat{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text-secondary)}.qs-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 2px 4px}
 .qb-row{padding:10px 2px;border-top:1px solid var(--border)}.qb-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}.qb-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden}.qb-bar i{display:block;height:100%;border-radius:3px}
 .qrx-more{display:none}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.backup-card{border:0;background:var(--bg);text-align:left}
+.backup-card .b-icon{display:none}
+.backup-card h4{font-size:15px}
+.backup-card p{font-size:12.5px}
+.qg{background:var(--bg);border-radius:14px;overflow:hidden;margin-top:12px}
+.qrx-sheet .qg .qr{display:flex;align-items:center;gap:10px;margin:0;padding:0 14px;min-height:46px;font-size:15px;color:var(--text)}
+.qg .qr+.qr{border-top:1px solid var(--border)}
+.qg .qr>span{flex:0 0 auto;color:var(--text-secondary);font-size:14px;max-width:42%}
+.qg .qr>span small{display:block;font-size:11px}
+.qrx-sheet .qg input,.qrx-sheet .qg select{flex:1;min-width:0;border:0;background:transparent;text-align:right;text-align-last:right;padding:11px 0;font-size:16px;border-radius:0;color:var(--text)}
+.qrx-sheet .qg input[type=checkbox]{flex:none;width:22px;height:22px;padding:0;margin-left:auto}
+@media (max-width:820px){
+  .settings-nav{gap:6px;padding:6px;scrollbar-width:none}
+  .settings-nav::-webkit-scrollbar{display:none}
+  .settings-nav button{white-space:nowrap;flex:none;padding:9px 14px;border-radius:999px}
+}
+.qrx-month{display:flex;align-items:center;gap:4px;margin-right:8px}
+.qm-b{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:10px;height:34px;min-width:34px;padding:0 10px;font-size:13px;cursor:pointer}
+.qm-l{font-weight:600;font-size:13px;min-width:92px;text-align:center}
 .sidebar-collapse-btn{height:40px;border:0;border-radius:12px;background:rgba(120,120,128,.12);color:var(--text);font-weight:600;font-size:14px}
 .sidebar-collapse-btn:hover{background:rgba(120,120,128,.2);color:var(--text)}
 .sidebar-collapse-btn:active{background:rgba(120,120,128,.28)}
@@ -3403,6 +3425,8 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
   .hero-actions.more-open{flex-wrap:wrap}
   .hero-btn{height:38px;padding:0 10px;font-size:13px;white-space:nowrap;flex:0 1 auto;min-width:0}
   #heroAddBtn [data-icon]{display:none}
+  .kpi-grid .kpi-card:first-child{display:none}
+  .kpi-grid .kpi-card:last-child{grid-column:1 / -1}
   .expense-card{padding:12px 14px}
   .expense-card .exp-actions{display:none}
   .expense-card .exp-amount{margin:2px 0}
@@ -3607,24 +3631,25 @@ function openForm(p){
   stopCam(); cur=p;
   let app=localStorage.getItem(AKEY); if(!APPS[app]) app='icb';
   const opts=(list,sel)=>list.map(([v,l])=>'<option value="'+esc(v)+'"'+(v===sel?' selected':'')+'>'+esc(l)+'</option>').join('');
-  const sh=overlay('<h3>Thông tin thanh toán</h3>'
-   +'<label>Tên khoản chi</label><input id="qrxName" value="'+esc(p.label||p.name||'')+'" placeholder="VD: Tiền điện">'
-   +'<label>Số tài khoản nhận ('+esc(BANKS[p.bin]?BANKS[p.bin].toUpperCase():'ngân hàng lạ')+')</label><input value="'+esc(p.account)+'" readonly>'
-   +'<label>Số tiền (đ)</label><input id="qrxAmt" inputmode="numeric" value="'+(p.amount?p.amount.toLocaleString('vi-VN'):'')+'">'
-   +'<label>Nội dung chuyển khoản</label><input id="qrxMsg" value="'+esc(p.content||'')+'">'
-   +(p.content?'<div class="qrx-note">QR này có sẵn nội dung — nên giữ nguyên để người nhận đối soát. "Tên khoản chi" ở trên là ghi chú riêng của bạn, sửa thoải mái.</div>':'')
-   +'<label>Danh mục (để trống = tự phân loại)</label><select id="qrxCat"></select>'
-   +'<label>Thanh toán bằng</label><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select>'
-   +(p.id?'':'<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" id="qrxSave" style="width:auto"> Lưu người nhận</label><div id="qrxSaveBox" style="display:none"><label>Tên người nhận (để nhớ)</label><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></div>')
+  const sh=overlay('<h3>Thông tin thanh toán</h3><div class="qg">'
+   +'<label class="qr"><span>Tên khoản chi</span><input id="qrxName" value="'+esc(p.label||p.name||'')+'" placeholder="VD: Tiền điện"></label>'
+   +'<div class="qr"><span>Tài khoản nhận<small>'+esc(BANKS[p.bin]?BANKS[p.bin].toUpperCase():'ngân hàng lạ')+'</small></span><input value="'+esc(p.account)+'" readonly></div>'
+   +'<label class="qr"><span>Số tiền (đ)</span><input id="qrxAmt" inputmode="numeric" placeholder="0" value="'+(p.amount?p.amount.toLocaleString('vi-VN'):'')+'"></label>'
+   +'<label class="qr"><span>Nội dung CK</span><input id="qrxMsg" placeholder="Không bắt buộc" value="'+esc(p.content||'')+'"></label></div>'
+   +(p.content?'<div class="qrx-note">QR này có sẵn nội dung — nên giữ nguyên để người nhận đối soát. "Tên khoản chi" là ghi chú riêng của bạn, sửa thoải mái.</div>':'')
+   +'<div class="qg"><label class="qr"><span>Danh mục</span><select id="qrxCat"></select></label>'
+   +'<label class="qr"><span>Thanh toán bằng</span><select id="qrxApp">'+opts(Object.keys(APPS).map(k=>[k,APPS[k]]),app)+'</select></label>'
+   +(p.id?'':'<label class="qr"><span>Lưu người nhận</span><input type="checkbox" id="qrxSave"></label><label class="qr" id="qrxSaveBox" style="display:none"><span>Tên để nhớ</span><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></label>')
+   +'</div><div class="qrx-note" style="margin-top:6px">Danh mục để trống thì app tự phân loại.</div>'
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v35 · tổng quan, hệ thống)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v38 · giao diện nhóm)</div>');
   const $=s=>sh.querySelector(s);
   let touched=false;
   const catOpts=sel=>'<option value="">— Chọn danh mục (hoặc để tự phân loại) —</option>'+STATE.categories.map(c=>'<option value="'+esc(c.id)+'"'+(c.id===sel?' selected':'')+'>'+esc(c.name)+'</option>').join('');
   const suggest=()=>{ if(touched) return; $('#qrxCat').innerHTML=catOpts(confident($('#qrxName').value+' '+$('#qrxMsg').value,p)||''); };
   suggest(); $('#qrxCat').onchange=()=>{touched=true;};
   ['#qrxName','#qrxMsg'].forEach(x=>$(x).addEventListener('change',suggest));
-  if($('#qrxSave')) $('#qrxSave').onchange=e=>{$('#qrxSaveBox').style.display=e.target.checked?'block':'none';};
+  if($('#qrxSave')) $('#qrxSave').onchange=e=>{$('#qrxSaveBox').style.display=e.target.checked?'flex':'none';};
   const read=()=>Object.assign(cur,{label:$('#qrxName').value.trim(),amount:num($('#qrxAmt').value),content:$('#qrxMsg').value.trim()});
   $('#qrxAmt').oninput=e=>{const n=num(e.target.value);e.target.value=n?n.toLocaleString('vi-VN'):'';};
   $('#qrxCp').onclick=()=>{read();navigator.clipboard&&navigator.clipboard.writeText(cur.account+' | '+cur.amount+' | '+noAccent(cur.content)).then(()=>showToast('Đã sao chép: STK | số tiền | nội dung'));};
@@ -3861,6 +3886,17 @@ function openSettle(){
   { const kg=document.querySelector('.kpi-grid'), kp=document.getElementById('kpiPending');
     if(kg&&kp){ const h=document.createElement('div'); h.id='qrxBudCard'; h.className='qrx-bud'; kg.insertAdjacentElement('afterend',h);
       new MutationObserver(renderBudCard).observe(kp,{childList:true,characterData:true,subtree:true}); renderBudCard(); } }
+  { const el=document.querySelector('.insight-text');
+    if(el){ const apply=()=>{ try{
+        const bd=budgets(), sp=spent(), its=[];
+        if(bd.total>0) its.push({n:'Tổng chi tiêu tháng',u:sp.total,l:bd.total});
+        STATE.categories.forEach(c=>{const l=Number(bd.cats[c.id])||0; if(l>0) its.push({n:c.name,u:sp.by[c.id]||0,l});});
+        const w=its.map(i=>Object.assign(i,{p:i.u/i.l*100})).filter(i=>i.p>=80).sort((a,b)=>b.p-a.p)[0];
+        if(!w) return;
+        const html='<b style="color:'+color(w.p)+'">'+esc(w.n)+'</b> '+(w.p>=100?'đã vượt hạn mức ('+Math.round(w.p)+'%)':'đã dùng '+Math.round(w.p)+'% hạn mức')+': '+esc(fmt(w.u))+' / '+esc(fmt(w.l))+'.';
+        if(el.dataset.qb!==html||el.innerHTML!==html){ el.dataset.qb=html; el.innerHTML=html; }
+      }catch(e){} };
+      new MutationObserver(apply).observe(el,{childList:true,characterData:true,subtree:true}); apply(); } }
   const sn=document.querySelector('.nav-item[data-view="stats"]');
   if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
     const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; } c.dataset.qrx='budget';
@@ -3884,7 +3920,7 @@ function openSettle(){
 })();
 /* Cài đặt → Thông tin hệ thống */
 (function(){
-  window.QRX_VER='v35';
+  window.QRX_VER='v38';
   const nav=document.getElementById('settingsNav'), last=document.getElementById('panel-recurring'); if(!nav||!last) return;
   const btn=document.createElement('button'); btn.dataset.panel='sysinfo'; btn.textContent='Thông tin hệ thống'; nav.appendChild(btn);
   const pn=document.createElement('div'); pn.className='settings-panel hidden'; pn.id='panel-sysinfo'; last.insertAdjacentElement('afterend',pn);
@@ -3902,6 +3938,32 @@ function openSettle(){
     pn.querySelector('#qsysR').onclick=async()=>{ try{ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){} location.reload(); };
   };
   btn.addEventListener('click',render);
+})();
+/* Lọc theo tháng trong danh sách + bấm biểu đồ danh mục để xem khoản chi */
+window.qrxMonthHTML=status=>{ const m=STATE.ui.filters.month||''; const lb=m?Number(m.slice(5))+'/'+m.slice(0,4):'Tất cả tháng';
+  return '<div class="qrx-month" data-status="'+status+'"><button class="qm-b" data-m="-1" aria-label="Tháng trước">‹</button><span class="qm-l">'+lb+'</span><button class="qm-b" data-m="1" aria-label="Tháng sau">›</button>'+(m?'<button class="qm-b" data-m="all">Tất cả</button>':'')+'</div>'; };
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.qrx-month [data-m]'); if(!b) return;
+  const st=b.closest('.qrx-month').dataset.status, f=STATE.ui.filters, m=b.dataset.m;
+  if(m==='all') f.month=''; else { const base=f.month||todayISO().slice(0,7), [y,mo]=base.split('-').map(Number), d=new Date(y,mo-1+Number(m),1); f.month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+  renderListView(st,true); });
+window.qrxCatList=function(catId,list){
+  const cat=catById(catId), items=(list||STATE.expenses).filter(e=>e.categoryId===catId).sort((a,b)=>String(b.createdDate).localeCompare(String(a.createdDate)));
+  const total=items.reduce((s,e)=>s+Number(e.amount||0),0), shown=items.slice(0,50);
+  const rows=shown.map(e=>{const st=e.paid?'Đã thanh toán':(isOverdue(e)?'Quá hạn':'Chưa thanh toán');
+    return '<button class="qrx-btn" data-id="'+esc(e.id)+'" style="text-align:left;width:100%;margin-top:8px"><b>'+esc(e.name)+'</b><br><span style="font-size:13px;color:var(--text-secondary)">'+esc(formatCurrency(e.amount))+' · '+esc((e.createdDate||'').split('-').reverse().join('/'))+' · '+st+'</span></button>';}).join('');
+  const sh=overlay('<h3>'+esc(cat.name)+'</h3><div class="qrx-note" style="margin:0 0 4px">'+items.length+' khoản · tổng '+esc(formatCurrency(total))+(items.length>50?' (hiện 50 khoản mới nhất)':'')+'</div>'+rows+'<div class="qrx-row"><button class="qrx-btn" id="qcX">Đóng</button></div>');
+  sh.querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>{close(); openExpenseDrawer(b.dataset.id);});
+  sh.querySelector('#qcX').onclick=close;
+};
+/* Sao lưu, Cài đặt, trợ năng */
+(function(){
+  const bd=document.querySelector('#view-backup .panel-title-sub');
+  if(bd){ bd.removeAttribute('data-i18n'); bd.textContent='Dữ liệu được lưu trên tài khoản của bạn (đám mây) và đồng bộ giữa các thiết bị. File sao lưu là bản dự phòng bạn tự giữ.'; }
+  const sn=document.getElementById('settingsNav');
+  if(sn) sn.addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setTimeout(()=>b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'}),60); });
+  const names={menuBtn:'Mở menu',quickAddBtn:'Thêm khoản chi'};
+  const fix=()=>document.querySelectorAll('button:not([aria-label])').forEach(b=>{ if(b.textContent.trim()) return; const l=names[b.id]||b.title; if(l) b.setAttribute('aria-label',l); });
+  fix(); let t; new MutationObserver(()=>{clearTimeout(t); t=setTimeout(fix,400);}).observe(document.body,{childList:true,subtree:true});
 })();
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
