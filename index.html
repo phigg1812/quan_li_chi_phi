@@ -3365,7 +3365,7 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qd-col{display:flex;flex-direction:column;gap:20px;min-width:0}
 #qrxTools{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 #qdAlert{display:none;grid-column:1 / -1;padding:10px 14px;border-radius:14px;background:var(--danger-soft);color:var(--danger);font-weight:600;font-size:14px;cursor:pointer}
-@media (max-width:820px){#qrxDash{grid-template-columns:1fr;gap:16px}.qd-col{display:contents}#qdAlert{order:0}#qdB{order:1}#qdD{order:2}#qdC{order:3}#qdA{order:4}#qrxTools{order:5}}
+@media (max-width:820px){#qrxDash{grid-template-columns:1fr;gap:16px}.qd-col{display:contents}#qdAlert{order:0}#qdB{order:1}#qdD{order:2}#qdC{order:3}#qdA{order:4}#qdE{order:5}}
 .qd-ok{padding:3px 9px;border-radius:10px;background:var(--success-soft);color:var(--success);font-size:12px;font-weight:600}
 .qd-sec{padding:10px 16px 2px;font-size:12px;font-weight:600;color:var(--text-secondary);letter-spacing:.4px;border-top:1px solid var(--border)}
 .qd-fc{margin:10px 16px 0;padding:10px 12px;border-radius:12px;font-size:13px}
@@ -3387,8 +3387,8 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qd-big{font-size:30px;font-weight:700;letter-spacing:-.5px;margin:2px 16px 0}
 .qd-stats{display:flex;gap:10px;padding:14px 16px 0}.qd-stats>div{flex:1}.qd-stats .l{font-size:12px;color:var(--text-secondary)}.qd-stats .v{font-size:15px;font-weight:600;margin-top:2px}
 .qd-warn{margin:14px 16px 16px;padding:10px 12px;border-radius:12px;background:var(--warning-soft);font-size:13px}
-#qrxTools .hero-btn{background:transparent;color:var(--primary);border:0;height:auto;padding:8px 10px;font-size:13px;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-#qrxTools .hero-btn:hover{background:var(--primary-soft)}
+#qrxExcel .hero-btn{background:var(--primary-soft);color:var(--primary);border:0;height:40px;padding:0 14px;font-size:14px;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;white-space:nowrap;flex:0 0 auto}
+#qrxExcel .hero-btn:hover{filter:brightness(.97)}
 button:focus-visible,a:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
 .qg .qr:focus-within{background:rgba(0,98,214,.06)}
@@ -3673,7 +3673,7 @@ function openForm(p){
    +(p.id?'':'<label class="qr"><span>Lưu người nhận</span><input type="checkbox" id="qrxSave"></label><label class="qr" id="qrxSaveBox" style="display:none"><span>Tên để nhớ</span><input id="qrxPN" value="'+esc(p.name||'')+'" placeholder="VD: Chị Lan - tiền nhà"></label>')
    +'</div><div class="qrx-note" style="margin-top:6px">Danh mục để trống thì app tự phân loại.</div>'
    +'<div class="qrx-row"><button class="qrx-btn" id="qrxCp">Sao chép</button><button class="qrx-btn p" id="qrxGo">Mở app &amp; thanh toán</button></div>'
-   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v42 · tổng quan hai cột)</div>');
+   +'<div class="qrx-note">Hãy đối chiếu tên người nhận trong app ngân hàng trước khi xác nhận. (bản QR v43 · tách Sắp đến hạn)</div>');
   const $=s=>sh.querySelector(s);
   sh.addEventListener('focusin',e=>{ const t=e.target; if(t&&t.scrollIntoView) setTimeout(()=>t.scrollIntoView({block:'center',behavior:'smooth'}),350); });
   let touched=false;
@@ -3915,10 +3915,10 @@ function openSettle(){
   const mShift=k=>{const [y,m]=ymNow().split('-').map(Number), d=new Date(y,m-1+k,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
   const short=v=>v>=1e6?(v/1e6).toFixed(1).replace('.',',').replace(',0','')+'tr':Math.round(v/1000)+'k';
   function renderDash(){
-    const A=document.getElementById('qdA'), B=document.getElementById('qdB'), C=document.getElementById('qdC'), D=document.getElementById('qdD'); if(!A) return;
+    const A=document.getElementById('qdA'), B=document.getElementById('qdB'), C=document.getElementById('qdC'), D=document.getElementById('qdD'), E=document.getElementById('qdE'); if(!A) return;
     const b=budgets(), sp=spentOf(ymNow()), pv=spentOf(mShift(-1)), m=Number(ymNow().slice(5)), y=Number(ymNow().slice(0,4));
     const unp=STATE.expenses.filter(e=>!e.paid), by=(x,z)=>dayOf(x)-dayOf(z);
-    const act=unp.filter(e=>dayOf(e)<=7).sort(by), soon=unp.filter(e=>dayOf(e)>7&&dayOf(e)<=30).sort(by).slice(0,3), overdue=unp.filter(e=>dayOf(e)<0).length;
+    const act=unp.filter(e=>dayOf(e)<=7).sort(by), soonAll=unp.filter(e=>dayOf(e)>7&&dayOf(e)<=30).sort(by), soon=soonAll.slice(0,5), overdue=unp.filter(e=>dayOf(e)<0).length;
     const al=document.getElementById('qdAlert'); if(al){ al.style.display=overdue?'block':'none'; al.textContent=overdue+' khoản quá hạn · Xem'; }
     const tot=act.reduce((s,e)=>s+(Number(e.amount)||0),0);
     const sub=e=>{const n=dayOf(e); return n<0?['Quá hạn '+(-n)+' ngày','var(--danger)']:n===0?['Đến hạn hôm nay','var(--warning)']:['Hạn '+ddmm(e)+' · còn '+n+' ngày','var(--text-secondary)'];};
@@ -3929,8 +3929,11 @@ function openSettle(){
         return '<div class="qd-row" data-c="'+esc(k)+'" style="display:block"><div style="display:flex;justify-content:space-between;font-size:14px"><span>'+esc(c.name)+(d===null||d===0?'':' <span class="'+(d>0?'up':'dn')+'">'+(d>0?'▲ ':'▼ ')+Math.abs(d)+'%</span>')+'</span><b>'+esc(fmt(u))+'</b></div><div class="qb-bar"><i style="width:'+Math.round(u/scale*100)+'%;background:'+(l>0?color(u/l*100):'var(--primary)')+'"></i>'+(l>0?'<u style="left:'+Math.min(99.5,l/scale*100)+'%"></u>':'')+'</div></div>';}).join(''):'<div class="qd-empty">Chưa có chi tiêu trong tháng này.</div>');
     C.querySelectorAll('[data-c]').forEach(r=>r.onclick=()=>{ if(window.qrxCatList) window.qrxCatList(r.dataset.c); });
     A.innerHTML='<div class="qd-head"><h2>Cần xử lý</h2>'+(act.length?'<span style="color:var(--danger);font-weight:600">'+esc(fmt(tot))+'</span>':'<span class="qd-ok">Ổn rồi</span>')+'</div>'
-      +(act.length?act.slice(0,3).map(e=>row(e,1)).join(''):'<div class="qd-empty">Không có khoản quá hạn hoặc đến hạn trong 7 ngày tới.</div>'+(soon.length?'<div class="qd-sec">SẮP TỚI</div>'+soon.map(e=>row(e,0)).join(''):''))
+      +(act.length?act.slice(0,3).map(e=>row(e,1)).join(''):'<div class="qd-empty">Không có khoản quá hạn hoặc đến hạn trong 7 ngày tới.</div>')
       +(unp.length?'<a class="qd-link" id="qdAll">Xem tất cả '+unp.length+' khoản chưa thanh toán ›</a>':'');
+    if(E){ E.style.display=soon.length?'':'none';
+      E.innerHTML='<div class="qd-head"><h2>Sắp đến hạn</h2><span class="qrx-note" style="margin:0">30 ngày tới · '+esc(fmt(soonAll.reduce((s,e)=>s+(Number(e.amount)||0),0)))+'</span></div>'+soon.map(e=>row(e,0)).join('')+(soonAll.length>5?'<div class="qd-empty" style="padding:10px 16px">và '+(soonAll.length-5)+' khoản khác</div>':'');
+      E.querySelectorAll('.qd-row').forEach(r=>r.onclick=()=>openExpenseDrawer(r.dataset.id)); }
     A.querySelectorAll('.qd-row').forEach(r=>r.onclick=e=>{ if(e.target.closest('.qd-pay')) return; openExpenseDrawer(r.dataset.id); });
     A.querySelectorAll('.qd-pay').forEach(x=>x.onclick=()=>payRow(x.dataset.pay));
     const lk=A.querySelector('#qdAll'); if(lk) lk.onclick=()=>switchView('pending');
@@ -3957,9 +3960,12 @@ function openSettle(){
   { const sec=document.getElementById('view-dashboard');
     if(sec&&sec.firstElementChild){
       sec.firstElementChild.classList.add('qd-keep');
-      const host=document.createElement('div'); host.id='qrxDash'; host.innerHTML='<a id="qdAlert"></a><div class="qd-col"><div class="qd-card" id="qdC"></div><div class="qd-card" id="qdA"></div></div><div class="qd-col"><div class="qd-card" id="qdB"></div><div class="qd-card" id="qdD"></div></div><div id="qrxTools"></div>'; host.querySelector('#qdAlert').onclick=()=>switchView('pending');
+      const host=document.createElement('div'); host.id='qrxDash'; host.innerHTML='<a id="qdAlert"></a><div class="qd-col"><div class="qd-card" id="qdC"></div><div class="qd-card" id="qdA"></div><div class="qd-card" id="qdE"></div></div><div class="qd-col"><div class="qd-card" id="qdB"></div><div class="qd-card" id="qdD"></div></div>'; host.querySelector('#qdAlert').onclick=()=>switchView('pending');
       sec.firstElementChild.insertAdjacentElement('afterend',host);
-      const tl=host.querySelector('#qrxTools'); ['heroExportBtn','heroImportBtn','heroBackupBtn'].forEach(id=>{const x=document.getElementById(id); if(x) tl.appendChild(x);});
+      { const bv=document.getElementById('view-backup'), ex=document.getElementById('heroExportBtn'), im=document.getElementById('heroImportBtn');
+        if(bv&&ex&&im){ const c=document.createElement('div'); c.id='qrxExcel'; c.style.cssText='background:var(--card);border-radius:var(--radius);padding:16px;margin-top:16px;box-shadow:var(--shadow-sm)';
+          c.innerHTML='<h3 style="margin:0 0 4px;font-size:16px">Excel</h3><div class="qrx-note" style="margin:0 0 10px">Xuất toàn bộ khoản chi ra file Excel hoặc nhập từ file Excel.</div><div style="display:flex;gap:8px;flex-wrap:wrap"></div>';
+          c.lastChild.append(ex,im); bv.appendChild(c); } }
       const _r=window.renderCurrentView; if(typeof _r==='function') window.renderCurrentView=function(){ const r=_r.apply(this,arguments); try{renderDash();}catch(e){} return r; };
       renderDash();
     } }
@@ -3997,7 +4003,7 @@ function openSettle(){
 })();
 /* Cài đặt → Thông tin hệ thống */
 (function(){
-  window.QRX_VER='v42';
+  window.QRX_VER='v43';
   const nav=document.getElementById('settingsNav'), last=document.getElementById('panel-recurring'); if(!nav||!last) return;
   const btn=document.createElement('button'); btn.dataset.panel='sysinfo'; btn.textContent='Thông tin hệ thống'; nav.appendChild(btn);
   const pn=document.createElement('div'); pn.className='settings-panel hidden'; pn.id='panel-sysinfo'; last.insertAdjacentElement('afterend',pn);
