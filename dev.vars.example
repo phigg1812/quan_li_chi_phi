@@ -1,0 +1,6 @@
+# Chỉ dùng khi chạy thử trên máy (npm run dev). Sao chép thành .dev.vars rồi điền giá trị.
+# KHÔNG đưa file .dev.vars lên GitHub (đã nằm trong .gitignore).
+USERS=Bố=123456:admin;Mẹ=654321
+ANTHROPIC_API_KEY=
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=

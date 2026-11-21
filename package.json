@@ -1,0 +1,19 @@
+{
+  "name": "so-don-hang",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "vapid": "node scripts/vapid.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check-backup": "node scripts/check-backup.mjs"
+  },
+  "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.163.0"
+  },
+  "private": true,
+  "type": "module"
+}
