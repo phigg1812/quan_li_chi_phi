@@ -272,9 +272,6 @@ main { padding-top: 4px; }
 }
 .top-brand .logo { background: transparent !important; border: 0 !important; filter: none !important; border-radius: 0 !important; object-fit: contain; }
 @media (max-width: 999px) {
-  .top-brand .titles:has(small:not(:empty)) { display: flex; flex-direction: column-reverse; }
-  .top-brand .titles:has(small:not(:empty)) small { font-size: 1.2rem; font-weight: 800; color: var(--ink); line-height: 1.12; margin: 0 0 2px; letter-spacing: -.01em; }
-  .top-brand .titles:has(small:not(:empty)) strong { font-size: .82rem; font-weight: 500; color: var(--mut); }
   .v3-card .acts { gap: 6px; }
   .v3-card .acts .b { white-space: nowrap; font-size: .84rem; gap: 5px; padding: 4px; }
   .v3-card .acts .b .ic { width: 18px; height: 18px; }
@@ -283,3 +280,73 @@ main { padding-top: 4px; }
   .v3-finance .important strong { font-size: 1.25rem; }
   .v3-finance b { font-size: 1.1rem; }
 }
+
+/* ===== v5.2 ===== */
+/* Mobile: tiêu đề trên in đậm, tên tiệm dưới bình thường; căn trái sát lề */
+.app-top { padding-left: 16px; padding-right: 14px; }
+.top-brand .titles strong { font-size: 1.2rem; font-weight: 800; color: var(--ink); line-height: 1.15; white-space: nowrap; }
+.top-brand .titles small { font-size: .92rem; font-weight: 400; color: var(--mut); margin-top: 2px; }
+.top-brand .logo { width: 64px; height: 44px; margin-left: -2px; }
+.top-brand { flex: 1; }
+/* Cuộn: để iOS tự nảy ở đầu/chân trang; chỉ cắt tràn ngang ở #app */
+html, body { overflow-x: visible !important; overscroll-behavior-y: auto; }
+#app { overflow-x: clip; }
+/* Nút liền nhau trong thẻ: có khoảng thở */
+.box > .btn + .btn, .group + .btn, .btn + .btn { margin-top: 14px; }
+.share-qr { display: block; margin: 12px auto 14px; max-width: 100%; height: auto; }
+.share-link { word-break: break-all; margin: 0 0 18px; }
+.btn.primary { box-shadow: 0 4px 12px rgba(31, 138, 91, .22); }
+@media (min-width: 1000px) {
+  .app-top { padding: 28px 40px 14px; }
+  .top-brand .titles strong { font-size: 2.1rem; }
+  .top-brand .titles small { font-size: 1.15rem; }
+  /* thanh bên: logo + tên căn trái, bỏ khoảng trắng thừa */
+  .nav { padding-top: 18px; }
+  .side-brand { flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; padding: 0 6px 22px 4px; text-align: left; }
+  .side-brand img { width: 84px; flex: none; }
+  .side-brand strong { font-size: 1.2rem; line-height: 1.18; font-weight: 800; }
+}
+
+/* ===== v5.3 — sửa theo rà soát UI ===== */
+.top-brand { min-width: 0; }
+.top-brand .titles { min-width: 0; }
+.top-brand .titles strong, .top-brand .titles small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top-actions { flex: none; }
+@media (max-width: 999px) {
+  .top-brand .logo { width: 56px; height: 40px; }
+  .top-brand .titles strong { font-size: 1.05rem; }
+  .top-brand .titles small { font-size: .85rem; }
+  .top-icon, .bell { width: 40px; height: 40px; min-width: 40px; }
+  .top-icon .ic { width: 20px; height: 20px; }
+}
+.order-info .when { color: var(--red); }
+.nav button { color: var(--mut); }
+.nav button.on { color: var(--gd); }
+.crow a { background: var(--fill); color: var(--ink); border-radius: 14px; font-weight: 700; }
+.crow a .ic { color: var(--g); }
+.tchip { white-space: nowrap; }
+.side-lily { -webkit-mask-image: linear-gradient(to right, #000 62%, transparent 98%); mask-image: linear-gradient(to right, #000 62%, transparent 98%); }
+@media (min-width: 1000px) and (max-width: 1500px) {
+  .q-grid { grid-template-columns: 132px minmax(0, .8fr) minmax(0, 1.25fr) 244px; gap: 0 18px; }
+  .order-cover { width: 132px; height: 132px; }
+  .q-mid { padding-left: 18px; gap: 8px; }
+  .q-line { font-size: 1rem; gap: 10px; }
+  .q-line span { white-space: nowrap; }
+  .tchip { padding: 3px 10px; font-size: .95rem; }
+  .q-owe { font-size: .95rem; padding: 10px 12px; }
+  .q-owe strong { font-size: 1.25rem; }
+  .order-info .who { font-size: 1.4rem; }
+  .tool { height: 64px; }
+  .q-side .b { height: 56px; font-size: 1.08rem; }
+}
+@media (max-width: 400px) {
+  .top-brand { gap: 6px; }
+  .top-brand .logo { width: 48px; height: 34px; }
+  .top-brand .titles strong { font-size: .95rem; }
+  .top-brand .titles small { font-size: .8rem; }
+  .top-actions { gap: 6px; }
+  .top-icon, .bell { width: 38px; height: 38px; min-width: 38px; }
+  .app-top { padding-left: 12px; padding-right: 10px; }
+}
+.stat-deco { max-width: 34%; height: 100%; right: -2px; bottom: -4px; opacity: .95; }
+.stat.c-p span { position: relative; z-index: 2; }

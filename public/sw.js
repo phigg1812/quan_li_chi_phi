@@ -1,6 +1,6 @@
 // Service worker: (1) lưu giao diện để mở được khi mất mạng, (2) nhận thông báo đẩy và mở đúng đơn
-const CACHE = 'qc-shell-v50';
-const SHELL = ['/', '/index.html', '/app.js?v=49', '/core.js?v=49', '/style.css?v=48', '/ui-v5.css?v=2', '/logo-qc.png?v=1', '/deco-lily.png?v=1', '/deco-bouquet.png?v=1', '/manifest.webmanifest', '/icon-192.png?v=qc3', '/icon-512.png?v=qc3', '/icon-180.png?v=qc3', '/favicon-64.png?v=qc4', '/favicon-192.png?v=qc4', '/dat-hoa.html', '/dat-hoa.js?v=4'];
+const CACHE = 'qc-shell-v51';
+const SHELL = ['/', '/index.html', '/app.js?v=50', '/core.js?v=49', '/style.css?v=48', '/ui-v5.css?v=6', '/logo-qc.png?v=1', '/deco-lily.png?v=1', '/deco-bouquet.png?v=1', '/manifest.webmanifest', '/icon-192.png?v=qc3', '/icon-512.png?v=qc3', '/icon-180.png?v=qc3', '/favicon-64.png?v=qc4', '/favicon-192.png?v=qc4', '/dat-hoa.html', '/dat-hoa.js?v=4'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => Promise.all(SHELL.map((u) => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));

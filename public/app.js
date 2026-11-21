@@ -363,8 +363,8 @@ function render() {
   $$('.nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === S.tab));
   const ti = TABS.indexOf(S.tab); $('.nav').style.setProperty('--i', ti); $('.nav').style.setProperty('--s', ti >= 2 ? ti + 1 : ti); // ô giữa dành cho nút nói
   TABS.forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== S.tab));
-  $('#topTitle').textContent = S.tab === 'orders' ? 'Quản lý đơn hàng' : TAB_TITLE[S.tab];
-  $('#topSubtitle').textContent = S.tab === 'orders' ? 'Tiệm Hoa Quý Cảnh' : '';
+  $('#topTitle').textContent = 'Quản lý đơn hàng'; // đầu trang giữ nguyên ở mọi tab, tên tab đã có ở thanh dưới
+  $('#topSubtitle').textContent = 'Tiệm Hoa Quý Cảnh';
   $('#searchToggle').classList.toggle('hidden', S.tab !== 'orders');
   $('#addBtn').classList.toggle('hidden', S.tab !== 'orders');
   $('#banner').classList.toggle('hidden', S.tab !== 'orders');
@@ -786,7 +786,7 @@ function openShopInfo() {
 function openShareQR() {
   const link=location.origin+'/dat-hoa.html';
   const qr='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(link);
-  pushSheet({title:'Mã QR đặt hoa',live:false,render:()=>`<div class="box" style="text-align:center"><p>Khách quét mã để tự gửi yêu cầu đặt hoa</p><img class="share-qr" src="${qr}" alt="QR đặt hoa"><p class="hint">${esc(link)}</p><a class="btn primary" href="${qr}" download="qr-dat-hoa.png" target="_blank" rel="noopener">Xem / lưu ảnh QR</a><button class="btn" data-act="copylink">Sao chép link đặt hoa</button></div>`});
+  pushSheet({title:'Mã QR đặt hoa',live:false,render:()=>`<div class="box" style="text-align:center"><p>Khách quét mã để tự gửi yêu cầu đặt hoa</p><img class="share-qr" src="${qr}" alt="QR đặt hoa"><p class="hint share-link">${esc(link)}</p><a class="btn primary" href="${qr}" download="qr-dat-hoa.png" target="_blank" rel="noopener">Xem / lưu ảnh QR</a><button class="btn" data-act="copylink">Sao chép link đặt hoa</button></div>`});
 }
 function openExportV3() {
   if(!S.user.admin)return toast('Chỉ quản trị viên được xuất dữ liệu');
