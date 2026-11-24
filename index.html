@@ -33,7 +33,7 @@
   } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-    collection, doc, getDocs, setDoc, deleteDoc, writeBatch
+    collection, doc, getDocs, setDoc, deleteDoc, writeBatch, runTransaction
   } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -55,7 +55,7 @@
 
   window.FB = {
     app, auth, db, googleProvider, currentUser: null,
-    collection, doc, getDocs, setDoc, deleteDoc, writeBatch,
+    collection, doc, getDocs, setDoc, deleteDoc, writeBatch, runTransaction,
     EmailAuthProvider, linkWithCredential, updatePassword, updateProfile
   };
 
@@ -1206,6 +1206,10 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
                 <div class="theme-opt dark" data-theme-opt="dark"><div class="swatch"></div></div>
               </div>
             </div>
+            <div class="settings-row envelope-import-row">
+              <div><div class="s-label">Sổ phong bì</div><div class="s-sub">Thêm các khoản từ tệp JSON đã đối soát.</div></div>
+              <button class="btn" id="envelopeImport" type="button" disabled>Nhập tệp phong bì</button>
+            </div>
           </div>
 
           <div class="settings-panel hidden" id="panel-categories">
@@ -1680,6 +1684,7 @@ async function loadAllState(){
   STATE.expenses = expenses;
   STATE.envelopes = envelopes || [];
   STATE.envelopesUnavailable = envelopes===null;
+  document.getElementById('envelopeImport').disabled = STATE.envelopesUnavailable;
   STATE.categories = categories;
   STATE.wallets = wallets;
   STATE.paymentMethods = paymentMethods;
@@ -3569,6 +3574,24 @@ body{max-width:100vw;touch-action:manipulation}
 .envelope-error{color:var(--danger);margin-top:12px}
 .main-content:has(#view-envelopes.active)>.qrx-large{display:none}
 @media(max-width:640px){.envelope-list{grid-template-columns:1fr}.envelope-card,.envelope-totals>div{padding:12px}}
+.envelope-groups { display: flex; flex-wrap: wrap; gap: 8px; border: 0; margin-block: 12px; }
+.envelope-groups legend { padding-bottom: 6px; font-weight: 600; }
+.envelope-groups label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 7px;
+  padding: 6px 11px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.envelope-groups label:has(input:checked) { background: var(--primary-soft); border-color: var(--primary); }
+.envelope-groups input { accent-color: var(--primary); }
+.envelope-result-count { color: var(--text-secondary); }
+.envelope-import-row { flex-wrap: wrap; }
+.envelope-import-row .btn { min-height: 44px; }
 </style>
 <script>
 /* ===== QR THANH TOÁN: quét VietQR -> mở app ngân hàng điền sẵn -> hỏi "Đã chuyển xong?" ===== */
