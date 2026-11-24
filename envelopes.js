@@ -119,6 +119,11 @@ function envelopeCard(entry){
     </footer></article>`;
 }
 
+function formatEnvelopeAmountInput(value){
+  const digits = value.replace(/[^0-9]/g,'').replace(/^0+(?=[0-9])/,'');
+  return digits.replace(/\B(?=(?:[0-9]{3})+(?![0-9]))/g,'.');
+}
+
 function openEnvelopeForm(entry, isReciprocal=false){
   const owner = requireUid();
   const item = isReciprocal ? entry.reciprocal : entry;
@@ -127,7 +132,7 @@ function openEnvelopeForm(entry, isReciprocal=false){
   dialog.setAttribute('aria-labelledby','envelopeFormTitle');
   dialog.innerHTML = `<form>
     <h2 id="envelopeFormTitle">${isReciprocal ? (entry.direction==='sent' ? 'Họ đã đi lại' : 'Tôi đã đi lại') : entry ? 'Sửa phong bì' : 'Ghi phong bì'}</h2>
-    ${isReciprocal ? `<p>${escapeHTML(entry.person)}</p>` : `
+    ${isReciprocal ? `<p class="envelope-person">${escapeHTML(entry.person)}</p>` : `
       <label>Người gửi hoặc nhận<input name="person" required maxlength="120" value="${escapeHTML(entry?.person)}"></label>
       <label>Chiều giao nhận<select name="direction" ${entry?.reciprocal ? 'disabled' : ''}>
         <option value="received" ${entry?.direction==='received' ? 'selected' : ''}>Tôi nhận</option>
@@ -137,16 +142,45 @@ function openEnvelopeForm(entry, isReciprocal=false){
         ${Object.entries(ENVELOPE_SCOPES).map(([key,label])=>`<option value="${key}" ${entry?.scope===key ? 'selected' : ''}>${label}</option>`).join('')}
       </select></label>`}
     <label>Sự kiện<input name="event" required maxlength="160" placeholder="Ví dụ: Cưới, sinh nhật" value="${escapeHTML(item?.event)}"></label>
-    <label>Số tiền (đ)<input name="amount" inputmode="numeric" pattern="[0-9]+" maxlength="13" required value="${escapeHTML(item?.amount)}"></label>
+    <label for="envelopeAmountInput">Số tiền</label>
+    <div class="envelope-amount-field">
+      <input id="envelopeAmountInput" name="amount" inputmode="numeric" placeholder="0" required
+        aria-describedby="envelopeAmountHelp" value="${item?.amount ? formatEnvelopeAmountInput(String(item.amount)) : ''}">
+      <span aria-hidden="true">₫</span>
+    </div>
+    <span id="envelopeAmountHelp" class="envelope-field-hint">Nhập hoặc chọn số tiền</span>
+    <div class="envelope-quick-amounts">
+      <button type="button" class="btn" data-amount="300000">300.000 ₫</button>
+      <button type="button" class="btn" data-amount="500000">500.000 ₫</button>
+      <button type="button" class="btn" data-amount="1000000">1.000.000 ₫</button>
+    </div>
     <label>${isReciprocal ? 'Ngày (có thể để trống)' : 'Ngày'}<input name="date" type="date" ${isReciprocal || item?.date==='' ? '' : 'required'} value="${escapeHTML(item?.date ?? (isReciprocal ? '' : todayISO()))}"></label>
-    <label>Ghi chú<textarea name="notes" maxlength="500" rows="2">${escapeHTML(item?.notes)}</textarea></label>
+    <label>Ghi chú (không bắt buộc)<textarea name="notes" maxlength="500" rows="2">${escapeHTML(item?.notes)}</textarea></label>
     <p class="envelope-error" role="alert" hidden></p>
-    <footer><button class="btn" type="button">Đóng</button><button class="btn btn-primary" type="submit">Lưu phong bì</button></footer>
+    <footer><button class="btn" type="button" data-cancel>Đóng</button><button class="btn btn-primary" type="submit">Lưu phong bì</button></footer>
   </form>`;
   const form = dialog.querySelector('form');
   const error = dialog.querySelector('.envelope-error');
   const submit = form.querySelector('[type=submit]');
-  const cancel = form.querySelector('[type=button]');
+  const cancel = form.querySelector('[data-cancel]');
+  const amountInput = form.elements.amount;
+  amountInput.addEventListener('input',()=>{
+    const raw = amountInput.value;
+    const digitsAfterCaret = raw.slice(amountInput.selectionStart).replace(/[^0-9]/g,'').length;
+    amountInput.value = formatEnvelopeAmountInput(raw);
+    let caret = amountInput.value.length;
+    for(let remaining=digitsAfterCaret; caret>0 && remaining>0;){
+      if(/[0-9]/.test(amountInput.value[--caret])) remaining--;
+    }
+    amountInput.setSelectionRange(caret,caret);
+    amountInput.setCustomValidity('');
+  });
+  form.querySelectorAll('[data-amount]').forEach(button=>{
+    button.onclick = ()=>{
+      amountInput.value = formatEnvelopeAmountInput(button.dataset.amount);
+      amountInput.setCustomValidity('');
+    };
+  });
   cancel.onclick = ()=>dialog.close();
   dialog.addEventListener('cancel',event=>{ if(submit.disabled) event.preventDefault(); });
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
@@ -154,13 +188,19 @@ function openEnvelopeForm(entry, isReciprocal=false){
     event.preventDefault();
     const values = new FormData(form);
     const value = key=>String(values.get(key) || '').trim();
-    const transaction = {event:value('event'),amount:Number(value('amount')),date:value('date'),notes:value('notes')};
+    const amount = Number(value('amount').replace(/\./g,''));
+    if(!Number.isSafeInteger(amount) || amount<=0 || amount>9999999999999){
+      amountInput.setCustomValidity('Nhập số tiền lớn hơn 0 và tối đa 13 chữ số.');
+      amountInput.reportValidity();
+      return;
+    }
+    const transaction = {event:value('event'),amount,date:value('date'),notes:value('notes')};
     const record = isReciprocal ? {...entry,reciprocal:transaction} : {
       ...entry,...transaction,id:entry?.id || uid('gift'),createdAt:entry?.createdAt || Date.now(),
       person:value('person'),scope:value('scope'),direction:value('direction') || entry.direction
     };
-    if(!record.person || !transaction.event || transaction.amount<=0){
-      error.textContent = 'Hãy nhập tên, sự kiện và số tiền lớn hơn 0.';
+    if(!record.person || !transaction.event){
+      error.textContent = 'Hãy nhập tên và sự kiện.';
       error.hidden = false;
       return;
     }
