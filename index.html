@@ -1711,7 +1711,7 @@ async function processRecurring(){
       const dup = STATE.expenses.some(x=>x.id===expId);
       const exp = {
         id:expId, name:r.name, amount:r.amount, categoryId:r.categoryId, walletId:r.walletId,
-        paymentMethodId:'', createdDate:t, dueDate:t, paid:false, notes:'Tự động sinh từ khoản định kỳ', recurringId:r.id
+        paymentMethodId:'', createdAt:Date.now(), createdDate:t, dueDate:t, paid:false, notes:'Tự động sinh từ khoản định kỳ', recurringId:r.id
       };
       if(!dup){ STATE.expenses.push(exp); await dbPut('expenses', exp); }
       r.lastGeneratedDate = t;
@@ -2100,15 +2100,25 @@ function getFilteredExpenses(status){
     if(f.period==='overdue') list = list.filter(isOverdue);
     if(f.period==='today') list = list.filter(e=>e.dueDate===t0);
   }
+  if(status==='pending') return list.sort((a,b)=>expenseCreatedTime(b)-expenseCreatedTime(a));
   const {field,dir} = STATE.ui.sort;
   list.sort((a,b)=>{
     let av=a[field], bv=b[field];
     if(field==='amount'){ av=Number(av); bv=Number(bv); }
     if(av==null) av=''; if(bv==null) bv='';
     let cmp = av>bv?1:av<bv?-1:0;
+    if(field==='createdDate' && !cmp) cmp = expenseEntryTime(a) - expenseEntryTime(b);
     return dir==='asc'?cmp:-cmp;
   });
   return list;
+}
+
+function expenseEntryTime(exp){
+  return Number(exp.createdAt) || parseInt(/^exp_([a-z0-9]{8})[a-z0-9]{6}$/.exec(exp.id)?.[1] || '',36) || 0;
+}
+
+function expenseCreatedTime(exp){
+  return expenseEntryTime(exp) || Date.parse(exp.createdDate+'T00:00:00') || 0;
 }
 
 function listToolbarHTML(status){
@@ -2139,13 +2149,13 @@ function listToolbarHTML(status){
     </select>`:''}
     <input type="text" inputmode="numeric" class="filter-select" placeholder="${t('filter.amountFrom')}" style="width:100px;" data-filter="minAmount" value="${STATE.ui.filters.minAmount}">
     <input type="text" inputmode="numeric" class="filter-select" placeholder="${t('filter.amountTo')}" style="width:100px;" data-filter="maxAmount" value="${STATE.ui.filters.maxAmount}">
-    <select class="filter-select" data-filter="sortField" id="sortField-${status}">
+    ${status==='pending' ? '<span class="filter-select" style="background-image:none;padding-right:12px">Mới tạo trước</span>' : `<select class="filter-select" data-filter="sortField" id="sortField-${status}">
       <option value="dueDate" ${STATE.ui.sort.field==='dueDate'?'selected':''}>${t('sort.due')}</option>
       <option value="createdDate" ${STATE.ui.sort.field==='createdDate'?'selected':''}>${t('sort.created')}</option>
       <option value="amount" ${STATE.ui.sort.field==='amount'?'selected':''}>${t('sort.amount')}</option>
       <option value="name" ${STATE.ui.sort.field==='name'?'selected':''}>${t('sort.name')}</option>
     </select>
-    <button class="icon-btn" id="sortDirBtn-${status}" title="${t('sort.toggleTitle')}">${iconSVG('arrow-up-down',15)}</button>
+    <button class="icon-btn" id="sortDirBtn-${status}" title="${t('sort.toggleTitle')}">${iconSVG('arrow-up-down',15)}</button>`}
   </div>`;
 }
 
@@ -2455,6 +2465,8 @@ async function handleExpenseFormSubmit(e){
     notes: document.getElementById('fNotes').value.trim(),
   };
   const existing = STATE.expenses.find(x=>x.id===id);
+  const createdAt = existing ? expenseEntryTime(existing) : Date.now();
+  if(createdAt) exp.createdAt = createdAt;
   const qrxOldCat = existing ? existing.categoryId : null;
   if(existing) Object.assign(existing, exp); else STATE.expenses.push(exp);
   await dbPut('expenses', exp);
@@ -3071,7 +3083,7 @@ async function importExcelFile(file){
       const cat = findCategoryByName(row['Danh mục']) || STATE.categories[0];
       const wal = findWalletByName(row['Ví']) || STATE.wallets[0];
       const exp = {
-        id: uid('exp'), name: String(name), amount: xlsAmount(row['Số tiền']!=null ? row['Số tiền'] : row['Amount']),
+        id: uid('exp'), createdAt:Date.now(), name: String(name), amount: xlsAmount(row['Số tiền']!=null ? row['Số tiền'] : row['Amount']),
         categoryId: cat.id, walletId: wal.id, paymentMethodId: STATE.paymentMethods[0]?.id||'',
         createdDate: xlsDate(row['Ngày tạo']), dueDate: xlsDate(row['Hạn thanh toán']),
         paid: String(row['Trạng thái']||'').includes('Đã'), notes: String(row['Ghi chú']||'')
@@ -3917,7 +3929,7 @@ function openSettle(){
   function renderDash(){
     const A=document.getElementById('qdA'), B=document.getElementById('qdB'), C=document.getElementById('qdC'), D=document.getElementById('qdD'), E=document.getElementById('qdE'); if(!A) return;
     const b=budgets(), sp=spentOf(ymNow()), pv=spentOf(mShift(-1)), m=Number(ymNow().slice(5)), y=Number(ymNow().slice(0,4));
-    const unp=STATE.expenses.filter(e=>!e.paid), by=(x,z)=>dayOf(x)-dayOf(z);
+    const unp=STATE.expenses.filter(e=>!e.paid), by=(x,z)=>dayOf(x)-dayOf(z) || expenseCreatedTime(z)-expenseCreatedTime(x);
     const act=unp.filter(e=>dayOf(e)<=7).sort(by), soonAll=unp.filter(e=>dayOf(e)>7&&dayOf(e)<=30).sort(by), soon=soonAll.slice(0,5), overdue=unp.filter(e=>dayOf(e)<0).length;
     const al=document.getElementById('qdAlert'); if(al){ al.style.display=overdue?'block':'none'; al.textContent=overdue+' khoản quá hạn · Xem'; }
     const tot=act.reduce((s,e)=>s+(Number(e.amount)||0),0);
