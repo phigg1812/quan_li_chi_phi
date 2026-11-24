@@ -107,7 +107,7 @@ function openEnvelopeForm(entry, isReciprocal=false){
       </select></label>`}
     <label>Sự kiện<input name="event" required maxlength="160" placeholder="Ví dụ: Cưới, sinh nhật" value="${escapeHTML(item?.event)}"></label>
     <label>Số tiền (đ)<input name="amount" inputmode="numeric" pattern="[0-9]+" maxlength="13" required value="${escapeHTML(item?.amount)}"></label>
-    <label>Ngày<input name="date" type="date" ${item?.date==='' ? '' : 'required'} value="${escapeHTML(item?.date ?? todayISO())}"></label>
+    <label>${isReciprocal ? 'Ngày (có thể để trống)' : 'Ngày'}<input name="date" type="date" ${isReciprocal || item?.date==='' ? '' : 'required'} value="${escapeHTML(item?.date ?? (isReciprocal ? '' : todayISO()))}"></label>
     <label>Ghi chú<textarea name="notes" maxlength="500" rows="2">${escapeHTML(item?.notes)}</textarea></label>
     <p class="envelope-error" role="alert" hidden></p>
     <footer><button class="btn" type="button">Đóng</button><button class="btn btn-primary" type="submit">Lưu phong bì</button></footer>
