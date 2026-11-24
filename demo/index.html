@@ -908,10 +908,6 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <span class="nav-icon" data-icon="settings"></span>
         <span class="nav-label" data-i18n="nav.settings">Cài đặt</span>
       </button>
-      <button class="nav-item" data-view="backup">
-        <span class="nav-icon" data-icon="archive"></span>
-        <span class="nav-label" data-i18n="nav.backup">Sao lưu</span>
-      </button>
     </nav>
     <div class="sidebar-footer">
       <button class="sidebar-collapse-btn" id="collapseBtn">
@@ -1096,6 +1092,8 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
       <!-- ============================================================
            MODULE 27 — SETTINGS VIEW
            ============================================================ -->
+      <section class="view" id="view-budget"></section>
+      <section class="view" id="view-settle"></section>
       <section class="view" id="view-settings">
         <div class="settings-grid">
           <div class="settings-nav" id="settingsNav">
@@ -1105,6 +1103,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
             <button data-panel="payment" data-i18n="settings.payment">Phương thức thanh toán</button>
             <button data-panel="learning">Quy tắc đã ghi nhớ</button>
             <button data-panel="recurring" data-i18n="settings.recurring">Chi định kỳ</button>
+            <button data-panel="backup" data-i18n="nav.backup">Sao lưu</button>
           </div>
 
           <div class="settings-panel" id="panel-general">
@@ -1160,13 +1159,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
             <div class="manage-list" id="recurringList"></div>
             <button class="btn btn-primary btn-sm" style="margin-top:12px;" id="addRecurringBtn"><span data-icon="plus"></span><span data-i18n="recurring.add">Thêm khoản định kỳ</span></button>
           </div>
-        </div>
-      </section>
-
-      <!-- ============================================================
-           MODULE 28 — BACKUP VIEW
-           ============================================================ -->
-      <section class="view" id="view-backup">
+          <div class="settings-panel hidden demo-backup-panel" id="panel-backup">
         <div class="panel">
           <div class="panel-header"><div><div class="panel-title" data-i18n="backup.title">Sao lưu &amp; Khôi phục</div><div class="panel-title-sub" data-i18n="backup.desc">Toàn bộ dữ liệu được lưu cục bộ trên máy bạn (IndexedDB). Hãy sao lưu định kỳ.</div></div></div>
           <div class="backup-actions">
@@ -1189,7 +1182,14 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
           <div class="panel-header"><div class="panel-title" data-i18n="backup.history">Lịch sử sao lưu</div></div>
           <div class="manage-list" id="backupHistoryList"></div>
         </div>
+          </div>
+        </div>
       </section>
+
+      <!-- ============================================================
+           MODULE 28 — BACKUP VIEW
+           ============================================================ -->
+
 
     </div>
   </div>
@@ -1722,14 +1722,19 @@ const VIEW_TITLE_KEYS = {
   stats:'nav.stats', calendar:'nav.calendar', settings:'nav.settings', backup:'nav.backup'
 };
 function switchView(name){
+  const showBackup = name==='backup';
+  if(showBackup)name='settings';
   const previousView = STATE.ui.currentView;
   STATE.ui.currentView = name;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===name));
-  document.getElementById('topbarTitle').textContent = name==='envelopes' ? 'Sổ phong bì' : t(VIEW_TITLE_KEYS[name]||'nav.dashboard');
+  const titles={envelopes:'Sổ phong bì',settle:'Quyết toán',budget:'Hạn mức'};
+  document.getElementById('topbarTitle').textContent = titles[name] || t(VIEW_TITLE_KEYS[name]||'nav.dashboard');
   closeMobileSidebar();
   renderCurrentView(true);
+  if(showBackup) document.querySelector('#settingsNav [data-panel="backup"]').click();
+  if(previousView!==name)window.scrollTo({top:0,behavior:'instant'});
   if(previousView!==name && !matchMedia('(prefers-reduced-motion: reduce)').matches){
     const view=document.getElementById('view-'+name);
     view.getAnimations().forEach(animation=>animation.cancel());
@@ -1746,7 +1751,8 @@ function renderCurrentView(force){
     case 'calendar': renderCalendar(); break;
     case 'stats': renderStats(); break;
     case 'settings': renderSettings(); break;
-    case 'backup': renderBackupView(); break;
+    case 'budget': window.renderPreviewBudget(); break;
+    case 'settle': window.renderPreviewSettle(); break;
   }
   renderSidebarBadges();
 }
@@ -2945,6 +2951,7 @@ document.getElementById('settingsNav').addEventListener('click',(e)=>{
   btn.classList.add('active');
   document.querySelectorAll('.settings-panel').forEach(p=>p.classList.add('hidden'));
   document.getElementById('panel-'+btn.dataset.panel).classList.remove('hidden');
+  if(btn.dataset.panel==='backup')renderBackupView();
 });
 document.getElementById('currencySelect').addEventListener('change', e=>setCurrency(e.target.value));
 document.querySelectorAll('.theme-opt').forEach(opt=>opt.addEventListener('click', ()=>setTheme(opt.dataset.themeOpt)));
@@ -3901,8 +3908,9 @@ tb.title='Quét QR thanh toán'; tb.setAttribute('aria-label','Quét QR thanh to
 if(qa) qa.parentNode.insertBefore(tb,qa); else document.body.appendChild(tb);
 
 /* Quyết toán cuối tháng */
-function openSettle(){
-  let ym=todayISO().slice(0,7), sheet; const off=new Set();
+function openSettle(){switchView('settle');}
+window.renderPreviewSettle=function(){
+  let ym=todayISO().slice(0,7); const off=new Set();
   const mOf=e=>(e.dueDate||e.createdDate||'').slice(0,7);
   const label=()=>Number(ym.slice(5))+'/'+ym.slice(0,4), fmt=n=>formatCurrency(n);
   const all=()=>STATE.expenses.filter(e=>!e.paid&&mOf(e)===ym).sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||'')||String(a.name).localeCompare(String(b.name)));
@@ -3910,13 +3918,13 @@ function openSettle(){
   const shift=d=>{const [y,m]=ym.split('-').map(Number),x=new Date(y,m-1+d,1); ym=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'); off.clear(); draw();};
   const draw=()=>{
     const list=all();
-    const sh=sheet=overlay('<div class="qb-h"><h3>Quyết toán cuối tháng</h3><button class="qb-x" id="qsX" aria-label="Đóng quyết toán">✕</button></div><div class="qb-body"><div class="qrx-row" style="align-items:center;margin-top:0"><button class="qrx-btn" id="qsP" style="flex:none;width:48px" aria-label="Tháng trước">‹</button><div style="flex:1;text-align:center;font-weight:600">Tháng '+label()+'</div><button class="qrx-btn" id="qsN" style="flex:none;width:48px" aria-label="Tháng sau">›</button></div>'
+    const sh=document.getElementById('view-settle');
+    sh.innerHTML='<div class="demo-feature-card"><div class="qb-h"><h2>Quyết toán cuối tháng</h2></div><div class="qb-body"><div class="qrx-row" style="align-items:center;margin-top:0"><button class="qrx-btn" id="qsP" style="flex:none;width:48px" aria-label="Tháng trước">‹</button><div style="flex:1;text-align:center;font-weight:600">Tháng '+label()+'</div><button class="qrx-btn" id="qsN" style="flex:none;width:48px" aria-label="Tháng sau">›</button></div>'
       +(list.length?'<div id="qsCats" style="margin-top:12px"></div><div style="margin-top:6px">'+list.map(e=>'<label class="qs-row"><input type="checkbox" data-id="'+esc(e.id)+'"'+(off.has(e.id)?'':' checked')+'><span class="t"><b>'+esc(e.name)+'</b><small>Hạn '+esc((e.dueDate||'').split('-').reverse().slice(0,2).join('/'))+' · '+esc(catById(e.categoryId).name)+'</small></span><span>'+esc(fmt(e.amount))+'</span></label>').join('')+'</div>'
         :'<div class="qrx-note" style="margin:16px 0;text-align:center">Tháng này không có khoản nào chưa thanh toán.</div>')
-      +'</div>'+(list.length?'<footer class="qb-f qs-footer"><div class="qs-total"><span id="qsC"></span><span id="qsT"></span></div><div class="qrx-row"><button class="qrx-btn" id="qsS">Chia sẻ tóm tắt</button><button class="qrx-btn p" id="qsD">Đã quyết toán</button></div></footer>':''),sheet);
-    sh.classList.add('qb-sheet');
+      +'</div>'+(list.length?'<footer class="qb-f qs-footer"><div class="qs-total"><span id="qsC"></span><span id="qsT"></span></div><div class="qrx-row"><button class="qrx-btn" id="qsS">Chia sẻ tóm tắt</button><button class="qrx-btn p" id="qsD">Đã quyết toán</button></div></footer>':'')+'</div>';
     const $=s=>sh.querySelector(s); let armed=false;
-    $('#qsP').onclick=()=>shift(-1); $('#qsN').onclick=()=>shift(1); $('#qsX').onclick=close;
+    $('#qsP').onclick=()=>shift(-1); $('#qsN').onclick=()=>shift(1);
     if(!list.length) return;
     const refresh=()=>{const it=picked(), by={}; let tot=0; it.forEach(e=>{by[e.categoryId]=(by[e.categoryId]||0)+Number(e.amount||0); tot+=Number(e.amount||0);});
       $('#qsCats').innerHTML=Object.keys(by).sort((a,b)=>by[b]-by[a]).map(k=>'<div class="qs-cat"><span>'+esc(catById(k).name)+'</span><span>'+esc(fmt(by[k]))+'</span></div>').join('');
@@ -3928,19 +3936,19 @@ function openSettle(){
       if(navigator.share) navigator.share({text:txt}).catch(()=>{}); else if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>showToast('Đã sao chép bản tóm tắt'));};
     $('#qsD').onclick=async()=>{const it=picked(); if(!it.length) return;
       if(!armed){armed=true; $('#qsD').textContent='Bấm lần nữa để xác nhận ('+it.length+' khoản)'; return;}
-      const tot=it.reduce((s,e)=>s+Number(e.amount||0),0); it.forEach(e=>e.paid=true); close(); showToast('Đang ghi quyết toán...');
+      const tot=it.reduce((s,e)=>s+Number(e.amount||0),0); it.forEach(e=>e.paid=true); $('#qsD').disabled=true; showToast('Đang ghi quyết toán...');
       try{ await Promise.race([dbPutMany('expenses',it),dbWait(4000)]); }
       catch(err){ it.forEach(e=>e.paid=false); try{renderCurrentView(true);}catch(x){} showToast('Quyết toán thất bại: '+((err&&err.code)||(err&&err.message)||'lỗi')); return; }
-      try{renderCurrentView(true);}catch(x){} showToast('Đã quyết toán '+it.length+' khoản · '+fmt(tot));};
+      draw(); renderSidebarBadges(); showToast('Đã quyết toán '+it.length+' khoản · '+fmt(tot));};
   };
   draw();
-}
+};
 (function(){
   const hb=document.getElementById('heroAddBtn');
   if(hb){const b=document.createElement('button'); b.className='hero-btn'; b.id='heroSettleBtn'; b.textContent='Quyết toán'; b.onclick=openSettle; hb.insertAdjacentElement('afterend',b);}
   const pn=document.querySelector('.nav-item[data-view="paid"]');
   if(pn){const c=pn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
-    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Đã thanh toán') n.nodeValue='Quyết toán'; } c.dataset.qrx='settle';
+    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Đã thanh toán') n.nodeValue='Quyết toán'; } c.dataset.qrx='settle'; c.dataset.view='settle';
     c.querySelectorAll('.nav-badge,.badge').forEach(x=>x.remove());
     { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openSettle();};
@@ -4025,7 +4033,8 @@ function openSettle(){
       showToast((f.lvl===2?'Đã vượt hạn mức ':'Sắp đạt hạn mức ')+f.name+' ('+Math.round(f.pct)+'%: '+fmt(f.used)+'/'+fmt(f.limit)+')'+(fresh.length>1?' và '+(fresh.length-1)+' mục khác':''));
     }catch(e){}
   };
-  function openBudget(){
+  function openBudget(){switchView('budget');}
+  window.renderPreviewBudget=function(){
     const b0=budgets(), sp=spent(), m=Number(ymNow().slice(5))+'/'+ymNow().slice(0,4);
     const draft={total:b0.total,cats:Object.assign({},b0.cats)};
     const shown=new Set(STATE.categories.filter(c=>(Number(draft.cats[c.id])||0)>0||(sp.by[c.id]||0)>0).map(c=>c.id));
@@ -4036,17 +4045,15 @@ function openSettle(){
         +(k==='total'?'<div class="qb-big">'+esc(fmt(used))+'</div>':'<div style="font-size:18px;font-weight:600">'+esc(fmt(used))+'</div>')
         +'<div class="qb-edit"><input inputmode="numeric" placeholder="Đặt hạn mức tháng" value="'+(l>0?l.toLocaleString('vi-VN'):'')+'"><span>đ</span></div>'
         +'<div class="qb-bar"><i style="width:'+Math.min(100,s.p)+'%;background:'+s.c+'"></i></div><div class="qb-st" style="color:'+s.c+'">'+esc(s.t)+'</div></div>'; };
-    let budgetSheet;
     const draw=focus=>{
       const rest=STATE.categories.filter(c=>!shown.has(c.id));
-      const sh=budgetSheet=overlay('<div class="qb-h"><h3>Hạn mức · tháng '+m+'</h3><button class="qb-x" id="qbX" aria-label="Đóng">✕</button></div><div class="qb-body">'
+      const sh=document.getElementById('view-budget');
+      sh.innerHTML='<div class="demo-feature-card"><div class="qb-h"><h2>Hạn mức · tháng '+m+'</h2></div><div class="qb-body">'
         +blk('total','Tổng cả tháng',sp.total)+'<div class="qb-sec">Theo danh mục</div>'
         +STATE.categories.filter(c=>shown.has(c.id)).map(c=>blk(c.id,c.name,sp.by[c.id]||0)).join('')
         +(rest.length?'<select id="qbAdd" style="margin-top:12px"><option value="">＋ Thêm hạn mức cho danh mục khác...</option>'+rest.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select>':'')
         +'<div class="qrx-note">Tính theo ngày tạo khoản chi. App nhắc khi đạt 80% và khi vượt 100%.</div></div>'
-        +'<div class="qb-f"><button class="qrx-btn p" id="qbS" style="width:100%">Lưu hạn mức</button></div>',budgetSheet);
-      sh.classList.add('qb-sheet');
-      sh.querySelector('#qbX').onclick=close;
+        +'<div class="qb-f"><button class="qrx-btn p" id="qbS" style="width:100%">Lưu hạn mức</button></div></div>';
       sh.querySelectorAll('[data-k]').forEach(el=>{ const k=el.dataset.k, inp=el.querySelector('input'); const used=k==='total'?sp.total:(sp.by[k]||0);
         inp.oninput=()=>{ const n=num(inp.value); inp.value=n?n.toLocaleString('vi-VN'):''; if(k==='total') draft.total=n; else draft.cats[k]=n;
           const s=stat(used,n); const i=el.querySelector('.qb-bar i'), st=el.querySelector('.qb-st'); i.style.width=Math.min(100,s.p)+'%'; i.style.background=s.c; st.textContent=s.t; st.style.color=s.c; }; });
@@ -4054,7 +4061,7 @@ function openSettle(){
       if(focus){ const e=sh.querySelector('[data-k="'+focus+'"] input'); if(e){ e.focus(); e.scrollIntoView({block:'center'}); } }
       sh.querySelector('#qbS').onclick=async()=>{
         const nb={total:draft.total||0,cats:{}}; Object.keys(draft.cats).forEach(k=>{ if(Number(draft.cats[k])>0) nb.cats[k]=Number(draft.cats[k]); });
-        STATE.settings.budgets=nb; close();
+        STATE.settings.budgets=nb;
         try{ await saveSettings(); showToast('Đã lưu hạn mức'); }catch(e){ showToast('Lưu hạn mức thất bại'); }
         demoStorage.removeItem('qrx_bud'); window.qrxCheckBudget(true); if(window.qrxRenderBud) window.qrxRenderBud();
       };
@@ -4143,7 +4150,7 @@ function openSettle(){
       new MutationObserver(apply).observe(el,{childList:true,characterData:true,subtree:true}); apply(); } }
   const sn=document.querySelector('.nav-item[data-view="stats"]');
   if(sn){const c=sn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
-    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; } c.dataset.qrx='budget';
+    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Thống kê') n.nodeValue='Hạn mức'; } c.dataset.qrx='budget'; c.dataset.view='budget';
     { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openBudget();};
     sn.insertAdjacentElement('afterend',c);}
@@ -4209,8 +4216,8 @@ window.qrxCatList=function(catId,list){
 };
 /* Sao lưu, Cài đặt, trợ năng */
 (function(){
-  const bd=document.querySelector('#view-backup .panel-title-sub');
-  if(bd){ bd.removeAttribute('data-i18n'); bd.textContent='Dữ liệu được lưu trên tài khoản của bạn (đám mây) và đồng bộ giữa các thiết bị. File sao lưu là bản dự phòng bạn tự giữ.'; }
+  const bd=document.querySelector('#panel-backup .panel-title-sub');
+  if(bd){ bd.removeAttribute('data-i18n'); bd.textContent='Tải và mở tệp JSON để thử sao lưu hoặc khôi phục dữ liệu mẫu.'; }
   const sn=document.getElementById('settingsNav');
   if(sn) sn.addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setTimeout(()=>b.scrollIntoView({inline:'center',block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}),60); });
   const names={menuBtn:'Mở menu',quickAddBtn:'Thêm khoản chi'};
