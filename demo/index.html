@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tổng quan · Sổ Theo Dõi</title>
+<style>
+:root{color-scheme:light;--bg:#f3f5fa;--paper:#fff;--ink:#19253a;--sub:#53617a;--line:#e0e6ef;--blue:#1759cc;--soft:#eaf2ff;--red:#a12d44;--red-bg:#fff0f3;--green:#087856;--radius:22px;font:16px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,select{font:inherit}button,select,a{touch-action:manipulation}button,select{cursor:pointer}a{color:inherit;text-decoration:none}button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:4px}h1,h2,p{margin:0}h1{font-size:clamp(29px,4.4vw,43px);letter-spacing:-.06em;line-height:1.08}h2{font-size:19px;letter-spacing:-.027em}.muted,small{color:var(--sub)}.money{font-variant-numeric:tabular-nums;white-space:nowrap}.wrap{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}.rail{background:#f8faff;border-right:1px solid var(--line);padding:34px 18px;position:sticky;top:0;height:100dvh}.brand{display:flex;align-items:center;gap:10px;font-weight:750;padding:0 10px 30px}.mark{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--blue);color:white;font-weight:800}.rail nav{display:grid;gap:4px}.rail a{padding:11px 12px;border-radius:12px;color:var(--sub);font-weight:600;font-size:14px}.rail a:first-child{background:var(--soft);color:var(--blue)}main{width:min(100%,1440px);margin:0 auto;padding:34px clamp(18px,3vw,44px) 36px}.head,.section-head,.line,.item,.budget-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.head{margin-bottom:24px}.head p{font-size:13px;margin-top:6px;color:var(--sub)}select,.button{min-height:44px;padding:9px 13px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;font-size:14px;font-weight:650}.grid{display:grid;grid-template-columns:minmax(0,1.03fr) minmax(0,1fr);gap:16px}.section{padding:21px;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);min-width:0}.summary{background:linear-gradient(145deg,#edf4ff 0%,#fff 78%);border-color:#d9e6fa}.label{font-weight:680;color:#334762;font-size:14px}.hero-value{display:block;font-size:clamp(29px,4vw,48px);font-weight:770;line-height:1.05;letter-spacing:-.065em;margin-top:7px}.period{display:block;font-size:13px;margin-top:6px}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:16px 0;margin-top:12px;border-block:1px solid var(--line)}.metrics div{min-width:0}.metrics small{display:block;line-height:1.3;font-size:12px}.metrics strong{display:block;font-size:clamp(13px,2vw,18px);margin-top:4px}.danger{color:var(--red)}.budget{margin-top:15px}.budget-head{font-size:13px;flex-wrap:wrap}.bar{height:7px;background:#e7edf7;border-radius:100px;overflow:hidden;margin:8px 0}.bar span{display:block;height:100%;background:var(--blue);border-radius:inherit}.budget small,.section-head small{font-size:12px;line-height:1.4}.change{font-size:12px;font-weight:650;background:var(--soft);color:var(--blue);padding:6px 8px;border-radius:8px}.chart{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;align-items:end;margin:13px 0 9px}.month{background:transparent;border:0;display:grid;grid-template-rows:128px auto;gap:6px;padding:3px 2px;color:var(--sub);font-size:12px}.month .track{display:flex;align-items:end;justify-content:center;background:#f4f7fc;border-radius:9px 9px 4px 4px;height:100%}.month .fill{background:#a8c6f3;border-radius:7px 7px 3px 3px;width:66%}.month[aria-pressed=true] .fill{background:var(--blue)}.month[aria-pressed=true]{color:var(--blue);font-weight:750}.chart-detail{font-size:13px;color:var(--sub);min-height:1.4em}.chart-detail strong{color:var(--ink)}.chart-note{margin-top:8px;font-size:12px;line-height:1.4;color:var(--sub)}.category,.due,.work{margin-top:16px}.category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;margin-top:12px}.category-row .line{font-size:14px}.category-row .bar{height:6px}.category-row small{font-size:11px}.item{padding:11px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0;padding-bottom:0}.item-name{font-size:14px;font-weight:650;overflow-wrap:anywhere}.item small{font-size:12px}.item .money{font-size:14px;font-weight:720}.rows{margin-top:6px}.badge{font-size:12px;color:var(--red);background:var(--red-bg);border-radius:9px;padding:6px 8px;font-weight:650}.empty{margin-top:12px;color:var(--sub);font-size:14px}.pay{color:var(--blue);background:var(--soft);border-color:transparent}.item-actions{display:flex;align-items:center;gap:9px}.toast{font-size:13px;color:var(--green);min-height:1.2em;margin-top:8px}.dialog{width:min(calc(100% - 24px),380px);border:1px solid var(--line);border-radius:20px;padding:20px;color:var(--ink)}.dialog::backdrop{background:#15233a66}.dialog p{margin-block:12px}.dialog footer{display:flex;justify-content:flex-end;gap:8px}.primary{background:var(--blue);color:white;border-color:transparent}
+@media(max-width:820px){
+.wrap{display:block}.rail{display:none}main{padding:calc(22px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom))}.head{align-items:flex-start;gap:5px;margin-bottom:15px}.head select{max-width:47%;padding-inline:7px;font-size:13px}.grid,.category-grid{grid-template-columns:1fr;gap:10px}.section{padding:15px;border-radius:17px}.metrics{gap:6px}.section-head h2{font-size:18px}.category,.due,.work{margin-top:10px}.item-actions{gap:5px}.item small{display:block}.item .button{padding:7px 9px}.hero-value{font-size:clamp(30px,10vw,41px)}
+}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+
+[hidden]{display:none!important}.rail a[aria-current]{background:var(--soft);color:var(--blue)}.rail a:first-child:not([aria-current]){background:none;color:var(--sub)}
+.dock{display:none}.page-flow{display:grid;gap:14px}.page-flow .section{margin:0}.toolbar,.segments,.chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.toolbar>input{flex:1;min-width:140px}
+.field,.toolbar input{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit}
+.toolbar>input{width:auto}.segments{margin-bottom:13px}.segments [aria-pressed=true],.chips [aria-pressed=true]{background:var(--soft);border-color:#b0c9f5;color:var(--blue)}
+.ledger{margin-top:12px}.ledger .item>div:first-child{min-width:0}.ledger .item>div:first-child small{display:block;margin-top:4px}.ledger .item-actions{white-space:nowrap}.ledger .item-actions>span{font-variant-numeric:tabular-nums}
+.filter-fields,.form-fields{display:grid;gap:10px;margin-top:12px}.filter-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.form-fields label,.filter-fields label{display:grid;gap:5px;font-size:14px;font-weight:600}.filter-fields select{width:100%}
+.status{font-size:13px;color:var(--sub);margin-top:12px}.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:12px 0}.calendar button{padding:0;min-width:0}.calendar button[aria-pressed=true]{color:white;background:var(--blue)}.calendar small{text-align:center}.calendar button.has-items:not([aria-pressed=true]){background:var(--soft);color:var(--blue)}
+.page-total{font-size:clamp(23px,5vw,34px);letter-spacing:-.045em;display:block;margin:8px 0}.check{accent-color:var(--blue);width:21px;height:21px}.checkrow{cursor:pointer}.checkrow>span:first-of-type{flex:1}.page-flow .section-head{flex-wrap:wrap}.page-flow .section-head p{font-size:13px;color:var(--sub)}
+.note{background:var(--soft);padding:12px 14px;border-radius:12px;font-size:13px;color:var(--blue)}.sample-badge{color:var(--sub);font-size:13px;margin-top:5px}.settings-links{display:grid;gap:10px}.settings-links button{text-align:left}
+body.dark{color-scheme:dark;--bg:#131926;--paper:#1c2637;--ink:#f0f4fc;--sub:#becae0;--line:#3b4961;--soft:#283e62;--blue:#9bc0ff;--red:#ffaab7;--red-bg:#552335}.dark .rail,.dark .summary{background:var(--paper)}.dark .primary{color:#13213a}.dark .label{color:var(--sub)}.dark .month .track,.dark .bar{background:#344159}
+@media(max-width:820px){
+ main{padding-bottom:calc(82px + env(safe-area-inset-bottom))}.dock{display:flex;position:fixed;inset:auto 0 0;align-items:stretch;justify-content:space-around;gap:3px;background:var(--paper);border-top:1px solid var(--line);padding:4px 8px max(4px,env(safe-area-inset-bottom));z-index:2}.dock>a{flex:1;min-height:48px;display:grid;place-items:center;text-align:center;align-content:center;gap:2px;font-size:11px;font-weight:650;color:var(--sub);border-radius:10px}.dock>a[aria-current]{background:var(--soft);color:var(--blue)}.dock>a span{font-size:18px;line-height:1}
+ .toolbar>input{flex-basis:100%}.filter-fields{grid-template-columns:1fr 1fr}.filter-fields label{min-width:0}.page-flow{gap:10px}.calendar{gap:3px}.calendar button{min-height:40px}.ledger .item-actions{gap:5px}.ledger .item-actions .button{font-size:12px}.ledger .item .money{font-size:13px}
+}
+
+.search-first{margin-bottom:12px}.search-first>input{max-width:none}
+.mobile-menu{position:fixed;inset:0 auto 0 0;margin:0;width:min(86vw,330px);height:100dvh;max-height:none;border:0;border-radius:0 19px 19px 0;padding:calc(18px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));background:var(--paper);color:var(--ink);overflow:auto}.mobile-menu::backdrop{background:#15233a66}.mobile-menu nav{margin-top:16px}.mobile-menu nav a{display:flex;align-items:center}
+@media(prefers-reduced-motion:no-preference){.mobile-menu[open]{animation:menu-in .19s ease-out}@keyframes menu-in{from{transform:translateX(-100%)}to{transform:translateX(0)}}}
+
+:root{--glass:rgba(255,255,255,.74);--glass-edge:rgba(255,255,255,.86);--wave:#c5e4ff}
+body.dark{--glass:rgba(25,34,49,.82);--glass-edge:rgba(185,202,224,.22);--wave:#27587e}
+.rail,.mobile-menu,.dock,.dialog{background:var(--paper)}
+@supports(backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
+  .rail,.mobile-menu,.dock,.dialog,body.dark .rail{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(155%);backdrop-filter:blur(24px) saturate(155%)}
+}
+.mobile-menu .brand{padding:0;gap:9px}
+.mobile-menu .button{min-width:44px;padding:0}
+.menu-group{display:grid;gap:3px;padding:6px 0 13px}
+.menu-group small{padding:5px 10px;font-weight:700;text-transform:uppercase;letter-spacing:.055em}
+.mobile-menu .menu-group a{min-height:44px;padding:9px 10px;border-radius:12px;font-size:14px;font-weight:650}
+.mobile-menu .menu-group a[aria-current]{background:var(--soft);color:var(--blue)}
+.calendar button.cal-day{position:relative;isolation:isolate;min-height:43px;overflow:hidden;background:var(--paper);color:var(--ink)}
+.calendar button.cal-day[aria-pressed=true]{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue);color:var(--blue)}
+.cal-water{position:absolute;inset:0;background:var(--wave);z-index:-1;pointer-events:none}
+.cal-number{position:relative;font-weight:700}
+.calendar-legend{display:flex;align-items:center;flex-wrap:wrap;gap:5px 7px;font-size:12px;color:var(--sub)}
+.calendar-legend span{display:inline-block;width:12px;height:12px;border:1px solid var(--line);border-radius:4px;background:var(--wave)}
+@media(max-width:820px){
+  .dock{inset:auto 12px max(8px,calc(env(safe-area-inset-bottom) - 6px));border:1px solid var(--glass-edge);border-radius:28px;padding:4px 6px;box-shadow:0 6px 24px #14233c20}
+  .dock>a{border-radius:22px}
+}
+@media(prefers-reduced-transparency:reduce){
+  .rail,.mobile-menu,.dock,.dialog,body.dark .rail{background:var(--paper);backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <aside class="rail">
+  <div class="brand"><span class="mark" aria-hidden="true">S</span>Sổ Theo Dõi</div>
+  <nav id="side" aria-label="Điều hướng chính"></nav>
+ </aside>
+ <main id="view-overview">
+  <header class="head"><div><h1>Tổng quan</h1><p>Dữ liệu mẫu · tính đến 24/11/2026</p></div>
+   <select id="period" aria-label="Chọn tháng">
+    <option value="5">Tháng 11/2026</option><option value="4">Tháng 10/2026</option>
+    <option value="3">Tháng 09/2026</option><option value="2">Tháng 08/2026</option>
+    <option value="1">Tháng 07/2026</option><option value="0">Tháng 06/2026</option>
+   </select>
+  </header>
+  <div class="grid">
+   <section class="section summary" id="tom-tat" aria-labelledby="summary-title">
+    <h2 class="label" id="summary-title">Tổng khoản ghi nhận</h2>
+    <strong class="hero-value money" id="total"></strong><small class="period" id="period-note"></small>
+    <div class="metrics">
+     <div><small>Đã thanh toán</small><strong class="money" id="paid"></strong></div>
+     <div><small>Chưa thanh toán</small><strong class="money" id="unpaid"></strong></div>
+     <div><small>Trong đó quá hạn</small><strong class="money danger" id="overdue"></strong></div>
+    </div>
+    <div class="budget"><div class="budget-head"><strong id="budget-left"></strong><span class="muted money" id="budget-used"></span></div><div class="bar" aria-hidden="true"><span id="budget-bar"></span></div><small>Hạn mức tính trên tổng khoản ghi nhận</small></div>
+   </section>
+   <section class="section" id="xu-huong" aria-labelledby="trend-title">
+    <div class="section-head"><h2 id="trend-title">Xu hướng 6 tháng</h2><span class="change" id="comparison"></span></div>
+    <div class="chart" id="chart" role="group" aria-label="Chọn cột để xem số liệu tháng"></div>
+    <p class="chart-detail" id="chart-detail" aria-live="polite"></p>
+    <p class="chart-note">Cột là tổng ghi nhận theo tháng. Tỷ lệ tăng giảm so từ ngày 1 đến ngày 24 của hai tháng.</p>
+   </section>
+  </div>
+  <section class="section category" id="danh-muc" aria-labelledby="category-title">
+   <div class="section-head"><h2 id="category-title">Chi theo danh mục</h2><small>Tỷ trọng trong tháng</small></div>
+   <div class="category-grid" id="categories"></div>
+  </section>
+  <section class="section due" id="sap-den-han" aria-labelledby="due-title">
+   <div class="section-head"><h2 id="due-title">Sắp đến hạn</h2><small>25–30/11</small></div><div class="rows" id="upcoming"></div>
+  </section>
+  <section class="section work" id="can-xu-ly" aria-labelledby="work-title">
+   <div class="section-head"><h2 id="work-title">Cần xử lý</h2><span class="badge" id="work-count"></span></div><div class="rows" id="work-items"></div><p class="toast" id="feedback" role="status"></p>
+  </section>
+ </main>
+ <main id="other-view" hidden></main>
+</div>
+<nav class="dock" id="dock" aria-label="Điều hướng mobile"></nav>
+<dialog id="mobile-menu" class="mobile-menu" aria-labelledby="mobile-menu-title"></dialog>
+<dialog id="prototype-form" class="dialog"></dialog>
+<dialog id="confirm" class="dialog" aria-labelledby="confirm-heading">
+ <form method="dialog"><h2 id="confirm-heading">Đánh dấu đã thanh toán?</h2><p id="confirm-copy"></p><footer><button class="button" value="cancel">Hủy</button><button class="button primary" value="pay">Đã thanh toán</button></footer></form>
+</dialog>
+<script>
+const months=[
+ {total:7800000,partial:7000000},{total:8950000,partial:8020000},{total:8240000,partial:7530000},
+ {total:9320000,partial:8750000},{total:11300000,partial:10400000},{total:9360000,partial:9360000}
+];
+const expenses=[
+ {name:'Tiền điện',amount:350000,day:19},
+ {name:'Phí quản lý',amount:250000,day:24},
+ {name:'Internet',amount:220000,day:27},
+ {name:'Tiền nhà',amount:1320000,day:30}
+];
+const labels=['Ăn uống','Nhà ở & hóa đơn','Di chuyển','Mua sắm và khác'];
+const portions=[.32,.35,.18,.15];
+const el=id=>document.getElementById(id);
+const money=value=>new Intl.NumberFormat('vi-VN').format(value)+' ₫';
+const number=value=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(value);
+let demoBudget=12000000;
+let activeMonth=5;
+let currentExpense;
+function renderMonth(){
+ const month=months[activeMonth];
+ const isCurrent=activeMonth===5;
+ const current=expenses.filter(expense=>!expense.paid);
+ const unpaid=isCurrent?current.reduce((sum,expense)=>sum+expense.amount,0):0;
+ const overdue=isCurrent?current.filter(expense=>expense.day<24).reduce((sum,expense)=>sum+expense.amount,0):0;
+ el('total').textContent=money(month.total);
+ el('paid').textContent=money(month.total-unpaid);
+ el('unpaid').textContent=money(unpaid);
+ el('overdue').textContent=money(overdue);
+ el('period-note').textContent=isCurrent?'1–24/11/2026 · Tháng đang diễn ra':'Tháng '+(activeMonth+6)+'/2026';
+ const limit = isCurrent ? demoBudget : 12000000;
+ const leftover = limit-month.total;
+ el('budget-left').textContent=(leftover>=0?'Còn ':'Vượt ')+money(Math.abs(leftover))+' trong hạn mức';
+ el('budget-used').textContent=number(month.total/limit*100)+'%';
+ el('budget-bar').style.width=Math.min(100,month.total/limit*100)+'%';
+ const delta=activeMonth>0?(month.partial/months[activeMonth-1].partial-1)*100:null;
+ el('comparison').textContent=delta===null?'Thiếu kỳ so sánh':(delta>0?'+':'')+number(delta)+'% cùng kỳ';
+ el('chart-detail').innerHTML='Tháng '+(activeMonth+6)+(isCurrent?' · đến ngày 24':'')+' · <strong class="money">'+money(month.total)+'</strong>';
+ el('chart').querySelectorAll('button').forEach((button,index)=>button.setAttribute('aria-pressed',String(index===activeMonth)));
+ el('period').value=String(activeMonth);
+ el('categories').innerHTML=labels.map((label,index)=>'<div class="category-row"><div class="line"><strong>'+label+'</strong><b class="money">'+money(Math.round(month.total*portions[index]))+'</b></div><div class="bar" aria-hidden="true"><span style="width:'+portions[index]*100+'%"></span></div><small>'+Math.round(portions[index]*100)+'% tổng ghi nhận</small></div>').join('');
+ const lines=(rows,showPay)=>rows.map(expense=>'<div class="item"><div><div class="item-name">'+expense.name+'</div><small class="'+(expense.day<24?'danger':'')+'">'+(expense.day<24?'Quá hạn từ ':expense.day===24?'Đến hạn hôm nay · ':'Hạn ')+expense.day+'/11</small></div><div class="item-actions"><span class="money">'+money(expense.amount)+'</span>'+(showPay?'<button type="button" class="button pay" data-row="'+expenses.indexOf(expense)+'" aria-label="Đánh dấu đã trả '+expense.name+'">Đã trả</button>':'')+'</div></div>').join('');
+ const upcoming=current.filter(expense=>expense.day>24);
+ const work=current.filter(expense=>expense.day<=24);
+ el('upcoming').innerHTML=lines(upcoming,false)||'<p class="empty">Không còn khoản sắp đến hạn.</p>';
+ el('work-items').innerHTML=lines(work,true)||'<p class="empty">Không còn khoản cần xử lý.</p>';
+ el('work-count').textContent=work.length+' khoản';
+}
+const max=Math.max(...months.map(month=>month.total));
+el('chart').innerHTML=months.map((month,index)=>'<button type="button" class="month" data-month="'+index+'" aria-label="Tháng '+(index+6)+', '+money(month.total)+(index===5?', đến ngày 24':'')+'"><span class="track"><span class="fill" style="height:'+Math.round(month.total/max*100)+'%"></span></span><span>T'+(index+6)+'</span></button>').join('');
+function selectMonth(index){activeMonth=index;renderMonth();}
+el('chart').addEventListener('click',event=>{const button=event.target.closest('[data-month]');if(button)selectMonth(Number(button.dataset.month));});
+el('period').addEventListener('change',event=>selectMonth(Number(event.target.value)));
+el('work-items').addEventListener('click',event=>{
+ const button=event.target.closest('[data-row]');
+ if(!button)return;
+ currentExpense=expenses[Number(button.dataset.row)];
+ el('confirm-copy').textContent=currentExpense.name+' · '+money(currentExpense.amount);
+ el('confirm').showModal();
+});
+el('confirm').addEventListener('close',()=>{
+ if(el('confirm').returnValue!=='pay')return;
+ currentExpense.paid=true;renderMonth();el('feedback').textContent='Đã đánh dấu '+currentExpense.name+' là đã thanh toán.';
+ el('confirm').returnValue='';
+});
+renderMonth();
+</script>
+<script>
+(() => {
+  const pages = {
+    overview:'Tổng quan', ledger:'Khoản chi', gifts:'Sổ phong bì', calendar:'Lịch',
+    stats:'Thống kê', budget:'Hạn mức', settle:'Quyết toán', settings:'Cài đặt', backup:'Sao lưu', more:'Thêm mục'
+  };
+  const records = [
+    ...expenses.map((record,index)=>Object.assign(record,{category:'Nhà & hóa đơn',month:'11',paid:false,createdAt:index+1})),
+    {name:'Đi chợ và ăn uống',amount:700000,category:'Ăn uống',month:'11',day:11,paid:true},
+    {name:'Mua đồ gia dụng',amount:1000000,category:'Mua sắm và khác',month:'11',day:15,paid:true},
+    {name:'Siêu thị cuối tuần',amount:470000,category:'Ăn uống',month:'11',day:22,paid:true},
+    {name:'Cà phê',amount:52000,category:'Ăn uống',month:'10',day:4,paid:true}
+  ];
+  const gifts = [
+    {name:'Minh Anh',amount:1000000,group:'Bạn chung',event:'Cưới',done:false},
+    {name:'Quốc Huy',amount:700000,group:'Bạn Pi',event:'Cưới',done:false},
+    {name:'Khánh Linh',amount:500000,group:'Bạn Bơ',event:'Sinh nhật',done:true}
+  ];
+  const state={paid:false,month:'all',query:'',category:'all',filters:false,giftDone:false,giftQuery:'',groups:new Set(),day:24,limit:12000000,checked:new Set(),settled:false};
+  const panel=el('other-view'), dialog=el('prototype-form');
+  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const normalize=value=>value.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').replace(/đ/g,'d');
+  const links=Object.keys(pages).filter(key=>!['more','backup'].includes(key));
+  const moreLinks=['calendar','stats','budget','settle','settings'];
+  let active='';
+  let syncRows=()=>{};
+  const link=key=>'<a href="#'+key+'" data-page="'+key+'">'+pages[key]+'</a>';
+  el('side').innerHTML=links.map(link).join('');
+  el('dock').innerHTML=['overview','ledger','gifts','more'].map(link).join('');
+  const page=(title,action='')=>'<header class="head"><div><h1>'+title+'</h1><p>Dữ liệu mẫu</p></div>'+action+'</header>';
+  const button=(label,action,primary=false)=>'<button class="button'+(primary?' primary':'')+'" type="button" data-do="'+action+'">'+label+'</button>';
+  const section=(content)=>'<section class="section">'+content+'</section>';
+  const row=(name,subtitle,amount,action='')=>'<div class="item"><div><div class="item-name">'+esc(name)+'</div><small>'+esc(subtitle)+'</small></div><div class="item-actions"><span class="money">'+money(amount)+'</span>'+action+'</div></div>';
+  const empty=()=>'<p class="empty">Không có khoản phù hợp.</p>';
+  const segment=(label,id,on)=>'<button class="button" type="button" data-do="'+id+'" aria-pressed="'+on+'">'+label+'</button>';
+  const categories=['Ăn uống','Nhà & hóa đơn','Di chuyển','Mua sắm và khác'];
+  function ledger(){
+    panel.innerHTML=page('Khoản chi',button('+ Thêm khoản','add',true))+section(
+      '<div class="toolbar search-first"><input type="search" aria-label="Tìm khoản chi" placeholder="Tìm khoản chi" value="'+esc(state.query)+'"></div>'+
+      '<div class="segments">'+segment('Chưa thanh toán','unpaid',!state.paid)+segment('Đã thanh toán','paid',state.paid)+'</div>'+
+      '<div class="toolbar">'+
+      '<select data-change="month" aria-label="Chọn tháng"><option value="all">Tất cả tháng</option><option value="11">Tháng này · 11/2026</option><option value="10">Tháng trước · 10/2026</option></select>'+
+      button('Bộ lọc'+(state.category!=='all'?' (1)':''),'filters')+'</div>'+
+      (state.filters?'<div class="filter-fields"><label>Danh mục<select data-change="category"><option value="all">Tất cả danh mục</option>'+categories.map(x=>'<option>'+esc(x)+'</option>').join('')+'</select></label></div>':'')+
+      '<div class="ledger" id="demo-rows"></div>');
+    panel.querySelector('[data-change=month]').value=state.month;
+    const category=panel.querySelector('[data-change=category]');
+    if(category)category.value=state.category;
+    syncRows=()=>{
+      const rows=records.filter(r=>r.paid===state.paid&&(state.month==='all'||state.month===r.month)&&(state.category==='all'||r.category===state.category)&&normalize(r.name+' '+r.category).includes(normalize(state.query.trim()))).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      el('demo-rows').innerHTML=rows.map(r=>row(r.name,r.category+' · Hạn '+r.day+'/'+r.month,r.amount,r.paid?'':button('Đã trả','pay-'+records.indexOf(r)))).join('')||empty();
+    };
+    syncRows();
+  }
+  function giftPage(){
+    panel.innerHTML=page('Sổ phong bì',button('+ Ghi phong bì','gift-add',true))+section(
+      '<div class="toolbar search-first"><input type="search" aria-label="Tìm phong bì" placeholder="Tìm tên hoặc sự kiện" value="'+esc(state.giftQuery)+'"></div>'+
+      '<div class="segments">'+segment('Chờ đi lại','gift-open',!state.giftDone)+segment('Đã đi lại','gift-done',state.giftDone)+'</div>'+
+      '<div class="chips" aria-label="Nhóm phong bì" style="margin-top:8px">'+['Bạn Pi','Bạn Bơ','Bạn chung'].map((group,i)=>segment(group,'group-'+i,state.groups.has(group))).join('')+'</div>'+
+      '<div class="ledger" id="demo-rows"></div>');
+    syncRows=()=>{
+      const rows=gifts.filter(r=>r.done===state.giftDone&&(!state.groups.size||state.groups.has(r.group))&&normalize(r.name+' '+r.event).includes(normalize(state.giftQuery.trim())));
+      el('demo-rows').innerHTML=rows.map(r=>row(r.name,r.event+' · '+r.group+(r.done?' · Đi lại '+money(r.returnAmount||500000)+(r.returnDate?' · '+r.returnDate.split('-').reverse().join('/'):' · Chưa rõ ngày'):''),r.amount,r.done?'':button('Đi lại','gift-'+gifts.indexOf(r)))).join('')||empty();
+    };
+    syncRows();
+  }
+  function calendarWave(ratio){
+    if(ratio>=1) return '';
+    const level = 100-ratio*100;
+    const amplitude = Math.min(6,level,ratio*100);
+    const edge = Array.from({length:25},(_,i)=>{
+      const y = level+Math.sin(i/24*Math.PI*2)*amplitude;
+      return (i/24*100).toFixed(2)+'% '+y.toFixed(2)+'%';
+    }).join(',');
+    return 'clip-path:polygon('+edge+',100% 100%,0% 100%)';
+  }
+  function calendar(){
+    const days=Array.from({length:30},(_,i)=>i+1);
+    const weekdays=['CN','T2','T3','T4','T5','T6','T7'];
+    const monthRecords=records.filter(record=>record.month==='11'&&record.paid);
+    const totals=new Map();
+    for(const record of monthRecords) totals.set(record.day,(totals.get(record.day)||0)+record.amount);
+    const maxAmount=Math.max(0,...totals.values());
+    const entries=monthRecords.filter(record=>record.day===state.day);
+    const cells=days.map(day=>{
+      const amount=totals.get(day)||0;
+      const ratio=maxAmount ? amount/maxAmount : 0;
+      return '<button class="button cal-day" data-do="day-'+day+'" data-fill="'+Math.round(ratio*100)+'" aria-label="Ngày '+day+'/11, đã chi '+money(amount)+'" aria-pressed="'+(state.day===day)+'">'
+        +(amount?'<span class="cal-water" aria-hidden="true" style="'+calendarWave(ratio)+'"></span>':'')
+        +'<span class="cal-number">'+day+'</span></button>';
+    }).join('');
+    panel.innerHTML=page('Lịch')+'<div class="grid page-flow">'
+      +section('<div class="section-head"><h2>Tháng 11/2026</h2><small>Tiền đã thanh toán</small></div><div class="calendar">'
+        +weekdays.map(day=>'<small>'+day+'</small>').join('')+cells+'</div>'
+        +'<p class="calendar-legend"><span aria-hidden="true"></span>Ô đầy = ngày chi nhiều nhất · <strong>'+money(maxAmount)+'</strong></p>')
+      +section('<div class="section-head"><h2>Ngày '+state.day+'/11</h2><strong class="money">'+money(totals.get(state.day)||0)+'</strong></div><div class="ledger">'
+        +(entries.map(record=>row(record.name,record.category,record.amount)).join('')||'<p class="empty">Chưa có khoản đã thanh toán trong ngày này.</p>')+'</div>')+'</div>';
+  }
+  function stats(){
+    panel.innerHTML=page('Thống kê')+'<div class="grid page-flow">'+section('<h2>Ghi nhận theo tháng</h2><div class="ledger">'+months.map((m,i)=>row('Tháng '+(i+6),i===5?'Đến ngày 24':'Cả tháng',m.total)).reverse().join('')+'</div>')+
+      section('<h2>Tháng 11 theo danh mục</h2><div class="ledger">'+labels.map((name,i)=>row(name,Math.round(portions[i]*100)+'% tổng ghi nhận',Math.round(9360000*portions[i]))).join('')+'</div>')+'</div>';
+  }
+  function budget(){
+    const percent=Math.round(9360000/state.limit*100);
+    const remaining=state.limit-9360000;
+    panel.innerHTML=page('Hạn mức',button('Chỉnh hạn mức','budget-edit',true))+'<div class="grid page-flow">'+section('<h2>Hạn mức tháng 11</h2><strong class="page-total money">'+money(state.limit)+'</strong><p class="muted">'+(remaining>=0?'Còn '+money(remaining):'Vượt '+money(-remaining))+'</p><div class="bar"><span style="width:'+Math.min(100,percent)+'%"></span></div><small>'+percent+'% đã ghi nhận</small>')+
+      section('<h2>Đã ghi nhận theo danh mục</h2><div class="ledger">'+labels.map((name,i)=>row(name,Math.round(portions[i]*100)+'% tổng ghi nhận',Math.round(9360000*portions[i]))).join('')+'</div>')+'</div>';
+  }
+  function settle(){
+    const rows=records.filter(r=>r.month==='11'&&!r.paid);
+    const total=rows.reduce((sum,r)=>sum+(state.checked.has(r)?r.amount:0),0);
+    panel.innerHTML=page('Quyết toán')+'<div class="grid page-flow">'+section('<div class="section-head"><h2>Khoản chưa thanh toán</h2><small>Tháng 11/2026</small></div><div class="ledger">'+(rows.map(r=>'<label class="item checkrow"><input class="check" type="checkbox" data-settle="'+records.indexOf(r)+'" '+(state.checked.has(r)?'checked':'')+'><span>'+esc(r.name)+'</span><b class="money">'+money(r.amount)+'</b></label>').join('')||empty())+'</div>')+
+      section('<h2>Tổng đã chọn</h2><output class="page-total money" id="settle-total">'+money(total)+'</output><p id="settle-count" class="status">'+rows.filter(r=>state.checked.has(r)).length+' khoản</p><div style="margin-top:12px">'+button('Xác nhận quyết toán','settle-confirm',true)+'</div>'+(state.settled?'<p class="status" role="status">Đã quyết toán các khoản đã chọn.</p>':''))+'</div>';
+    panel.querySelector('[data-do=settle-confirm]').disabled=total===0;
+  }
+  function settings(){
+    panel.innerHTML=page('Cài đặt')+'<div class="page-flow">'+section('<div class="section-head"><h2>Giao diện</h2><select data-change="theme" aria-label="Chế độ giao diện"><option value="light">Sáng</option><option value="dark">Tối</option></select></div>')+
+      section('<h2>Dữ liệu</h2><div class="settings-links" style="margin-top:10px">'+button('Nhập tệp phong bì','gift-import')+'<a class="button" href="#backup">Sao lưu</a></div>')+'</div>';
+    panel.querySelector('[data-change=theme]').value=document.body.classList.contains('dark')?'dark':'light';
+  }
+  function backup(){
+    panel.innerHTML=page('Sao lưu','<a class="button" href="#settings">‹ Cài đặt</a>')+'<div class="grid page-flow">'+section('<h2>Xuất dữ liệu</h2><p class="status">Tải JSON chứa các khoản mẫu trong demo.</p><div style="margin-top:12px">'+button('Tải bản sao lưu JSON','download',true)+'</div>')+
+      section('<h2>Khôi phục dữ liệu</h2><p class="status">Xem trước số khoản trong tệp JSON trước khi khôi phục.</p><div style="margin-top:12px">'+button('Chọn tệp xem trước','restore')+'</div>')+'</div>';
+  }
+  const screens={ledger,gifts:giftPage,calendar,stats,budget,settle,settings,backup,more:()=>{
+    panel.innerHTML=page('Thêm mục')+section('<div class="settings-links">'+moreLinks.map(key=>'<a class="button" href="#'+key+'">'+pages[key]+' ›</a>').join('')+'</div>');
+  }};
+  function navigate(){
+    const hash=location.hash.slice(1);
+    const key=Object.hasOwn(pages,hash)?hash:'overview';
+    active=key;
+    el('view-overview').hidden=key!=='overview';
+    panel.hidden=key==='overview';
+    document.querySelectorAll('[data-page]').forEach(a=>{
+      if(a.dataset.page===key||(key==='backup' && a.dataset.page==='settings')||(a.closest('#dock')&&a.dataset.page==='more'&&['calendar','stats','budget','settle','settings','backup'].includes(key)))a.setAttribute('aria-current','page');
+      else a.removeAttribute('aria-current');
+    });
+    if(key==='overview')renderMonth();
+    else screens[key]?.();
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  const field=(label,name,value='',type='text')=>'<label>'+label+'<input class="field" name="'+name+'" type="'+type+'" value="'+esc(value)+'" '+(type==='number'?'min="1" inputmode="numeric"':'')+' required></label>';
+  function form(title,content,save,onSave){
+    dialog.innerHTML='<form><h2 id="demo-form-title">'+title+'</h2><div class="form-fields">'+content+'</div><p class="status" role="status"></p><footer>'+button('Đóng','cancel')+'<button class="button primary" type="submit">'+save+'</button></footer></form>';
+    dialog.setAttribute('aria-labelledby','demo-form-title');
+    dialog.querySelector('[data-do=cancel]').onclick=()=>dialog.close();
+    dialog.querySelector('form').onsubmit=async event=>{
+      event.preventDefault();
+      if(await onSave(new FormData(event.currentTarget))!==false)dialog.close();
+    };
+    dialog.showModal();
+  }
+  panel.addEventListener('input',event=>{
+    if(event.target.type!=='search')return;
+    state[active==='ledger'?'query':'giftQuery']=event.target.value;
+    syncRows();
+  });
+  panel.addEventListener('change',event=>{
+    const {change,settle}=event.target.dataset;
+    if(change==='theme')document.body.classList.toggle('dark',event.target.value==='dark');
+    else if(change){state[change]=event.target.value;ledger();panel.querySelector('[data-change='+change+']')?.focus({preventScroll:true});}
+    if(settle!==undefined){
+      const record=records[Number(settle)];
+      if(event.target.checked)state.checked.add(record);else state.checked.delete(record);
+      const picked=[...state.checked].filter(r=>!r.paid);
+      el('settle-total').textContent=money(picked.reduce((sum,r)=>sum+r.amount,0));
+      el('settle-count').textContent=picked.length+' khoản';
+      panel.querySelector('[data-do=settle-confirm]').disabled=!picked.length;
+    }
+  });
+  panel.addEventListener('click',event=>{
+    const action=event.target.closest('[data-do]')?.dataset.do;
+    if(!action)return;
+    if(['paid','unpaid','filters'].includes(action)){
+      if(action==='filters')state.filters=!state.filters;else state.paid=action==='paid';
+      ledger();panel.querySelector('[data-do='+action+']')?.focus({preventScroll:true});return;
+    }
+    if(action==='gift-open'||action==='gift-done'){state.giftDone=action==='gift-done';giftPage();return;}
+    if(action.startsWith('group-')){
+      const group=['Bạn Pi','Bạn Bơ','Bạn chung'][Number(action.slice(6))];
+      if(state.groups.has(group))state.groups.delete(group);else state.groups.add(group);
+      giftPage();return;
+    }
+    if(action.startsWith('day-')){state.day=Number(action.slice(4));calendar();return;}
+    if(action.startsWith('pay-')){
+      const r=records[Number(action.slice(4))];
+      form('Đánh dấu đã thanh toán?', '<p>'+esc(r.name)+' · '+money(r.amount)+'</p>','Xác nhận',()=>{r.paid=true;ledger();});return;
+    }
+    if(action==='gift-add'){
+      form('Ghi phong bì',field('Tên','name')+field('Sự kiện','event','Cưới')+field('Số tiền','amount','','number'),'Lưu',v=>{
+        gifts.unshift({name:v.get('name'),event:v.get('event'),amount:Number(v.get('amount')),group:'Bạn chung',done:false});state.giftDone=false;giftPage();
+      });return;
+    }
+    if(action.startsWith('gift-')&&/^gift-\d+$/.test(action)){
+      const r=gifts[Number(action.slice(5))];
+      form('Tôi đã đi lại','<p>'+esc(r.name)+'</p>'+field('Số tiền','amount','','number')+'<label>Ngày (tùy chọn)<input class="field" name="date" type="date"></label>','Lưu',v=>{r.done=true;r.returnAmount=Number(v.get('amount'));r.returnDate=v.get('date');giftPage();});return;
+    }
+    if(action==='add'){
+      form('Thêm khoản chi',field('Tên khoản','name')+field('Số tiền','amount','','number'),'Lưu',v=>{
+        records.unshift({name:v.get('name'),amount:Number(v.get('amount')),category:'Mua sắm và khác',month:'11',day:24,paid:false,createdAt:Date.now()});state.paid=false;ledger();
+      });return;
+    }
+    if(action==='budget-edit'){form('Chỉnh hạn mức',field('Hạn mức tháng','limit',state.limit,'number'),'Lưu',v=>{state.limit=demoBudget=Number(v.get('limit'));budget();});return;}
+    if(action==='settle-confirm'){form('Xác nhận quyết toán','<p>Đánh dấu đã thanh toán các khoản đang chọn?</p>','Xác nhận',()=>{state.checked.forEach(r=>r.paid=true);state.checked.clear();state.settled=true;settle();});return;}
+    if(action==='download'){
+      const url=URL.createObjectURL(new Blob([JSON.stringify({expenses:records,envelopes:gifts},null,2)],{type:'application/json'}));
+      const a=document.createElement('a');a.href=url;a.download='so-theo-doi-demo.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
+    }
+    if(action==='restore'||action==='gift-import'){
+      form(action==='restore'?'Xem trước bản sao lưu':'Xem trước tệp phong bì','<label>Tệp dữ liệu<input class="field" name="file" type="file" accept=".json,application/json" required></label>','Xem trước',async values=>{
+        const message=dialog.querySelector('[role=status]');
+        try{
+          const data=JSON.parse(await values.get('file').text());
+          message.textContent=action==='restore'?((data.expenses?.length||0)+' khoản chi · '):'';
+          message.textContent+=(data.envelopes?.length||0)+' phong bì trong tệp.';
+        }catch{message.textContent='Tệp JSON không hợp lệ.';}
+        return false;
+      });
+    }
+  });
+  const menu=el('mobile-menu');
+  const mobile=matchMedia('(max-width:820px)');
+  menu.innerHTML='<header class="section-head"><div class="brand"><span class="mark" aria-hidden="true">S</span><h2 id="mobile-menu-title">Sổ Theo Dõi</h2></div><button type="button" class="button" aria-label="Đóng menu">✕</button></header>'
+    +'<nav aria-label="Menu mobile"><div class="menu-group"><small>Menu</small>'
+    +['overview','ledger','gifts','calendar','stats','budget','settle'].map(link).join('')+'</div>'
+    +'<div class="menu-group"><small>Hệ thống</small>'+link('settings')+'</div></nav>';
+  const closeMenu=()=>menu.close();
+  function openMenu(){
+    if(mobile.matches && !document.querySelector('dialog[open]')){
+      menu.querySelectorAll('[data-page]').forEach(a=>{
+        if(a.dataset.page===active || (active==='backup' && a.dataset.page==='settings'))a.setAttribute('aria-current','page');
+        else a.removeAttribute('aria-current');
+      });
+      menu.showModal();
+    }
+  }
+  el('dock').querySelector('[data-page=more]').addEventListener('click',event=>{
+    if(mobile.matches){event.preventDefault();openMenu();}
+  });
+  menu.addEventListener('click',event=>{
+    if(event.target===menu || event.target.closest('button,a[href]'))closeMenu();
+  });
+  mobile.addEventListener('change',()=>{if(!mobile.matches && menu.open)closeMenu();});
+  let touchStart;
+  document.addEventListener('touchstart',event=>{
+    touchStart=null;
+    if(!mobile.matches || event.touches.length!==1 || document.querySelector('dialog[open]'))return;
+    if(!event.target.matches('main, header, section, .page-flow, .grid, body, .wrap'))return;
+    const {clientX:x,clientY:y,identifier}=event.touches[0];
+    touchStart={x,y,identifier};
+  },{passive:true});
+  document.addEventListener('touchcancel',()=>{touchStart=null;},{passive:true});
+  document.addEventListener('touchend',event=>{
+    if(!touchStart)return;
+    const start=touchStart;
+    touchStart=null;
+    const touch=[...event.changedTouches].find(item=>item.identifier===start.identifier);
+    if(!touch || event.touches.length)return;
+    const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
+    if(dx>=70 && dx>Math.abs(dy)*2)openMenu();
+  },{passive:true});
+  addEventListener('hashchange',navigate);
+  navigate();
+})();
+</script>
+</body>
+</html>
