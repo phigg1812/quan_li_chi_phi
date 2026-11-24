@@ -1,0 +1,23 @@
+/* Keep the original chrome and give the preview the same motion on both layouts. */
+.demo-label{font-size:11px;font-weight:700;padding:4px 7px;border-radius:7px;background:var(--primary-soft);color:var(--primary);white-space:nowrap;margin-inline-start:8px}
+.demo-month{min-height:44px;min-width:0}
+.cal-cell{isolation:isolate}
+.cal-cell-amount,.cal-date,.cal-dots{position:relative}
+.demo-calendar-fill{position:absolute;inset:0;background:#c4e4ff;z-index:-1;pointer-events:none;transform-origin:bottom}
+[data-theme="dark"] .demo-calendar-fill{background:#205582}
+.cal-cell.other-month .demo-calendar-fill{display:none}
+@media(max-width:820px){.expense-list-content .list-toolbar .demo-month{width:100%}.cal-grid{grid-template-columns:repeat(7,minmax(0,1fr))}.cal-cell-amount{font-size:9px;overflow-wrap:anywhere}.topbar .demo-label{margin-inline-start:4px}}
+@media(prefers-reduced-motion:no-preference){
+  .demo-calendar-fill{animation:preview-wave .4s cubic-bezier(.2,.72,.25,1)}
+  @keyframes preview-wave{from{transform:scaleY(.15);opacity:.25}to{transform:scaleY(1);opacity:1}}
+  .envelope-dialog[open]{animation:sheetEnter .22s cubic-bezier(.2,.72,.25,1)}
+  .envelope-dialog[open]::backdrop{animation:sheetBackdropIn .18s ease-out}
+  .qrx-btn:active,.qtb:active,.qd-pay:active{transform:scale(.96)}
+  .exp-check{transition:background-color .18s ease,transform .18s ease}
+  .exp-checking{animation:checkPulse .34s ease}
+  @supports(transition-behavior:allow-discrete){
+    .envelope-dialog{transition:opacity .16s ease,transform .16s ease,display .16s allow-discrete,overlay .16s allow-discrete}
+    .envelope-dialog:not([open]){opacity:0;transform:translateY(12px)}
+  }
+}
+@media(max-width:820px){#qdA{order:6}}
