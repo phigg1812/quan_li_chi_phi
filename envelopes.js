@@ -142,6 +142,9 @@ function openEnvelopeForm(entry, isReciprocal=false){
         ${Object.entries(ENVELOPE_SCOPES).map(([key,label])=>`<option value="${key}" ${entry?.scope===key ? 'selected' : ''}>${label}</option>`).join('')}
       </select></label>`}
     <label>Sự kiện<input name="event" required maxlength="160" placeholder="Ví dụ: Cưới, sinh nhật" value="${escapeHTML(item?.event)}"></label>
+    <div class="envelope-quick-amounts" role="group" aria-label="Chọn sự kiện nhanh">
+      ${['Cưới','Sinh nhật','Tân gia'].map(name=>`<button type="button" class="btn" data-event="${name}" aria-pressed="${item?.event===name}">${name}</button>`).join('')}
+    </div>
     <label for="envelopeAmountInput">Số tiền</label>
     <div class="envelope-amount-field">
       <input id="envelopeAmountInput" name="amount" inputmode="numeric" placeholder="0" required
@@ -156,6 +159,9 @@ function openEnvelopeForm(entry, isReciprocal=false){
     </div>
     <label>${isReciprocal ? 'Ngày (có thể để trống)' : 'Ngày'}<input name="date" type="date" ${isReciprocal || item?.date==='' ? '' : 'required'} value="${escapeHTML(item?.date ?? (isReciprocal ? '' : todayISO()))}"></label>
     <label>Ghi chú (không bắt buộc)<textarea name="notes" maxlength="500" rows="2">${escapeHTML(item?.notes)}</textarea></label>
+    ${isReciprocal ? `<div class="envelope-quick-amounts">
+      <button type="button" class="btn" data-past-gift>${entry.direction==='sent' ? 'Họ đã đi trước đó' : 'Tôi đã đi trước đó'}</button>
+    </div>` : ''}
     <p class="envelope-error" role="alert" hidden></p>
     <footer><button class="btn" type="button" data-cancel>Đóng</button><button class="btn btn-primary" type="submit">Lưu phong bì</button></footer>
   </form>`;
@@ -164,6 +170,33 @@ function openEnvelopeForm(entry, isReciprocal=false){
   const submit = form.querySelector('[type=submit]');
   const cancel = form.querySelector('[data-cancel]');
   const amountInput = form.elements.amount;
+  const eventInput = form.elements.event;
+  const quickEvents = [...form.querySelectorAll('[data-event]')];
+  const syncQuickEvents = ()=>quickEvents.forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.event===eventInput.value.trim()));
+  });
+  eventInput.addEventListener('input',syncQuickEvents);
+  quickEvents.forEach(button=>{
+    button.onclick = ()=>{
+      eventInput.value = button.dataset.event;
+      syncQuickEvents();
+    };
+  });
+  const pastGift = form.querySelector('[data-past-gift]');
+  if(pastGift){
+    const notes = form.elements.notes;
+    const phrase = pastGift.textContent;
+    const syncPastGift = ()=>{
+      pastGift.disabled = notes.value.split('\n').some(line=>line.trim()===phrase)
+        || notes.value.trimEnd().length+phrase.length+(notes.value.trimEnd()?1:0)>notes.maxLength;
+    };
+    notes.addEventListener('input',syncPastGift);
+    pastGift.onclick = ()=>{
+      notes.value = [notes.value.trimEnd(),phrase].filter(Boolean).join('\n');
+      syncPastGift();
+    };
+    syncPastGift();
+  }
   amountInput.addEventListener('input',()=>{
     const raw = amountInput.value;
     const digitsAfterCaret = raw.slice(amountInput.selectionStart).replace(/[^0-9]/g,'').length;
