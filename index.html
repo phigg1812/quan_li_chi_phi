@@ -981,6 +981,10 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <span class="nav-icon" data-icon="bar-chart"></span>
         <span class="nav-label" data-i18n="nav.stats">Thống kê</span>
       </button>
+      <button class="nav-item" data-view="envelopes">
+        <span class="nav-icon" data-icon="archive"></span>
+        <span class="nav-label">Sổ phong bì</span>
+      </button>
       <button class="nav-item" data-view="calendar">
         <span class="nav-icon" data-icon="calendar"></span>
         <span class="nav-label" data-i18n="nav.calendar">Lịch</span>
@@ -1118,6 +1122,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
       <!-- ============================================================
            MODULE 04 — PENDING / PAID LIST VIEWS (shared markup)
            ============================================================ -->
+      <section class="view" id="view-envelopes"></section>
       <section class="view" id="view-pending" data-status="pending"></section>
       <section class="view" id="view-paid" data-status="paid"></section>
 
@@ -1597,7 +1602,7 @@ async function dbClear(storeName){
    MODULE 09b — GLOBAL STATE + UTILITIES
    ============================================================ */
 const STATE = {
-  expenses:[], categories:[], wallets:[], paymentMethods:[], recurring:[], backups:[], learningRules:[],
+  expenses:[], envelopes:[], categories:[], wallets:[], paymentMethods:[], recurring:[], backups:[], learningRules:[],
   settings:{ language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false },
   ui:{ currentView:'dashboard', listViewMode:'card', search:'', sort:{field:'dueDate',dir:'asc'},
        filters:{category:'all', wallet:'all', period:'all', minAmount:'', maxAmount:''},
@@ -1665,11 +1670,16 @@ async function seedIfEmpty(){
 }
 
 async function loadAllState(){
-  const [expenses, categories, wallets, paymentMethods, recurring, backups, learningRules, settingsRows] = await Promise.all([
+  const [expenses, categories, wallets, paymentMethods, recurring, backups, learningRules, settingsRows, envelopes] = await Promise.all([
     dbGetAll('expenses'), dbGetAll('categories'), dbGetAll('wallets'), dbGetAll('paymentMethods'),
-    dbGetAll('recurring'), dbGetAll('backups'), dbGetAll('learningRules'), dbGetAll('settings')
+    dbGetAll('recurring'), dbGetAll('backups'), dbGetAll('learningRules'), dbGetAll('settings'), dbGetAll('envelopes').catch(err=>{
+      if(err.code!=='permission-denied') throw err;
+      return null;
+    })
   ]);
   STATE.expenses = expenses;
+  STATE.envelopes = envelopes || [];
+  STATE.envelopesUnavailable = envelopes===null;
   STATE.categories = categories;
   STATE.wallets = wallets;
   STATE.paymentMethods = paymentMethods;
@@ -1796,7 +1806,7 @@ function switchView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===name));
-  document.getElementById('topbarTitle').textContent = t(VIEW_TITLE_KEYS[name]||'nav.dashboard');
+  document.getElementById('topbarTitle').textContent = name==='envelopes' ? 'Sổ phong bì' : t(VIEW_TITLE_KEYS[name]||'nav.dashboard');
   closeMobileSidebar();
   renderCurrentView(true);
 }
@@ -1805,6 +1815,7 @@ function renderCurrentView(force){
     case 'dashboard': renderDashboard(); break;
     case 'pending': renderListView('pending', force); break;
     case 'paid': renderListView('paid', force); break;
+    case 'envelopes': renderEnvelopeView(); break;
     case 'calendar': renderCalendar(); break;
     case 'stats': renderStats(); break;
     case 'settings': renderSettings(); break;
@@ -2959,7 +2970,7 @@ document.querySelectorAll('.theme-opt').forEach(opt=>opt.addEventListener('click
 function buildBackupPayload(){
   return {
     version:1, exportedAt:new Date().toISOString(),
-    expenses:STATE.expenses, categories:STATE.categories, wallets:STATE.wallets,
+    expenses:STATE.expenses, ...(STATE.envelopesUnavailable ? {} : {envelopes:STATE.envelopes}), categories:STATE.categories, wallets:STATE.wallets,
     paymentMethods:STATE.paymentMethods, recurring:STATE.recurring, learningRules:STATE.learningRules, settings:STATE.settings
   };
 }
@@ -2988,7 +2999,7 @@ async function importBackupFile(file){
     if(!data || !Array.isArray(data.expenses)) throw new Error('invalid');
     const ok = await askConfirm(t('backup.restoreTitle'), t('backup.restoreDesc'));
     if(!ok) return;
-    for(const [store,rows] of [['expenses',data.expenses],['categories',data.categories],['wallets',data.wallets],['paymentMethods',data.paymentMethods],['recurring',data.recurring],['learningRules',data.learningRules]]){
+    for(const [store,rows] of [['expenses',data.expenses],['envelopes',data.envelopes],['categories',data.categories],['wallets',data.wallets],['paymentMethods',data.paymentMethods],['recurring',data.recurring],['learningRules',data.learningRules]]){
       if(Array.isArray(rows)) await dbReplaceAll(store, rows);
     }
     if(data.settings){ Object.assign(STATE.settings, data.settings); await saveSettings(); }
@@ -3547,6 +3558,33 @@ function buildLink(app,p){
     +'&ba='+encodeURIComponent(p.account+'@'+code)+'&url='+encodeURIComponent(location.origin+location.pathname);
 }
 
+.envelope-empty{padding:24px;color:var(--text-secondary);text-align:center}
+.envelope-header,.envelope-filters,.envelope-card header,.envelope-card footer,.envelope-dialog footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.envelope-header h1{font-size:clamp(23px,4vw,31px);margin:0}
+.envelope-header .btn,.envelope-card .btn,.envelope-dialog .btn{min-height:44px}
+.envelope-totals,.envelope-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.envelope-totals>div,.envelope-card,.envelope-empty{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.envelope-totals span,.envelope-transaction span{display:block;color:var(--text-secondary);font-size:13px}
+.envelope-totals strong{font-size:clamp(17px,4vw,26px);overflow-wrap:anywhere}
+.envelope-filters input{flex:1;min-width:0;background-image:none;padding-right:10px}
+.envelope-filters .filter-select{min-height:44px}
+.envelope-card header{align-items:start}
+.envelope-card h2{font-size:17px;overflow-wrap:anywhere}
+.envelope-card header span{font-size:12px;color:var(--primary);background:var(--primary-soft);border-radius:20px;padding:3px 9px;white-space:nowrap}
+.envelope-transaction{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.envelope-transaction b{display:block;overflow-wrap:anywhere}
+.envelope-transaction strong{white-space:nowrap}
+.envelope-card footer,.envelope-dialog footer{justify-content:flex-end;margin-top:12px}
+.envelope-empty{grid-column:1/-1}
+.envelope-dialog{position:fixed;margin:auto;width:min(calc(100% - 24px),460px);max-height:calc(100dvh - 36px);overflow:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--card);color:var(--text);padding:20px}
+.envelope-dialog::backdrop{background:rgba(15,23,42,.55)}
+.envelope-dialog h2{font-size:21px;margin-bottom:10px}
+.envelope-dialog label{display:grid;gap:4px;margin-top:9px;font-weight:600;font-size:13px}
+.envelope-dialog input,.envelope-dialog select,.envelope-dialog textarea{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font-size:16px}
+.envelope-error{color:var(--danger);margin-top:12px}
+.main-content:has(#view-envelopes.active)>.qrx-large{display:none}
+@media(max-width:640px){.envelope-list{grid-template-columns:1fr}.envelope-card,.envelope-totals>div{padding:12px}}
+
 let stream=null, raf=0, cur=null;
 function loadJsQR(){ if(window.jsQR) return Promise.resolve();
   const urls=['https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js','https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js'];
@@ -4089,3 +4127,4 @@ try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body)
 
 </body>
 </html>
+<script src="./envelopes.js"></script>

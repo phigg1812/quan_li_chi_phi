@@ -7,7 +7,7 @@ service cloud.firestore {
       allow create, update: if request.auth != null
                             && request.auth.uid == userId
                             && coll in ['expenses', 'categories', 'wallets', 'paymentMethods',
-                                        'recurring', 'learningRules', 'payees', 'settings', 'backups']
+                                        'recurring', 'envelopes', 'learningRules', 'payees', 'settings', 'backups']
                             && docId.size() <= 200
                             && request.resource.data.keys().size() <= 60;
     }
