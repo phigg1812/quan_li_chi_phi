@@ -1,5 +1,7 @@
 const ENVELOPE_SCOPES = {personal:'Riêng tôi · Bạn Pi', partner:'Bên Bơ', couple:'Vợ chồng · Bạn chung'};
 let envelopeFilter = 'all';
+let envelopeSort = 'recent';
+const envelopeNameOrder = new Intl.Collator('vi',{sensitivity:'base',numeric:true});
 const selectedEnvelopeScopes = new Set();
 
 function renderEnvelopeView(){
@@ -10,9 +12,16 @@ function renderEnvelopeView(){
       <div class="envelope-totals" aria-label="Tổng tiền phong bì"></div>
       <div class="envelope-filters">
         <input class="filter-select" type="search" aria-label="Tìm phong bì" placeholder="Tên, sự kiện hoặc ghi chú">
-        <select class="filter-select" aria-label="Lọc phong bì">
+        <select class="filter-select" aria-label="Lọc phong bì" id="envelopeDirection">
           <option value="all">Tất cả</option><option value="received">Đã nhận</option><option value="sent">Đã đi</option>
           <option value="open">Chưa đi lại</option>
+        </select>
+        <select class="filter-select" aria-label="Sắp xếp phong bì" id="envelopeSort">
+          <option value="recent">Sắp xếp: Mới nhất</option>
+          <option value="amount-desc">Tiền: Lớn → nhỏ</option>
+          <option value="amount-asc">Tiền: Nhỏ → lớn</option>
+          <option value="name-asc">Tên: A → Z</option>
+          <option value="name-desc">Tên: Z → A</option>
         </select>
       </div>
       <fieldset class="envelope-groups">
@@ -28,8 +37,12 @@ function renderEnvelopeView(){
       else selectedEnvelopeScopes.delete(target.value);
       renderEnvelopeView();
     };
-    section.querySelector('select').onchange = event=>{
+    section.querySelector('#envelopeDirection').onchange = event=>{
       envelopeFilter = event.target.value;
+      renderEnvelopeView();
+    };
+    section.querySelector('#envelopeSort').onchange = event=>{
+      envelopeSort = event.target.value;
       renderEnvelopeView();
     };
   }
@@ -43,8 +56,7 @@ function renderEnvelopeView(){
     if(envelopeFilter==='open') return !entry.reciprocal;
     return entry.direction===envelopeFilter ||
       (entry.reciprocal && ['sent','received'].includes(envelopeFilter));
-  }).sort((a,b)=>(b.reciprocal?.date || b.date).localeCompare(a.reciprocal?.date || a.date)
-    || b.createdAt-a.createdAt || (a.sourceRow||0)-(b.sourceRow||0));
+  }).sort(compareEnvelopes);
   const totals = {received:0, sent:0};
   for(const entry of visible){
     totals[entry.direction] += Number(entry.amount);
@@ -64,6 +76,25 @@ function renderEnvelopeView(){
       if(entry) openEnvelopeForm(entry,button.dataset.action==='reciprocal');
     };
   });
+}
+
+function compareEnvelopes(a,b){
+  let order = 0;
+  switch(envelopeSort){
+    case 'amount-asc': order = envelopeSortAmount(a)-envelopeSortAmount(b); break;
+    case 'amount-desc': order = envelopeSortAmount(b)-envelopeSortAmount(a); break;
+    case 'name-asc': order = envelopeNameOrder.compare(a.person,b.person); break;
+    case 'name-desc': order = envelopeNameOrder.compare(b.person,a.person); break;
+  }
+  return order || (b.reciprocal?.date || b.date).localeCompare(a.reciprocal?.date || a.date)
+    || b.createdAt-a.createdAt || (a.sourceRow||0)-(b.sourceRow||0);
+}
+
+function envelopeSortAmount(entry){
+  if(entry.reciprocal && ['sent','received'].includes(envelopeFilter) && entry.direction!==envelopeFilter){
+    return Number(entry.reciprocal.amount);
+  }
+  return Number(entry.amount);
 }
 
 function envelopeAmount(amount){

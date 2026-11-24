@@ -3558,6 +3558,7 @@ body{max-width:100vw;touch-action:manipulation}
 .envelope-totals strong{font-size:clamp(17px,4vw,26px);overflow-wrap:anywhere}
 .envelope-filters input{flex:1;min-width:0;background-image:none;padding-right:10px}
 .envelope-filters .filter-select{min-height:44px}
+@media(max-width:640px){.envelope-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.envelope-filters input{grid-column:1/-1}.envelope-filters .filter-select{width:100%;min-width:0}}
 .envelope-card header{align-items:start}
 .envelope-card h2{font-size:17px;overflow-wrap:anywhere}
 .envelope-card header span{font-size:12px;color:var(--primary);background:var(--primary-soft);border-radius:20px;padding:3px 9px;white-space:nowrap}
