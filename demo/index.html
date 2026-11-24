@@ -69,6 +69,20 @@ body.dark{--glass:rgba(25,34,49,.82);--glass-edge:rgba(185,202,224,.22);--wave:#
   .dock-qr{display:grid;place-items:center;width:50px;height:50px;flex:none;border:0;border-radius:50%;background:#095bc6;color:white;box-shadow:0 3px 14px #0a5acc40}
   .dock-badge{position:absolute;top:1px;right:4px;min-width:17px;border-radius:9px;padding:1px 4px;background:#bc2844;color:white;font-size:10px;font-weight:700;line-height:1.4}
 }
+
+@media(prefers-reduced-motion:no-preference){
+  .button,.dock>a,.dock-qr,.month .fill,.bar span{transition:background-color .18s ease,color .18s ease,transform .14s ease,width .24s ease}
+  .button:active,.dock-qr:active{transform:scale(.96)}
+  .dialog[open]{animation:demo-dialog-in .22s cubic-bezier(.2,.72,.25,1)}
+  .dialog[open]::backdrop,.mobile-menu[open]::backdrop{animation:demo-backdrop-in .18s ease-out}
+  @keyframes demo-backdrop-in{from{opacity:0}to{opacity:1}}
+  @keyframes demo-dialog-in{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @supports(transition-behavior:allow-discrete){
+    .dialog,.mobile-menu{transition:opacity .16s ease,transform .16s ease,display .16s allow-discrete,overlay .16s allow-discrete}
+    .dialog:not([open]){opacity:0;transform:translateY(10px) scale(.985)}
+    .mobile-menu:not([open]){opacity:0;transform:translateX(-24px)}
+  }
+}
 </style>
 </head>
 <body>
@@ -346,6 +360,7 @@ renderMonth();
     const hash=location.hash.slice(1);
     const key=hash==='paid'?'ledger':Object.hasOwn(pages,hash)?hash:'overview';
     if(key==='ledger')state.paid=hash==='paid';
+    const previous=active;
     active=key;
     syncDock();
     el('view-overview').hidden=key!=='overview';
@@ -357,6 +372,12 @@ renderMonth();
     if(key==='overview')renderMonth();
     else screens[key]?.();
     window.scrollTo({top:0,behavior:'instant'});
+    if(previous && previous!==key && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const view=key==='overview'?el('view-overview'):panel;
+      view.getAnimations().forEach(animation=>animation.cancel());
+      view.animate([{opacity:.55,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],
+        {duration:190,easing:'cubic-bezier(.2,.7,.25,1)'});
+    }
   }
   const field=(label,name,value='',type='text')=>'<label>'+label+'<input class="field" name="'+name+'" type="'+type+'" value="'+esc(value)+'" '+(type==='number'?'min="1" inputmode="numeric"':'')+' required></label>';
   function form(title,content,save,onSave){
