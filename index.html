@@ -3929,8 +3929,9 @@ function openSettle(){
   function renderDash(){
     const A=document.getElementById('qdA'), B=document.getElementById('qdB'), C=document.getElementById('qdC'), D=document.getElementById('qdD'), E=document.getElementById('qdE'); if(!A) return;
     const b=budgets(), sp=spentOf(ymNow()), pv=spentOf(mShift(-1)), m=Number(ymNow().slice(5)), y=Number(ymNow().slice(0,4));
-    const unp=STATE.expenses.filter(e=>!e.paid), by=(x,z)=>dayOf(x)-dayOf(z) || expenseCreatedTime(z)-expenseCreatedTime(x);
-    const act=unp.filter(e=>dayOf(e)<=7).sort(by), soonAll=unp.filter(e=>dayOf(e)>7&&dayOf(e)<=30).sort(by), soon=soonAll.slice(0,5), overdue=unp.filter(e=>dayOf(e)<0).length;
+    const unp=STATE.expenses.filter(e=>!e.paid);
+    const act=unp.filter(e=>dayOf(e)<=7).sort((a,b)=>expenseCreatedTime(b)-expenseCreatedTime(a));
+    const soonAll=unp.filter(e=>dayOf(e)>7&&dayOf(e)<=30).sort((a,b)=>dayOf(a)-dayOf(b)), soon=soonAll.slice(0,5), overdue=unp.filter(e=>dayOf(e)<0).length;
     const al=document.getElementById('qdAlert'); if(al){ al.style.display=overdue?'block':'none'; al.textContent=overdue+' khoản quá hạn · Xem'; }
     const tot=act.reduce((s,e)=>s+(Number(e.amount)||0),0);
     const sub=e=>{const n=dayOf(e); return n<0?['Quá hạn '+(-n)+' ngày','var(--danger)']:n===0?['Đến hạn hôm nay','var(--warning)']:['Hạn '+ddmm(e)+' · còn '+n+' ngày','var(--text-secondary)'];};
