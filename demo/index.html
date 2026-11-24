@@ -56,6 +56,19 @@ body.dark{--glass:rgba(25,34,49,.82);--glass-edge:rgba(185,202,224,.22);--wave:#
 @media(prefers-reduced-transparency:reduce){
   .rail,.mobile-menu,.dock,.dialog,body.dark .rail{background:var(--paper);backdrop-filter:none;-webkit-backdrop-filter:none}
 }
+
+.demo-menu-bar{display:none}
+@media(max-width:820px){
+  .demo-menu-bar{display:flex;padding:calc(8px + env(safe-area-inset-top)) 14px 0}
+  .demo-menu-trigger{min-height:44px}
+  main{padding-top:12px;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  .dock{height:66px;align-items:center;gap:1px;padding:4px 6px}
+  .dock>a{position:relative;height:54px;min-width:0;gap:3px}
+  .dock>a span{font-size:11px;line-height:1.15}
+  .dock>a svg{width:22px;height:22px}
+  .dock-qr{display:grid;place-items:center;width:50px;height:50px;flex:none;border:0;border-radius:50%;background:#095bc6;color:white;box-shadow:0 3px 14px #0a5acc40}
+  .dock-badge{position:absolute;top:1px;right:4px;min-width:17px;border-radius:9px;padding:1px 4px;background:#bc2844;color:white;font-size:10px;font-weight:700;line-height:1.4}
+}
 </style>
 </head>
 <body>
@@ -204,7 +217,31 @@ renderMonth();
   let syncRows=()=>{};
   const link=key=>'<a href="#'+key+'" data-page="'+key+'">'+pages[key]+'</a>';
   el('side').innerHTML=links.map(link).join('');
-  el('dock').innerHTML=['overview','ledger','gifts','more'].map(link).join('');
+  const ic=(p)=>'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+  const dockTabs=[
+    ['overview','Tổng quan',ic('<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>')],
+    ['ledger','Chưa TT',ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')],
+    ['paid','Đã TT',ic('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>')],
+    ['stats','Thống kê',ic('<path d="M5 20V10M12 20V4M19 20V7"/>')]
+  ];
+  const dockLink=([key,label,icon])=>'<a href="#'+key+'" data-dock="'+key+'">'+icon+'<span>'+label+'</span>'
+    +(key==='ledger'?'<b id="demo-pending-badge" class="dock-badge"></b>':'')+'</a>';
+  el('dock').innerHTML=dockTabs.slice(0,2).map(dockLink).join('')
+    +'<button type="button" id="demo-qr" class="dock-qr" aria-label="Quét QR thanh toán"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><g fill="currentColor" stroke="none"><rect x="5.5" y="5.5" width="2" height="2"/><rect x="16.5" y="5.5" width="2" height="2"/><rect x="5.5" y="16.5" width="2" height="2"/><rect x="14" y="14" width="2.6" height="2.6"/><rect x="18.4" y="14" width="2.6" height="2.6"/><rect x="16.2" y="17" width="2.6" height="2.6"/><rect x="14" y="19" width="2.6" height="2"/><rect x="18.4" y="19" width="2.6" height="2"/></g></svg></button>'
+    +dockTabs.slice(2).map(dockLink).join('');
+  function syncDock(){
+    const selected=active==='ledger' && state.paid ? 'paid' : active;
+    document.querySelectorAll('[data-dock]').forEach(a=>{
+      if(a.dataset.dock===selected)a.setAttribute('aria-current','page');
+      else a.removeAttribute('aria-current');
+    });
+    const count=records.filter(record=>!record.paid).length;
+    const badge=el('demo-pending-badge');
+    badge.hidden=count===0;
+    badge.textContent=count;
+    badge.parentElement.setAttribute('aria-label','Chưa thanh toán'+(count?' · '+count+' khoản':''));
+  }
+
   const page=(title,action='')=>'<header class="head"><div><h1>'+title+'</h1><p>Dữ liệu mẫu</p></div>'+action+'</header>';
   const button=(label,action,primary=false)=>'<button class="button'+(primary?' primary':'')+'" type="button" data-do="'+action+'">'+label+'</button>';
   const section=(content)=>'<section class="section">'+content+'</section>';
@@ -213,6 +250,7 @@ renderMonth();
   const segment=(label,id,on)=>'<button class="button" type="button" data-do="'+id+'" aria-pressed="'+on+'">'+label+'</button>';
   const categories=['Ăn uống','Nhà & hóa đơn','Di chuyển','Mua sắm và khác'];
   function ledger(){
+    syncDock();
     panel.innerHTML=page('Khoản chi',button('+ Thêm khoản','add',true))+section(
       '<div class="toolbar search-first"><input type="search" aria-label="Tìm khoản chi" placeholder="Tìm khoản chi" value="'+esc(state.query)+'"></div>'+
       '<div class="segments">'+segment('Chưa thanh toán','unpaid',!state.paid)+segment('Đã thanh toán','paid',state.paid)+'</div>'+
@@ -285,6 +323,7 @@ renderMonth();
       section('<h2>Đã ghi nhận theo danh mục</h2><div class="ledger">'+labels.map((name,i)=>row(name,Math.round(portions[i]*100)+'% tổng ghi nhận',Math.round(9360000*portions[i]))).join('')+'</div>')+'</div>';
   }
   function settle(){
+    syncDock();
     const rows=records.filter(r=>r.month==='11'&&!r.paid);
     const total=rows.reduce((sum,r)=>sum+(state.checked.has(r)?r.amount:0),0);
     panel.innerHTML=page('Quyết toán')+'<div class="grid page-flow">'+section('<div class="section-head"><h2>Khoản chưa thanh toán</h2><small>Tháng 11/2026</small></div><div class="ledger">'+(rows.map(r=>'<label class="item checkrow"><input class="check" type="checkbox" data-settle="'+records.indexOf(r)+'" '+(state.checked.has(r)?'checked':'')+'><span>'+esc(r.name)+'</span><b class="money">'+money(r.amount)+'</b></label>').join('')||empty())+'</div>')+
@@ -305,8 +344,10 @@ renderMonth();
   }};
   function navigate(){
     const hash=location.hash.slice(1);
-    const key=Object.hasOwn(pages,hash)?hash:'overview';
+    const key=hash==='paid'?'ledger':Object.hasOwn(pages,hash)?hash:'overview';
+    if(key==='ledger')state.paid=hash==='paid';
     active=key;
+    syncDock();
     el('view-overview').hidden=key!=='overview';
     panel.hidden=key==='overview';
     document.querySelectorAll('[data-page]').forEach(a=>{
@@ -350,7 +391,11 @@ renderMonth();
     const action=event.target.closest('[data-do]')?.dataset.do;
     if(!action)return;
     if(['paid','unpaid','filters'].includes(action)){
-      if(action==='filters')state.filters=!state.filters;else state.paid=action==='paid';
+      if(action==='filters')state.filters=!state.filters;
+      else{
+        state.paid=action==='paid';
+        history.replaceState(null,'',state.paid?'#paid':'#ledger');
+      }
       ledger();panel.querySelector('[data-do='+action+']')?.focus({preventScroll:true});return;
     }
     if(action==='gift-open'||action==='gift-done'){state.giftDone=action==='gift-done';giftPage();return;}
@@ -412,9 +457,24 @@ renderMonth();
       menu.showModal();
     }
   }
-  el('dock').querySelector('[data-page=more]').addEventListener('click',event=>{
-    if(mobile.matches){event.preventDefault();openMenu();}
-  });
+  const menuTrigger=document.createElement('button');
+  menuTrigger.type='button';
+  menuTrigger.className='button demo-menu-trigger';
+  menuTrigger.textContent='Menu';
+  menuTrigger.setAttribute('aria-haspopup','dialog');
+  menuTrigger.setAttribute('aria-controls','mobile-menu');
+  menuTrigger.onclick=openMenu;
+  const menuBar=document.createElement('div');
+  menuBar.className='demo-menu-bar';
+  menuBar.appendChild(menuTrigger);
+  document.querySelector('.wrap').before(menuBar);
+  el('demo-qr').onclick=()=>{
+    form('Quét QR thanh toán','<p>Luồng demo dùng một giao dịch mẫu để xem giao diện xác nhận.</p>','Xem QR mẫu',()=>{
+      dialog.close();
+      form('Thông tin QR mẫu','<p>Tiền điện · '+money(350000)+'</p><p class="status">Đây là giao dịch mẫu để xem trước.</p>','Đóng',()=>{});
+      return false;
+    });
+  };
   menu.addEventListener('click',event=>{
     if(event.target===menu || event.target.closest('button,a[href]'))closeMenu();
   });
@@ -437,6 +497,7 @@ renderMonth();
     const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
     if(dx>=70 && dx>Math.abs(dy)*2)openMenu();
   },{passive:true});
+  el('confirm').addEventListener('close',syncDock);
   addEventListener('hashchange',navigate);
   navigate();
 })();
