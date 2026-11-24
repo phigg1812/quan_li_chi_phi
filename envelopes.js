@@ -1,5 +1,6 @@
 const ENVELOPE_SCOPES = {personal:'Riêng tôi · Bạn Pi', partner:'Bên Bơ', couple:'Vợ chồng · Bạn chung'};
 let envelopeFilter = 'all';
+let envelopeStatus = 'open';
 let envelopeSort = 'recent';
 const envelopeNameOrder = new Intl.Collator('vi',{sensitivity:'base',numeric:true});
 const selectedEnvelopeScopes = new Set();
@@ -14,7 +15,6 @@ function renderEnvelopeView(){
         <input class="filter-select" type="search" aria-label="Tìm phong bì" placeholder="Tên, sự kiện hoặc ghi chú">
         <select class="filter-select" aria-label="Lọc phong bì" id="envelopeDirection">
           <option value="all">Tất cả</option><option value="received">Đã nhận</option><option value="sent">Đã đi</option>
-          <option value="open">Chưa đi lại</option>
         </select>
         <select class="filter-select" aria-label="Sắp xếp phong bì" id="envelopeSort">
           <option value="recent">Sắp xếp: Mới nhất</option>
@@ -28,6 +28,10 @@ function renderEnvelopeView(){
         <legend>Nhóm người gửi hoặc nhận</legend>
         ${Object.entries(ENVELOPE_SCOPES).map(([key,label])=>`<label><input type="checkbox" value="${key}">${label}</label>`).join('')}
       </fieldset>
+      <div class="seg-toggle envelope-status" role="group" aria-label="Trạng thái đi lại">
+        <button type="button" data-status="open">Chờ đi lại</button>
+        <button type="button" data-status="completed">Đã đi lại</button>
+      </div>
       <p class="envelope-result-count" role="status"></p>
       <div class="envelope-list"></div>`;
     section.querySelector('#envelopeAdd').onclick = ()=>openEnvelopeForm();
@@ -37,6 +41,12 @@ function renderEnvelopeView(){
       else selectedEnvelopeScopes.delete(target.value);
       renderEnvelopeView();
     };
+    section.querySelectorAll('.envelope-status button').forEach(button=>{
+      button.onclick = ()=>{
+        envelopeStatus = button.dataset.status;
+        renderEnvelopeView();
+      };
+    });
     section.querySelector('#envelopeDirection').onchange = event=>{
       envelopeFilter = event.target.value;
       renderEnvelopeView();
@@ -49,16 +59,24 @@ function renderEnvelopeView(){
   section.querySelector('#envelopeAdd').disabled = STATE.envelopesUnavailable;
   const entries = STATE.envelopes;
   const query = normalizeVietnamese(section.querySelector('input').value.trim());
-  const visible = entries.filter(entry=>{
+  const matching = entries.filter(entry=>{
     if(selectedEnvelopeScopes.size && !selectedEnvelopeScopes.has(entry.scope)) return false;
     if(!normalizeVietnamese([entry.person,entry.event,entry.notes,entry.method,entry.reciprocal?.event,entry.reciprocal?.notes].join(' ')).includes(query)) return false;
     if(envelopeFilter==='all') return true;
-    if(envelopeFilter==='open') return !entry.reciprocal;
     return entry.direction===envelopeFilter ||
       (entry.reciprocal && ['sent','received'].includes(envelopeFilter));
-  }).sort(compareEnvelopes);
+  });
+  const completedCount = matching.filter(entry=>entry.reciprocal).length;
+  section.querySelectorAll('.envelope-status button').forEach(button=>{
+    const completed = button.dataset.status==='completed';
+    const selected = button.dataset.status===envelopeStatus;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed',String(selected));
+    button.textContent = completed ? `Đã đi lại (${completedCount})` : `Chờ đi lại (${matching.length-completedCount})`;
+  });
+  const visible = matching.filter(entry=>Boolean(entry.reciprocal)===(envelopeStatus==='completed')).sort(compareEnvelopes);
   const totals = {received:0, sent:0};
-  for(const entry of visible){
+  for(const entry of matching){
     totals[entry.direction] += Number(entry.amount);
     if(entry.reciprocal) totals[entry.direction==='sent' ? 'received' : 'sent'] += Number(entry.reciprocal.amount);
   }
@@ -69,7 +87,7 @@ function renderEnvelopeView(){
   section.querySelector('.envelope-result-count').textContent = `${visible.length} khoản đang hiển thị`;
   const list = section.querySelector('.envelope-list');
   list.innerHTML = visible.map(envelopeCard).join('') ||
-    `<p class="envelope-empty" role="status">${STATE.envelopesUnavailable ? 'Chưa truy cập được Sổ phong bì. Cần cập nhật quy tắc Firestore.' : entries.length ? 'Không tìm thấy phong bì phù hợp.' : 'Chưa có phong bì. Bấm “Ghi phong bì” để bắt đầu.'}</p>`;
+    `<p class="envelope-empty" role="status">${STATE.envelopesUnavailable ? 'Chưa truy cập được Sổ phong bì. Cần cập nhật quy tắc Firestore.' : matching.length ? (envelopeStatus==='completed' ? 'Chưa có khoản đi lại.' : 'Đã xử lý hết các khoản trong nhóm này.') : entries.length ? 'Không tìm thấy phong bì phù hợp.' : 'Chưa có phong bì. Bấm “Ghi phong bì” để bắt đầu.'}</p>`;
   list.querySelectorAll('button').forEach(button=>{
     button.onclick = ()=>{
       const entry = entries.find(item=>item.id===button.closest('article').dataset.id);
@@ -125,6 +143,7 @@ function formatEnvelopeAmountInput(value){
 }
 
 function openEnvelopeForm(entry, isReciprocal=false){
+  const anchor = isReciprocal ? envelopeScrollAnchor(entry.id) : null;
   const owner = requireUid();
   const item = isReciprocal ? entry.reciprocal : entry;
   const dialog = document.createElement('dialog');
@@ -249,7 +268,8 @@ function openEnvelopeForm(entry, isReciprocal=false){
       else STATE.envelopes[index] = record;
       dialog.close();
       renderEnvelopeView();
-      focusEnvelopeCard(record.id);
+      if(anchor) restoreEnvelopeScroll(anchor);
+      else focusEnvelopeCard(record.id);
       showToast('Đã lưu phong bì');
     }catch(err){
       error.textContent = 'Chưa lưu được phong bì. Kiểm tra kết nối rồi thử lại.';
@@ -261,6 +281,21 @@ function openEnvelopeForm(entry, isReciprocal=false){
   };
   document.body.append(dialog);
   dialog.showModal();
+}
+
+function envelopeScrollAnchor(id){
+  const cards = [...document.querySelectorAll('#view-envelopes .envelope-card')];
+  const index = cards.findIndex(card=>card.dataset.id===id);
+  const target = cards[index+1] || cards[index-1];
+  return {id:target?.dataset.id,top:target?.getBoundingClientRect().top,y:window.scrollY};
+}
+
+function restoreEnvelopeScroll(anchor){
+  const card = [...document.querySelectorAll('#view-envelopes .envelope-card')].find(item=>item.dataset.id===anchor.id);
+  const top = card ? window.scrollY+card.getBoundingClientRect().top-anchor.top : anchor.y;
+  const focus = card?.querySelector('[data-action=reciprocal]') || document.querySelector('.envelope-status .active');
+  focus?.focus({preventScroll:true});
+  window.scrollTo({top,behavior:'instant'});
 }
 
 function focusEnvelopeCard(id){
