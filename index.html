@@ -1721,7 +1721,7 @@ async function processRecurring(){
       const dup = STATE.expenses.some(x=>x.id===expId);
       const exp = {
         id:expId, name:r.name, amount:r.amount, categoryId:r.categoryId, walletId:r.walletId,
-        paymentMethodId:'', createdDate:t, dueDate:t, paid:false, notes:'Tự động sinh từ khoản định kỳ', recurringId:r.id
+        paymentMethodId:'', createdAt:Date.now(), createdDate:t, dueDate:t, paid:false, notes:'Tự động sinh từ khoản định kỳ', recurringId:r.id
       };
       if(!dup){ STATE.expenses.push(exp); await dbPut('expenses', exp); }
       r.lastGeneratedDate = t;
@@ -2122,17 +2122,27 @@ function getFilteredExpenses(status){
   return list;
 }
 
+  if(status==='pending') return list.sort((a,b)=>expenseCreatedTime(b)-expenseCreatedTime(a));
 function listToolbarHTML(status){
   return `
   <div class="list-toolbar">
     ${window.qrxMonthHTML?window.qrxMonthHTML(status):''}
     <div class="seg-toggle" id="viewModeToggle-${status}">
       <button data-mode="card" class="${STATE.ui.listViewMode==='card'?'active':''}">${iconSVG('grid',14)}</button>
+    if(field==='createdDate' && !cmp) cmp = expenseEntryTime(a) - expenseEntryTime(b);
       <button data-mode="table" class="${STATE.ui.listViewMode==='table'?'active':''}">${iconSVG('list',14)}</button>
     </div>
     <div class="grow"></div>
     <button class="btn btn-sm" data-action="export-list">${iconSVG('download',14)} ${t('quick.exportExcel')}</button>
     <button class="btn btn-sm" data-action="add-expense">${iconSVG('plus',14)} ${t('quick.add')}</button>
+function expenseEntryTime(exp){
+  return Number(exp.createdAt) || parseInt(/^exp_([a-z0-9]{8})[a-z0-9]{6}$/.exec(exp.id)?.[1] || '',36) || 0;
+}
+
+function expenseCreatedTime(exp){
+  return expenseEntryTime(exp) || Date.parse(exp.createdDate+'T00:00:00') || 0;
+}
+
   </div>
   <div class="filter-bar">
     <select class="filter-select" data-filter="category" id="filterCategory-${status}">
@@ -2150,13 +2160,13 @@ function listToolbarHTML(status){
     </select>`:''}
     <input type="text" inputmode="numeric" class="filter-select" placeholder="${t('filter.amountFrom')}" style="width:100px;" data-filter="minAmount" value="${STATE.ui.filters.minAmount}">
     <input type="text" inputmode="numeric" class="filter-select" placeholder="${t('filter.amountTo')}" style="width:100px;" data-filter="maxAmount" value="${STATE.ui.filters.maxAmount}">
-    <select class="filter-select" data-filter="sortField" id="sortField-${status}">
+    ${status==='pending' ? '<span class="filter-select" style="background-image:none;padding-right:12px">Mới tạo trước</span>' : `<select class="filter-select" data-filter="sortField" id="sortField-${status}">
       <option value="dueDate" ${STATE.ui.sort.field==='dueDate'?'selected':''}>${t('sort.due')}</option>
       <option value="createdDate" ${STATE.ui.sort.field==='createdDate'?'selected':''}>${t('sort.created')}</option>
       <option value="amount" ${STATE.ui.sort.field==='amount'?'selected':''}>${t('sort.amount')}</option>
       <option value="name" ${STATE.ui.sort.field==='name'?'selected':''}>${t('sort.name')}</option>
     </select>
-    <button class="icon-btn" id="sortDirBtn-${status}" title="${t('sort.toggleTitle')}">${iconSVG('arrow-up-down',15)}</button>
+    <button class="icon-btn" id="sortDirBtn-${status}" title="${t('sort.toggleTitle')}">${iconSVG('arrow-up-down',15)}</button>`}
   </div>`;
 }
 
@@ -2492,6 +2502,8 @@ async function handleDeleteExpense(id){
     if(removed){ STATE.expenses.push(removed); await dbPut('expenses', removed); renderCurrentView(true); }
   }});
 }
+  const createdAt = existing ? expenseEntryTime(existing) : Date.now();
+  if(createdAt) exp.createdAt = createdAt;
 function handleDeleteFromDrawer(){
   const id = document.getElementById('expenseId').value;
   if(id) handleDeleteExpense(id);
@@ -3082,7 +3094,7 @@ async function importExcelFile(file){
       const cat = findCategoryByName(row['Danh mục']) || STATE.categories[0];
       const wal = findWalletByName(row['Ví']) || STATE.wallets[0];
       const exp = {
-        id: uid('exp'), name: String(name), amount: xlsAmount(row['Số tiền']!=null ? row['Số tiền'] : row['Amount']),
+        id: uid('exp'), createdAt:Date.now(), name: String(name), amount: xlsAmount(row['Số tiền']!=null ? row['Số tiền'] : row['Amount']),
         categoryId: cat.id, walletId: wal.id, paymentMethodId: STATE.paymentMethods[0]?.id||'',
         createdDate: xlsDate(row['Ngày tạo']), dueDate: xlsDate(row['Hạn thanh toán']),
         paid: String(row['Trạng thái']||'').includes('Đã'), notes: String(row['Ghi chú']||'')
