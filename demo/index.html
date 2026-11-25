@@ -1738,8 +1738,9 @@ function switchView(name){
   if(previousView!==name && !matchMedia('(prefers-reduced-motion: reduce)').matches){
     const view=document.getElementById('view-'+name);
     view.getAnimations().forEach(animation=>animation.cancel());
-    view.animate([{opacity:.55,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],
-      {duration:230,easing:'cubic-bezier(.2,.72,.25,1)'});
+    const frames=['budget','settle'].includes(name) ? [{opacity:.55},{opacity:1}]
+      : [{opacity:.55,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}];
+    view.animate(frames,{duration:230,easing:'cubic-bezier(.2,.72,.25,1)'});
   }
 }
 function renderCurrentView(force){
@@ -3907,28 +3908,55 @@ const tb=document.createElement('button'); tb.type='button'; tb.id='qrxTopBtn'; 
 tb.title='Quét QR thanh toán'; tb.setAttribute('aria-label','Quét QR thanh toán'); tb.innerHTML=ICON; tb.onclick=openScan;
 if(qa) qa.parentNode.insertBefore(tb,qa); else document.body.appendChild(tb);
 
+function previewMonthOptions(selected, dates){
+  const now=todayISO().slice(0,7);
+  const reference=parseISO(now+'-01');
+  const nearby=Array.from({length:14},(_,i)=>dateISO(new Date(reference.getFullYear(),reference.getMonth()+1-i,1)).slice(0,7));
+  return [...new Set([selected,...nearby,...dates.map(value=>String(value||'').slice(0,7))])]
+    .filter(value=>/^\d{4}-(0[1-9]|1[0-2])$/.test(value)).sort().reverse()
+    .map(value=>{
+      const label='Tháng '+Number(value.slice(5))+'/'+value.slice(0,4);
+      return '<option value="'+value+'"'+(value===selected?' selected':'')+'>'+label+'</option>';
+    }).join('');
+}
+function previewPeriodToolbar(id, selected, dates){
+  return '<div class="demo-period"><label for="'+id+'">Kỳ đang xem</label><select class="filter-select" id="'+id+'">'
+    +previewMonthOptions(selected,dates)+'</select></div>';
+}
+let previewSettleMonth='';
+let previewBudgetMonth='';
+
 /* Quyết toán cuối tháng */
 function openSettle(){switchView('settle');}
 window.renderPreviewSettle=function(){
-  let ym=todayISO().slice(0,7); const off=new Set();
+  let ym=previewSettleMonth || todayISO().slice(0,7); const off=new Set();
   const mOf=e=>(e.dueDate||e.createdDate||'').slice(0,7);
   const label=()=>Number(ym.slice(5))+'/'+ym.slice(0,4), fmt=n=>formatCurrency(n);
   const all=()=>STATE.expenses.filter(e=>!e.paid&&mOf(e)===ym).sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||'')||String(a.name).localeCompare(String(b.name)));
   const picked=()=>all().filter(e=>!off.has(e.id));
-  const shift=d=>{const [y,m]=ym.split('-').map(Number),x=new Date(y,m-1+d,1); ym=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'); off.clear(); draw();};
   const draw=()=>{
     const list=all();
     const sh=document.getElementById('view-settle');
-    sh.innerHTML='<div class="demo-feature-card"><div class="qb-h"><h2>Quyết toán cuối tháng</h2></div><div class="qb-body"><div class="qrx-row" style="align-items:center;margin-top:0"><button class="qrx-btn" id="qsP" style="flex:none;width:48px" aria-label="Tháng trước">‹</button><div style="flex:1;text-align:center;font-weight:600">Tháng '+label()+'</div><button class="qrx-btn" id="qsN" style="flex:none;width:48px" aria-label="Tháng sau">›</button></div>'
-      +(list.length?'<div id="qsCats" style="margin-top:12px"></div><div style="margin-top:6px">'+list.map(e=>'<label class="qs-row"><input type="checkbox" data-id="'+esc(e.id)+'"'+(off.has(e.id)?'':' checked')+'><span class="t"><b>'+esc(e.name)+'</b><small>Hạn '+esc((e.dueDate||'').split('-').reverse().slice(0,2).join('/'))+' · '+esc(catById(e.categoryId).name)+'</small></span><span>'+esc(fmt(e.amount))+'</span></label>').join('')+'</div>'
-        :'<div class="qrx-note" style="margin:16px 0;text-align:center">Tháng này không có khoản nào chưa thanh toán.</div>')
-      +'</div>'+(list.length?'<footer class="qb-f qs-footer"><div class="qs-total"><span id="qsC"></span><span id="qsT"></span></div><div class="qrx-row"><button class="qrx-btn" id="qsS">Chia sẻ tóm tắt</button><button class="qrx-btn p" id="qsD">Đã quyết toán</button></div></footer>':'')+'</div>';
-    const $=s=>sh.querySelector(s); let armed=false;
-    $('#qsP').onclick=()=>shift(-1); $('#qsN').onclick=()=>shift(1);
+    sh.innerHTML=previewPeriodToolbar('qsMonth',ym,STATE.expenses.map(mOf))
+      +(list.length?'<section class="demo-feature-card demo-settle-summary" aria-label="Tổng quyết toán">'
+        +'<div class="demo-summary-label">Tổng khoản đang chọn</div><strong class="demo-summary-value" id="qsT"></strong>'
+        +'<p id="qsC" class="demo-summary-sub" role="status"></p></section>'
+        +'<section class="demo-feature-card demo-settle-list" aria-labelledby="qsListTitle"><header class="qb-h"><h2 id="qsListTitle">Khoản chưa thanh toán</h2></header><div class="qb-body">'
+        +list.map(e=>'<label class="qs-row"><input type="checkbox" data-id="'+esc(e.id)+'"'+(off.has(e.id)?'':' checked')+'><span class="t"><b>'+esc(e.name)+'</b><small>Hạn '+esc(formatDateShort(e.dueDate||e.createdDate))+' · '+esc(catById(e.categoryId).name)+'</small></span><span>'+esc(fmt(e.amount))+'</span></label>').join('')
+        +'<details class="demo-settle-breakdown"><summary>Tổng theo danh mục</summary><div id="qsCats"></div></details></div></section>'
+        +'<footer class="qb-f qs-footer demo-feature-actions"><button class="qrx-btn" id="qsS">Chia sẻ</button><button class="qrx-btn p" id="qsD">Xác nhận quyết toán</button></footer>'
+        :'<section class="demo-feature-card demo-feature-empty"><h2>Không có khoản cần quyết toán</h2><p>Tháng '+esc(label())+' không có khoản nào chưa thanh toán. Bạn có thể chọn tháng khác ở trên.</p></section>');
+    const $=selector=>sh.querySelector(selector); let armed=false;
+    $('#qsMonth').onchange=event=>{
+      ym=previewSettleMonth=event.target.value;
+      off.clear();
+      draw();
+      $('#qsMonth').focus({preventScroll:true});
+    };
     if(!list.length) return;
     const refresh=()=>{const it=picked(), by={}; let tot=0; it.forEach(e=>{by[e.categoryId]=(by[e.categoryId]||0)+Number(e.amount||0); tot+=Number(e.amount||0);});
       $('#qsCats').innerHTML=Object.keys(by).sort((a,b)=>by[b]-by[a]).map(k=>'<div class="qs-cat"><span>'+esc(catById(k).name)+'</span><span>'+esc(fmt(by[k]))+'</span></div>').join('');
-      $('#qsC').textContent='Cần xin ('+it.length+'/'+list.length+')'; $('#qsT').textContent=fmt(tot); $('#qsD').disabled=!it.length; armed=false; $('#qsD').textContent='Đã quyết toán'; return {it,tot};};
+      $('#qsC').textContent=it.length+' / '+list.length+' khoản được chọn'; $('#qsT').textContent=fmt(tot); $('#qsD').disabled=$('#qsS').disabled=!it.length; armed=false; $('#qsD').textContent='Xác nhận quyết toán'; return {it,tot};};
     sh.querySelectorAll('.qs-row input').forEach(c=>c.onchange=()=>{c.checked?off.delete(c.dataset.id):off.add(c.dataset.id); refresh();});
     refresh();
     $('#qsS').onclick=()=>{const {it,tot}=refresh(); if(!it.length) return;
@@ -4035,25 +4063,36 @@ window.renderPreviewSettle=function(){
   };
   function openBudget(){switchView('budget');}
   window.renderPreviewBudget=function(){
-    const b0=budgets(), sp=spent(), m=Number(ymNow().slice(5))+'/'+ymNow().slice(0,4);
+    const ym=previewBudgetMonth || ymNow();
+    const isCurrent=ym===ymNow();
+    const emptyBudget={total:0,cats:{}};
+    const b0=isCurrent ? budgets() : (STATE.settings.previewBudgetMonths?.[ym] || emptyBudget);
+    const sp=spentOf(ym);
     const draft={total:b0.total,cats:Object.assign({},b0.cats)};
     const shown=new Set(STATE.categories.filter(c=>(Number(draft.cats[c.id])||0)>0||(sp.by[c.id]||0)>0).map(c=>c.id));
     const stat=(u,l)=>{ if(!(l>0)) return {p:0,t:'Chưa đặt hạn mức',c:'var(--text-secondary)'}; const p=u/l*100; return {p,t:(u>l?'Vượt '+fmt(u-l):'Còn '+fmt(l-u))+' · '+Math.round(p)+'%',c:color(p)}; };
     const val=k=>k==='total'?draft.total:(Number(draft.cats[k])||0);
     const blk=(k,name,used)=>{ const l=val(k), s=stat(used,l);
-      return '<div class="'+(k==='total'?'qb-card':'qb-row')+'" data-k="'+esc(k)+'"><div class="qb-top"><b>'+esc(name)+'</b><span>Đã chi</span></div>'
-        +(k==='total'?'<div class="qb-big">'+esc(fmt(used))+'</div>':'<div style="font-size:18px;font-weight:600">'+esc(fmt(used))+'</div>')
-        +'<div class="qb-edit"><input inputmode="numeric" placeholder="Đặt hạn mức tháng" value="'+(l>0?l.toLocaleString('vi-VN'):'')+'"><span>đ</span></div>'
+      return '<div class="'+(k==='total'?'demo-feature-card demo-budget-summary':'qb-row demo-budget-row')+'" data-k="'+esc(k)+'"><div class="qb-top"><b>'+esc(name)+'</b><span>Đã ghi nhận</span></div>'
+        +'<div class="'+(k==='total'?'demo-summary-value':'demo-budget-used')+'">'+esc(fmt(used))+'</div>'
+        +'<label class="qb-edit"><span>Hạn mức</span><input inputmode="numeric" aria-label="Hạn mức '+esc(name)+'" placeholder="Chưa đặt" value="'+(l>0?l.toLocaleString('vi-VN'):'')+'"><span>₫</span></label>'
         +'<div class="qb-bar"><i style="width:'+Math.min(100,s.p)+'%;background:'+s.c+'"></i></div><div class="qb-st" style="color:'+s.c+'">'+esc(s.t)+'</div></div>'; };
     const draw=focus=>{
       const rest=STATE.categories.filter(c=>!shown.has(c.id));
       const sh=document.getElementById('view-budget');
-      sh.innerHTML='<div class="demo-feature-card"><div class="qb-h"><h2>Hạn mức · tháng '+m+'</h2></div><div class="qb-body">'
-        +blk('total','Tổng cả tháng',sp.total)+'<div class="qb-sec">Theo danh mục</div>'
+      sh.innerHTML=previewPeriodToolbar('qbMonth',ym,STATE.expenses.map(e=>e.createdDate))
+        +blk('total','Tổng cả tháng',sp.total)
+        +'<section class="demo-feature-card demo-budget-categories"><header class="qb-h"><h2>Theo danh mục</h2></header><div class="qb-body">'
         +STATE.categories.filter(c=>shown.has(c.id)).map(c=>blk(c.id,c.name,sp.by[c.id]||0)).join('')
-        +(rest.length?'<select id="qbAdd" style="margin-top:12px"><option value="">＋ Thêm hạn mức cho danh mục khác...</option>'+rest.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select>':'')
-        +'<div class="qrx-note">Tính theo ngày tạo khoản chi. App nhắc khi đạt 80% và khi vượt 100%.</div></div>'
-        +'<div class="qb-f"><button class="qrx-btn p" id="qbS" style="width:100%">Lưu hạn mức</button></div></div>';
+        +(rest.length?'<label class="demo-category-add">Thêm hạn mức theo danh mục<select id="qbAdd"><option value="">Chọn danh mục</option>'+rest.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label>':'')
+        +'<p class="demo-summary-sub">Tổng ghi nhận tính theo ngày tạo khoản chi.</p></div></section>'
+        +'<footer class="qb-f demo-feature-actions"><button class="qrx-btn p" id="qbS">Lưu hạn mức</button></footer>';
+      const monthSelect=sh.querySelector('#qbMonth');
+      monthSelect.onchange=event=>{
+        previewBudgetMonth=event.target.value;
+        window.renderPreviewBudget();
+        sh.querySelector('#qbMonth').focus({preventScroll:true});
+      };
       sh.querySelectorAll('[data-k]').forEach(el=>{ const k=el.dataset.k, inp=el.querySelector('input'); const used=k==='total'?sp.total:(sp.by[k]||0);
         inp.oninput=()=>{ const n=num(inp.value); inp.value=n?n.toLocaleString('vi-VN'):''; if(k==='total') draft.total=n; else draft.cats[k]=n;
           const s=stat(used,n); const i=el.querySelector('.qb-bar i'), st=el.querySelector('.qb-st'); i.style.width=Math.min(100,s.p)+'%'; i.style.background=s.c; st.textContent=s.t; st.style.color=s.c; }; });
@@ -4061,7 +4100,8 @@ window.renderPreviewSettle=function(){
       if(focus){ const e=sh.querySelector('[data-k="'+focus+'"] input'); if(e){ e.focus(); e.scrollIntoView({block:'center'}); } }
       sh.querySelector('#qbS').onclick=async()=>{
         const nb={total:draft.total||0,cats:{}}; Object.keys(draft.cats).forEach(k=>{ if(Number(draft.cats[k])>0) nb.cats[k]=Number(draft.cats[k]); });
-        STATE.settings.budgets=nb;
+        if(isCurrent) STATE.settings.budgets=nb;
+        else STATE.settings.previewBudgetMonths={...STATE.settings.previewBudgetMonths,[ym]:nb};
         try{ await saveSettings(); showToast('Đã lưu hạn mức'); }catch(e){ showToast('Lưu hạn mức thất bại'); }
         demoStorage.removeItem('qrx_bud'); window.qrxCheckBudget(true); if(window.qrxRenderBud) window.qrxRenderBud();
       };
@@ -4193,17 +4233,17 @@ window.renderPreviewSettle=function(){
 /* Lọc theo tháng trong danh sách + bấm biểu đồ danh mục để xem khoản chi */
 window.qrxMonthHTML=status=>{
   const m=STATE.ui.filters.month||'';
-  const now=todayISO().slice(0,7);
-  const values=[...new Set([now,m,...STATE.expenses.map(e=>(e.createdDate||'').slice(0,7))].filter(value=>/^\d{4}-\d{2}$/.test(value)))].sort().reverse();
   return `<select class="filter-select demo-month" aria-label="Chọn tháng" data-list="${status}">
     <option value="">Tất cả tháng</option>
-    ${values.map(value=>`<option value="${value}" ${value===m?'selected':''}>Tháng ${Number(value.slice(5))}/${value.slice(0,4)}</option>`).join('')}
+    ${previewMonthOptions(m,STATE.expenses.map(e=>e.createdDate))}
   </select>`;
 };
 document.addEventListener('change',event=>{
   if(!event.target.matches('.demo-month'))return;
   STATE.ui.filters.month=event.target.value;
-  renderListView(event.target.dataset.list,true);
+  const status=event.target.dataset.list;
+  renderListView(status,true);
+  document.querySelector('#view-'+status+' .demo-month')?.focus({preventScroll:true});
 });
 window.qrxCatList=function(catId,list){
   const cat=catById(catId), items=(list||STATE.expenses).filter(e=>e.categoryId===catId).sort((a,b)=>String(b.createdDate).localeCompare(String(a.createdDate)));
