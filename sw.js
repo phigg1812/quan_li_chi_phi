@@ -1,6 +1,6 @@
 /* Service worker của Sổ Theo Dõi: trang tải từ mạng trước (luôn có bản mới), có bản lưu đệm khi mất mạng. */
-const CACHE = 'sd-v46';
-const SHELL = ['./', './index.html', './manifest.json', './envelopes.js', './icon-192.png', './icon-512.png'];
+const CACHE = 'sd-v47';
+const SHELL = ['./', './index.html', './manifest.json', './envelopes.js', './layout.css?v=47', './layout.js?v=47', './icon-192.png', './icon-512.png'];
 const LIBS = /cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|cdn\.sheetjs\.com|www\.gstatic\.com\/firebasejs/;
 
 self.addEventListener('install', e => {
@@ -13,6 +13,7 @@ self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET') return;
   const u = new URL(r.url), same = u.origin === location.origin;
+  if (same && u.pathname.startsWith(new URL('./demo/',self.registration.scope).pathname)) return;
   if (!same && !LIBS.test(u.href)) return;   // Firestore, đăng nhập Google...: để trình duyệt tự xử lý
   if (same) {                                 // trang của app: mạng trước, hết 4 giây hoặc mất mạng thì dùng bản lưu
     e.respondWith(
