@@ -159,18 +159,28 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 }
 
 /* Sổ phong bì */
-#view-envelopes .envelope-filters{display:block}
-.envelope-search-row{display:flex;gap:8px;margin-bottom:10px}
-.envelope-filter-options{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.envelope-filter-options .envelope-groups{width:100%;margin:6px 0 0}
-#envelopeFilterButton{display:none;white-space:nowrap}
+.envelope-toolbar{display:flex;align-items:center;gap:8px}
+.envelope-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:3px;border:1px solid var(--border);border-radius:999px;background:var(--card)}
+.envelope-status button{display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--text-secondary);font:inherit;font-size:13px;font-weight:600;white-space:nowrap}
+.envelope-status button.active{background:var(--primary-soft);color:var(--primary)}
+.envelope-status button span,.envelope-filter-count{font-size:11px;font-variant-numeric:tabular-nums}
+.envelope-status button span{opacity:.85}
+#envelopeFilterButton{display:inline-flex;gap:5px;min-height:44px;border-radius:999px;white-space:nowrap}
+.envelope-filter-count{min-width:18px;border-radius:999px;background:var(--primary-soft);color:var(--primary);text-align:center}
+.envelope-filter-icon{display:grid;place-items:center}
+.envelope-filter-sheet .envelope-filter-options{display:grid;gap:10px}
+.envelope-filter-sheet .filter-select{width:100%;min-height:44px;font-size:16px}
+.envelope-filter-sheet .envelope-groups{margin-block:4px}
+.envelope-filter-sheet footer button{min-height:44px}
 @media(max-width:820px){
-  #envelopeFilterButton{display:inline-flex;min-height:44px}
-  #view-envelopes .envelope-filter-options{display:none}
-  .envelope-filter-sheet .envelope-filter-options{display:grid;gap:10px}
-  .envelope-filter-sheet .filter-select{width:100%;min-height:44px;font-size:16px}
-  .envelope-filter-sheet .envelope-groups{margin-block:4px}
-  .envelope-filter-sheet footer button{min-height:44px}
+  .envelope-status{flex:1;min-width:0}
+  .envelope-status button{padding-inline:4px}
+  #envelopeFilterButton{padding-inline:10px}
+}
+@media(max-width:380px){
+  .envelope-toolbar{gap:5px}
+  .envelope-status button{font-size:12px}
+  .envelope-filter-icon{display:none}
 }
 
 .qd-category{display:block;width:100%;min-height:44px;border:0;border-top:1px solid var(--border);background:transparent;color:inherit;font:inherit;text-align:left}
@@ -289,8 +299,6 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 #view-envelopes .envelope-totals strong{font-size:16px}
 .envelope-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(max-width:820px){
-  #view-envelopes .envelope-status{display:flex;width:100%;margin:0}
-  #view-envelopes .envelope-status button{flex:1;min-width:0;padding-inline:6px}
   #view-envelopes .envelope-list{margin-top:12px}
 }
 

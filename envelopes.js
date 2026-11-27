@@ -10,11 +10,17 @@ function renderEnvelopeView(){
   if(!section.querySelector('.envelope-list')){
     section.innerHTML = `
       <div class="envelope-totals" aria-label="Tổng tiền phong bì"></div>
-      <div class="envelope-filters">
-        <div class="envelope-search-row">
-          <input class="filter-select" type="search" aria-label="Tìm phong bì" placeholder="Tên, sự kiện hoặc ghi chú">
-          <button type="button" class="btn" id="envelopeFilterButton" aria-haspopup="dialog">Bộ lọc</button>
+      <div class="envelope-toolbar">
+        <div class="envelope-status" role="group" aria-label="Trạng thái đi lại">
+          <button type="button" data-status="open">Chờ đi lại <span></span></button>
+          <button type="button" data-status="completed">Đã đi lại <span></span></button>
         </div>
+        <button type="button" class="btn" id="envelopeFilterButton" aria-haspopup="dialog">
+          <span class="envelope-filter-icon" aria-hidden="true">${iconSVG('filter',16)}</span>
+          Bộ lọc<span class="envelope-filter-count" hidden></span>
+        </button>
+      </div>
+      <div class="envelope-filter-holder" hidden>
         <div class="envelope-filter-options">
           <label class="envelope-filter-field"><span>Chiều giao nhận</span>
             <select class="filter-select" id="envelopeDirection">
@@ -36,16 +42,11 @@ function renderEnvelopeView(){
           </fieldset>
         </div>
       </div>
-      <div class="seg-toggle envelope-status" role="group" aria-label="Trạng thái đi lại">
-        <button type="button" data-status="open">Chờ đi lại</button>
-        <button type="button" data-status="completed">Đã đi lại</button>
-      </div>
       <p class="envelope-result-count envelope-sr-only" role="status"></p>
       <div class="envelope-list"></div>`;
     const filterButton=section.querySelector('#envelopeFilterButton');
     const options=section.querySelector('.envelope-filter-options');
     filterButton.onclick=()=>openEnvelopeFilters(options,filterButton);
-    section.querySelector('input[type=search]').oninput = renderEnvelopeView;
     section.querySelector('.envelope-groups').onchange = ({target})=>{
       if(target.checked) selectedEnvelopeScopes.add(target.value);
       else selectedEnvelopeScopes.delete(target.value);
@@ -67,9 +68,11 @@ function renderEnvelopeView(){
     };
   }
   const entries = STATE.envelopes;
-  const query = normalizeVietnamese(section.querySelector('input[type=search]').value.trim());
+  const query = normalizeVietnamese(STATE.ui.envelopeSearch.trim());
   const filterCount=selectedEnvelopeScopes.size+Number(envelopeFilter!=='all')+Number(envelopeSort!=='recent');
-  section.querySelector('#envelopeFilterButton').textContent=filterCount?`Bộ lọc (${filterCount})`:'Bộ lọc';
+  const filterBadge=section.querySelector('.envelope-filter-count');
+  filterBadge.hidden=!filterCount;
+  filterBadge.textContent=filterCount;
   const matching = entries.filter(entry=>{
     if(selectedEnvelopeScopes.size && !selectedEnvelopeScopes.has(entry.scope)) return false;
     if(!normalizeVietnamese([entry.person,entry.event,entry.notes,entry.method,entry.reciprocal?.event,entry.reciprocal?.notes].join(' ')).includes(query)) return false;
@@ -83,7 +86,7 @@ function renderEnvelopeView(){
     const selected = button.dataset.status===envelopeStatus;
     button.classList.toggle('active',selected);
     button.setAttribute('aria-pressed',String(selected));
-    button.textContent = completed ? `Đã đi lại (${completedCount})` : `Chờ đi lại (${matching.length-completedCount})`;
+    button.querySelector('span').textContent=completed ? completedCount : matching.length-completedCount;
   });
   const visible = matching.filter(entry=>Boolean(entry.reciprocal)===(envelopeStatus==='completed')).sort(compareEnvelopes);
   const totals = {received:0, sent:0};
@@ -110,7 +113,6 @@ function renderEnvelopeView(){
 function openEnvelopeFilters(options,trigger){
   const holder=options.parentElement;
   const dialog=document.createElement('dialog');
-  const mobile=matchMedia('(max-width:820px)');
   dialog.className='envelope-dialog envelope-filter-sheet';
   dialog.setAttribute('aria-labelledby','envelopeFilterTitle');
   dialog.innerHTML=`<h2 id="envelopeFilterTitle" tabindex="-1" autofocus>Bộ lọc phong bì</h2>
@@ -127,13 +129,10 @@ function openEnvelopeFilters(options,trigger){
     options.querySelectorAll('input[type=checkbox]').forEach(input=>input.checked=false);
     renderEnvelopeView();
   };
-  const closeOnResize=event=>{ if(!event.matches) dialog.close(); };
-  mobile.addEventListener('change',closeOnResize);
   dialog.addEventListener('close',()=>{
-    mobile.removeEventListener('change',closeOnResize);
     holder.append(options);
     dialog.remove();
-    if(mobile.matches) trigger.focus({preventScroll:true});
+    trigger.focus({preventScroll:true});
   },{once:true});
   document.body.append(dialog);
   dialog.showModal();

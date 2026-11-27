@@ -1646,7 +1646,7 @@ async function dbClear(storeName){
 const STATE = {
   expenses:[], envelopes:[], categories:[], wallets:[], paymentMethods:[], recurring:[], backups:[], learningRules:[],
   settings:{ language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false },
-  ui:{ currentView:'dashboard', listViewMode:'card', search:'', sort:{field:'dueDate',dir:'asc'},
+  ui:{ currentView:'dashboard', listViewMode:'card', search:'', envelopeSearch:'', sort:{field:'dueDate',dir:'asc'},
        filters:{category:'all', wallet:'all', period:'all', minAmount:'', maxAmount:''},
        calDate:new Date(), historyDay:null, pendingDrawerId:null, pendingDeleteId:null,
        pendingDeleteType:null, dashExpanded:false, dashCategory:'all', smartPrediction:null }
@@ -1869,6 +1869,14 @@ function switchView(name,{keepSearchOpen=false,slideFrom}={}){
   if(previousView!==name && !keepSearchOpen) setHeaderSearchOpen(false);
   if(name==='dashboard' && previousView!==name) dashboardEntryMotion=true;
   STATE.ui.currentView = name;
+  if(previousView!==name && (name==='envelopes'||previousView==='envelopes')){
+    const envelopes=name==='envelopes';
+    const label=envelopes?'Tìm phong bì':'Tìm khoản chi';
+    headerSearchButton.setAttribute('aria-label',label);
+    globalSearchInput.setAttribute('aria-label',label);
+    globalSearchInput.placeholder=envelopes?'Tên, sự kiện hoặc ghi chú':t('search.placeholder');
+    globalSearchInput.value=envelopes?STATE.ui.envelopeSearch:STATE.ui.search;
+  }
   const quickAdd=document.getElementById('quickAddBtn');
   const addLabel=name==='envelopes'?'Ghi phong bì':'Thêm khoản chi';
   quickAdd.setAttribute('aria-label',addLabel);
@@ -3597,12 +3605,18 @@ headerSearchBox.addEventListener('keydown',event=>{
   setHeaderSearchOpen(false);
   headerSearchButton.focus();
 });
-globalSearchInput.addEventListener('input',debounce(()=>{
-  if(headerSearchBox.hidden) return;
+const searchExpenses=debounce(()=>{
+  if(headerSearchBox.hidden||STATE.ui.currentView==='envelopes') return;
   STATE.ui.search=globalSearchInput.value;
   if(['pending','paid'].includes(STATE.ui.currentView)) renderListView(STATE.ui.currentView,true);
   else if(globalSearchInput.value.trim()) switchView('pending',{keepSearchOpen:true});
-},200));
+},200);
+globalSearchInput.addEventListener('input',()=>{
+  if(STATE.ui.currentView==='envelopes'){
+    STATE.ui.envelopeSearch=globalSearchInput.value;
+    renderEnvelopeView();
+  }else searchExpenses();
+});
 
 /* Keyboard shortcuts: N, Ctrl+F, Ctrl+K, Esc, Delete */
 document.addEventListener('keydown',(e)=>{
@@ -4008,16 +4022,13 @@ body{max-width:100vw;touch-action:manipulation}
 .drawer-footer{padding-bottom:calc(var(--space-5) + env(safe-area-inset-bottom,0px))}
 .sidebar{padding-bottom:env(safe-area-inset-bottom,0px)}
 .envelope-empty{padding:24px;color:var(--text-secondary);text-align:center}
-.envelope-header,.envelope-filters,.envelope-card header,.envelope-card footer,.envelope-dialog footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.envelope-header,.envelope-card header,.envelope-card footer,.envelope-dialog footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .envelope-header h1{font-size:clamp(23px,4vw,31px);margin:0}
 .envelope-header .btn,.envelope-card .btn,.envelope-dialog .btn{min-height:44px}
 .envelope-totals,.envelope-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
 .envelope-totals>div,.envelope-card,.envelope-empty{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
 .envelope-totals span,.envelope-transaction span{display:block;color:var(--text-secondary);font-size:13px}
 .envelope-totals strong{font-size:clamp(17px,4vw,26px);overflow-wrap:anywhere}
-.envelope-filters input{flex:1;min-width:0;background-image:none;padding-right:10px}
-.envelope-filters .filter-select{min-height:44px}
-@media(max-width:640px){.envelope-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.envelope-filters input{grid-column:1/-1}.envelope-filters .filter-select{width:100%;min-width:0}}
 .envelope-card header{align-items:start}
 .envelope-card h2{font-size:17px;overflow-wrap:anywhere}
 .envelope-card header span{font-size:12px;color:var(--primary);background:var(--primary-soft);border-radius:20px;padding:3px 9px;white-space:nowrap}
@@ -4975,10 +4986,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=81"></script>
-<link rel="stylesheet" href="./layout.css?v=81">
-<script src="./layout.js?v=81"></script>
-<script src="./voice-expense.js?v=81"></script>
-<script src="./kpi.js?v=81"></script>
+<script src="./envelopes.js?v=82"></script>
+<link rel="stylesheet" href="./layout.css?v=82">
+<script src="./layout.js?v=82"></script>
+<script src="./voice-expense.js?v=82"></script>
+<script src="./kpi.js?v=82"></script>
 </body>
 </html>
