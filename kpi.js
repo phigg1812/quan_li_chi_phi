@@ -25,7 +25,8 @@
     for(const row of rows){
       if(row.key?.startsWith('kpi_task_') && typeof row.id==='string' && typeof row.name==='string' && /^\d{4}-\d{2}-\d{2}$/.test(row.start)) state.tasks.push(row);
       if(row.key?.startsWith('kpi_day_') && /^\d{4}-\d{2}-\d{2}$/.test(row.date) && row.marks){
-        state.ticks[row.date]=new Set(Object.keys(row.marks).filter(id=>row.marks[id]===true));
+        state.ticks[row.date]=new Map(Object.keys(row.marks).filter(id=>row.marks[id]===true)
+          .map(id=>[id,Number(row.completedAt?.[id])||0]));
       }
     }
   };
@@ -58,8 +59,8 @@
     });
     return true;
   }
-  const active=day=>state.tasks.filter(task=>task.start<=day && (!task.end || day<task.end))
-    .sort((a,b)=>a.start.localeCompare(b.start)||(a.createdAt||0)-(b.createdAt||0)||a.id.localeCompare(b.id));
+  const compareTasks=(a,b)=>a.start.localeCompare(b.start)||(a.createdAt||0)-(b.createdAt||0)||a.id.localeCompare(b.id);
+  const active=day=>state.tasks.filter(task=>task.start<=day && (!task.end || day<task.end)).sort(compareTasks);
   const isDone=(day,id)=>state.ticks[day]?.has(id)===true;
   const count=day=>{const tasks=active(day);return {total:tasks.length,done:tasks.filter(task=>isDone(day,task.id)).length};};
   const percent=(n,d)=>d?Math.round(n/d*100):0;
@@ -123,6 +124,10 @@
   function render(){
     const date=today(), metrics=stats(), {done,total}=count(date);
     const detail=selected&&selected<=date?active(selected):[];
+    const taskNumbers=new Map([...state.tasks].sort(compareTasks).map((task,index)=>[task.id,index+1]));
+    const completionOrder=state.ticks[date];
+    const orderedTasks=active(date).sort((a,b)=>Number(isDone(date,a.id))-Number(isDone(date,b.id)) ||
+      (completionOrder?.get(a.id)||0)-(completionOrder?.get(b.id)||0));
     view.innerHTML=`<div class="kpi-page">
       <section class="panel kpi-hero"><h2>Chuỗi hoàn thành hiện tại</h2>
         <strong class="kpi-streak">${metrics.current} ngày liên tiếp</strong>
@@ -136,10 +141,10 @@
           <button type="button" class="btn btn-primary" data-kpi-add aria-label="Thêm hạng mục">${iconSVG('plus',24)} Thêm</button>
           <button type="button" class="btn" data-kpi-manage aria-label="Quản lý hạng mục">${iconSVG('settings',24)} Quản lý</button>
         </div></div>
-        <ol class="kpi-task-list" role="list">${[...active(date)].sort((a,b)=>Number(isDone(date,a.id))-Number(isDone(date,b.id))).map((task,index)=>{
+        <ol class="kpi-task-list" role="list">${orderedTasks.map(task=>{
           const complete=isDone(date,task.id);
           const label=complete?'Đã xong':'Chưa xong';
-          return `<li class="kpi-task"><small class="kpi-task-number">${index+1}.</small><span>${escapeHTML(taskName(task,date))}</span><button type="button" class="exp-check exp-pay-action ${complete?'checked':''}" data-task="${task.id}" aria-pressed="${complete}" aria-label="${complete?'Bỏ đánh dấu hoàn thành':'Đánh dấu xong'}: ${escapeHTML(taskName(task,date))}">${complete?iconSVG('check',13):''}${label}</button></li>`;
+          return `<li class="kpi-task"><small class="kpi-task-number">${taskNumbers.get(task.id)}.</small><span>${escapeHTML(taskName(task,date))}</span><button type="button" class="exp-check exp-pay-action ${complete?'checked':''}" data-task="${task.id}" aria-pressed="${complete}" aria-label="${complete?'Bỏ đánh dấu hoàn thành':'Đánh dấu xong'}: ${escapeHTML(taskName(task,date))}">${complete?iconSVG('check',13):''}${label}</button></li>`;
         }).join('')||'<li>Chưa có hạng mục. Bấm Thêm để bắt đầu.</li>'}</ol>
       </section>
       <section class="panel"><div class="kpi-month"><button class="btn" data-kpi-month="-1" aria-label="Tháng trước">‹</button><h2>Tháng ${month.getMonth()+1}/${month.getFullYear()}</h2><button class="btn" data-kpi-month="1" aria-label="Tháng sau">›</button></div>
@@ -198,20 +203,22 @@
     const date=today(), previous=stats().record;
     if(!active(date).some(task=>task.id===id)) return;
     const previousValue=isDone(date,id), nextValue=!previousValue;
-    const done=state.ticks[date] ||= new Set();
+    const done=state.ticks[date] ||= new Map();
+    const previousTimestamp=done.get(id)||0;
+    const timestamp=nextValue?Math.max(Date.now(),...Array.from(done.values(),value=>value+1)):0;
     const operation=Symbol();
     const operationKey=date+'_'+id;
     const currentState=state;
     pendingTickWrites.set(operationKey,operation);
-    if(nextValue) done.add(id); else done.delete(id);
+    if(nextValue) done.set(id,timestamp); else done.delete(id);
     recordNew=stats().record>previous;
     render();
     view.querySelector('[data-task="'+id+'"]')?.focus({preventScroll:true});
     const key='kpi_day_'+date;
-    const request=trackWrite(window.FB.setDoc(storeDoc('settings',key),{key,date,marks:{[id]:nextValue}},{merge:true}));
+    const request=trackWrite(window.FB.setDoc(storeDoc('settings',key),{key,date,marks:{[id]:nextValue},completedAt:{[id]:timestamp}},{merge:true}));
     request.catch(error=>{
       if(state!==currentState||pendingTickWrites.get(operationKey)!==operation) return;
-      if(previousValue) done.add(id); else done.delete(id);
+      if(previousValue) done.set(id,previousTimestamp); else done.delete(id);
       recordNew=false;
       dbFail(error);refresh();
     }).finally(()=>{
