@@ -425,9 +425,8 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;letter-spacing:-0.02
 /* ============================================================
    MODULE 03 — DASHBOARD (Hero, KPI, Charts)
    ============================================================ */
-.view{display:none;animation:fadeIn var(--dur-slow) var(--ease);}
+.view{display:none;}
 .view.active{display:block;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 
 .hero{
   background:linear-gradient(135deg,var(--primary) 0%, #6EA2FF 55%, #8DBBFF 100%);
@@ -1860,6 +1859,7 @@ const VIEW_TITLE_KEYS = {
   dashboard:'nav.dashboard', pending:'nav.pending',
   stats:'nav.stats', settings:'nav.settings', backup:'nav.backup'
 };
+let pageSlideAnimations = [];
 function switchView(name,{keepSearchOpen=false}={}){
   const showBackup = name==='backup';
   if(showBackup)name='settings';
@@ -1886,12 +1886,17 @@ function switchView(name,{keepSearchOpen=false}={}){
   renderCurrentView(true);
   if(showBackup) document.querySelector('#settingsNav [data-panel="backup"]').click();
   if(previousView!==name)window.scrollTo({top:0,behavior:'instant'});
-  if(previousView!==name && !matchMedia('(prefers-reduced-motion: reduce)').matches){
-    const view=document.getElementById('view-'+name);
-    view.getAnimations().forEach(animation=>animation.cancel());
-    const frames=['budget','settle'].includes(name) ? [{opacity:.55},{opacity:1}]
-      : [{opacity:.55,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}];
-    view.animate(frames,{duration:230,easing:'cubic-bezier(.2,.72,.25,1)'});
+  if(previousView!==name){
+    pageSlideAnimations.forEach(animation=>animation.cancel());
+    pageSlideAnimations = [];
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const from = name==='menu' && ['kpi','envelopes','budget','settle','settings'].includes(previousView)
+        ? '-100%' : '100%';
+      const frames = [{translate:from},{translate:'0%'}];
+      const timing = {duration:320,easing:'cubic-bezier(.22,.75,.25,1)'};
+      pageSlideAnimations = [document.querySelector('.topbar'),document.getElementById('view-'+name)]
+        .map(element=>element.animate(frames,timing));
+    }
   }
 }
 function renderCurrentView(force){
@@ -4048,7 +4053,6 @@ body{max-width:100vw;touch-action:manipulation}
 @keyframes sheetEnter{from{transform:translateY(24px)}to{transform:translateY(0)}}
 @keyframes sheetExit{from{transform:translateY(0)}to{transform:translateY(18px)}}
 @media(max-width:820px){
-  .view{animation:none}
   .due-soon-tag,.exp-checking,.dash-more-grid .expense-card{animation:none}
   .expense-card:hover{transform:none}
   .expense-card.paid{opacity:1}
@@ -4829,10 +4833,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=75"></script>
-<link rel="stylesheet" href="./layout.css?v=75">
-<script src="./layout.js?v=75"></script>
-<script src="./voice-expense.js?v=75"></script>
-<script src="./kpi.js?v=75"></script>
+<script src="./envelopes.js?v=76"></script>
+<link rel="stylesheet" href="./layout.css?v=76">
+<script src="./layout.js?v=76"></script>
+<script src="./voice-expense.js?v=76"></script>
+<script src="./kpi.js?v=76"></script>
 </body>
 </html>
