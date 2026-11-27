@@ -1135,10 +1135,9 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
           <div class="charts-grid">
             <div class="panel" style="grid-column:1/-1;">
               <div class="panel-header stats-trend-header">
-                <div class="panel-title" data-i18n="stats.trend">Xu hướng chi tiêu</div>
+                <div class="stats-trend-heading"><div class="panel-title" data-i18n="stats.trend">Xu hướng chi tiêu</div><p class="stats-trend-period qrx-note"></p></div>
                 <div class="seg-toggle trend-segments" role="group" aria-label="Nhóm xu hướng"></div>
               </div>
-              <p class="stats-trend-period qrx-note"></p>
               <div class="chart-wrap" style="height:280px;"><canvas id="chartStatsTrend"></canvas></div>
             </div>
             <div class="panel">
@@ -1168,6 +1167,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
       <section class="view" id="view-budget"></section>
       <section class="view" id="view-settle"></section>
       <section class="view" id="view-menu"></section>
+      <section class="view" id="view-kpi"></section>
       <section class="view" id="view-settings">
         <div class="settings-grid">
           <div class="settings-nav" id="settingsNav">
@@ -1177,6 +1177,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
             <button data-panel="payment" data-i18n="settings.payment">Phương thức thanh toán</button>
             <button data-panel="learning">Quy tắc đã ghi nhớ</button>
             <button data-panel="recurring" data-i18n="settings.recurring">Chi định kỳ</button>
+            <button type="button" id="kpiSettingsLink">Theo dõi KPI</button>
             <button data-panel="backup" data-i18n="nav.backup">Sao lưu</button>
           </div>
 
@@ -1698,7 +1699,7 @@ async function seedIfEmpty(){
   if(cats.length===0){ for(const c of DEFAULT_CATEGORIES) await dbPut('categories', c); }
   if(wallets.length===0){ for(const w of DEFAULT_WALLETS) await dbPut('wallets', w); }
   if(pms.length===0){ for(const p of DEFAULT_PAYMENT_METHODS) await dbPut('paymentMethods', p); }
-  if(settingsRows.length===0){
+  if(!settingsRows.some(row=>row.key==='app')){
     await dbPut('settings',{key:'app', language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false, userName:'bạn'});
   }
 }
@@ -1722,6 +1723,7 @@ async function loadAllState(){
   STATE.recurring = recurring;
   STATE.backups = backups.sort((a,b)=> b.createdAt - a.createdAt);
   STATE.learningRules = learningRules.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  window.loadKpiSettings?.(settingsRows);
   const appSettings = settingsRows.find(s=>s.key==='app');
   if(appSettings) Object.assign(STATE.settings, appSettings);
 }
@@ -1856,7 +1858,7 @@ function switchView(name,{keepSearchOpen=false}={}){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===name));
-  const titles={envelopes:'Sổ phong bì',settle:'Quyết toán',budget:'Hạn mức',menu:'Menu'};
+  const titles={kpi:'Theo dõi KPI',envelopes:'Sổ phong bì',settle:'Quyết toán',budget:'Hạn mức',menu:'Menu'};
   document.getElementById('topbarTitle').textContent = titles[name] || t(VIEW_TITLE_KEYS[name]||'nav.dashboard');
   const menuBrand=document.querySelector('.topbar-menu-brand');
   menuBrand.hidden=name!=='menu';
@@ -1881,6 +1883,7 @@ function renderCurrentView(force){
     case 'dashboard': renderDashboard(); break;
     case 'pending': renderListView('pending', force); break;
     case 'envelopes': renderEnvelopeView(); break;
+    case 'kpi': window.renderKpiPage(); break;
     case 'stats': renderStatistics(); break;
     case 'settings': renderSettings(); break;
     case 'budget': window.renderBudgetPage(); break;
@@ -3212,7 +3215,7 @@ document.getElementById('recurForm').addEventListener('submit', async (e)=>{
 });
 
 document.getElementById('settingsNav').addEventListener('click',(e)=>{
-  const btn = e.target.closest('button'); if(!btn) return;
+  const btn = e.target.closest('button'); if(!btn || !btn.dataset.panel) return;
   document.querySelectorAll('#settingsNav button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.settings-panel').forEach(p=>p.classList.add('hidden'));
@@ -4185,21 +4188,59 @@ window.addEventListener('pageshow',()=>setTimeout(checkPending,300));
 setTimeout(checkPending,0);
 setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
 
-/* Kéo xuống để làm mới */
+/* Kéo nội dung xuống rồi thả để cập nhật dữ liệu tại trang đang xem. */
 (function(){
-  let y0=0,pull=0,on=false;
-  const ind=document.createElement('div');
-  ind.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translate(-50%,-40px);z-index:1100;padding:8px 14px;border-radius:999px;background:var(--card);color:var(--text);box-shadow:var(--shadow);font-size:13px;opacity:0;pointer-events:none;transition:opacity .15s';
-  document.body.appendChild(ind);
-  const blocked=t=>document.getElementById('qrxOv')||document.querySelector('#expenseDrawer.show,.modal-overlay.show,.envelope-dialog[open]')||(t&&t.closest&&t.closest('.drawer-body,.sidebar,.table-wrap,input,textarea,select'));
-  addEventListener('touchstart',e=>{ if(window.scrollY>0||e.touches.length!==1||blocked(e.target)){on=false;return;} y0=e.touches[0].clientY;pull=0;on=true; },{passive:true});
-  addEventListener('touchmove',e=>{ if(!on||window.__qrxSwiping) return; const dy=e.touches[0].clientY-y0;
-    if(dy<=0||window.scrollY>0){ind.style.opacity=0;pull=0;return;}
-    pull=Math.min(dy,140); if(e.cancelable) e.preventDefault();
-    ind.style.opacity=Math.min(1,pull/70); ind.style.transform='translate(-50%,'+(pull*0.5-30)+'px)';
-    ind.textContent=pull>=80?'Thả để làm mới':'Kéo xuống để làm mới'; },{passive:false});
-  addEventListener('touchend',()=>{ if(!on) return; on=false;
-    if(pull>=80){ind.textContent='Đang làm mới...';ind.style.opacity=1;setTimeout(()=>location.reload(),150);} else ind.style.opacity=0; pull=0; },{passive:true});
+  const content=document.querySelector('.main-content');
+  const indicator=document.createElement('div');
+  indicator.className='pull-refresh-indicator';
+  indicator.setAttribute('role','status');
+  indicator.hidden=true;
+  document.getElementById('appShell').append(indicator);
+  const mobile=matchMedia('(max-width:820px)');
+  let origin=null, distance=0, refreshing=false;
+  const reset=()=>{
+    origin=null;distance=0;
+    content.classList.add('refresh-returning');
+    content.style.removeProperty('transform');
+  };
+  addEventListener('touchstart',event=>{
+    if(refreshing||!mobile.matches||!appBooted||scrollY>0||event.touches.length!==1||
+      !event.target.closest('.main-content')||event.target.closest('input,textarea,select,button,a')||
+      document.querySelector('#qrxOv,.drawer.show,.modal-overlay.show,dialog[open]')) return;
+    origin=event.touches[0];
+    content.classList.remove('refresh-returning');
+  },{passive:true});
+  addEventListener('touchmove',event=>{
+    if(!origin) return;
+    const touch=event.touches[0];
+    const y=touch.clientY-origin.clientY, x=touch.clientX-origin.clientX;
+    if(event.touches.length!==1||scrollY>0||window.__qrxSwiping||y<0||Math.abs(x)>Math.max(12,y)){
+      reset();indicator.hidden=true;return;
+    }
+    if(y<6||!event.cancelable) return;
+    event.preventDefault();
+    distance=Math.min(y,150);
+    if(!matchMedia('(prefers-reduced-motion:reduce)').matches)
+      content.style.transform='translateY('+Math.round(distance*.48)+'px)';
+    indicator.textContent=distance>=85?'Thả để làm mới':'Kéo xuống để làm mới';
+    indicator.hidden=false;
+  },{passive:false});
+  addEventListener('touchcancel',()=>{
+    if(origin){reset();indicator.hidden=true;}
+  },{passive:true});
+  addEventListener('touchend',async()=>{
+    if(!origin) return;
+    const shouldRefresh=distance>=85;
+    reset();
+    if(!shouldRefresh){indicator.hidden=true;return;}
+    refreshing=true;
+    indicator.textContent='Đang làm mới…';
+    try{
+      await loadAllState();
+      renderCurrentView(true);
+    }catch(error){showToast('Chưa làm mới được dữ liệu. Vui lòng thử lại.');}
+    finally{refreshing=false;indicator.hidden=true;}
+  },{passive:true});
 })();
 const ICON='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><g fill="currentColor" stroke="none"><rect x="5.5" y="5.5" width="2" height="2"/><rect x="16.5" y="5.5" width="2" height="2"/><rect x="5.5" y="16.5" width="2" height="2"/><rect x="14" y="14" width="2.6" height="2.6"/><rect x="18.4" y="14" width="2.6" height="2.6"/><rect x="16.2" y="17" width="2.6" height="2.6"/><rect x="14" y="19" width="2.6" height="2"/><rect x="18.4" y="19" width="2.6" height="2"/></g></svg>';
 const qa=document.getElementById('quickAddBtn');
@@ -4607,7 +4648,7 @@ try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body)
   bar.querySelectorAll('.qtb').forEach(b=>b.onclick=()=>{bar.querySelectorAll('.qtb').forEach(x=>x.classList.toggle('on',x===b)); place(b); switchView(b.dataset.v);});
   bar.querySelector('#qrxTabQR').onclick=openScan;
   const sync=()=>{
-    const a=STATE.ui.currentView, v=(['dashboard','pending','stats'].includes(a)?a:'menu'), sub=!!a&&!['dashboard','pending','stats','menu'].includes(a); document.body.classList.toggle('qrx-sub',sub); { const mb=document.getElementById('menuBtn'); if(mb) mb.setAttribute('aria-label',sub&&matchMedia('(max-width:820px)').matches?'Quay lại Menu':'Mở menu'); }
+    const a=STATE.ui.currentView, v=(['dashboard','pending','stats'].includes(a)?a:'menu'), sub=!!a&&!['dashboard','pending','stats','menu'].includes(a); document.body.classList.toggle('qrx-sub',sub); { const mb=document.getElementById('menuBtn'); if(mb) mb.setAttribute('aria-label',sub&&matchMedia('(max-width:820px)').matches?(a==='kpi'?'Quay lại Cài đặt':'Quay lại Menu'):'Mở menu'); }
     if(a) bar.querySelectorAll('.qtb').forEach(b=>{
       const current=b.dataset.v===v;
       b.classList.toggle('on',current);
@@ -4650,14 +4691,15 @@ window.renderMenuPage=function(){
   el.querySelectorAll('[data-act]').forEach(r=>r.onclick=()=>{ const b=document.getElementById(r.dataset.act); if(b) b.click(); });
   el.querySelector('#qmTheme').onclick=async()=>{ await setTheme(STATE.settings.theme==='dark'?'light':'dark'); window.renderMenuPage(); el.querySelector('#qmTheme').focus({preventScroll:true}); };
 };
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#menuBtn'); if(b&&matchMedia('(max-width:820px)').matches){ e.stopPropagation(); e.preventDefault(); switchView('menu'); } },true);
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#menuBtn'); if(b&&matchMedia('(max-width:820px)').matches){ e.stopPropagation(); e.preventDefault(); switchView(STATE.ui.currentView==='kpi'?'settings':'menu'); } },true);
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=62"></script>
-<link rel="stylesheet" href="./layout.css?v=62">
-<script src="./layout.js?v=62"></script>
-<script src="./voice-expense.js?v=62"></script>
+<script src="./envelopes.js?v=63"></script>
+<link rel="stylesheet" href="./layout.css?v=63">
+<script src="./layout.js?v=63"></script>
+<script src="./voice-expense.js?v=63"></script>
+<script src="./kpi.js?v=63"></script>
 </body>
 </html>
