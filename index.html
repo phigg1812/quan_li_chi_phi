@@ -1172,12 +1172,12 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <div class="settings-grid">
           <div class="settings-nav" id="settingsNav">
             <button class="active" data-panel="general" data-i18n="settings.general">Chung</button>
+            <button type="button" id="kpiSettingsLink">Theo dõi KPI</button>
             <button data-panel="categories" data-i18n="settings.categories">Danh mục</button>
             <button data-panel="wallets" data-i18n="settings.wallets">Ví</button>
             <button data-panel="payment" data-i18n="settings.payment">Phương thức thanh toán</button>
             <button data-panel="learning">Quy tắc đã ghi nhớ</button>
             <button data-panel="recurring" data-i18n="settings.recurring">Chi định kỳ</button>
-            <button type="button" id="kpiSettingsLink">Theo dõi KPI</button>
             <button data-panel="backup" data-i18n="nav.backup">Sao lưu</button>
           </div>
 
@@ -1279,9 +1279,9 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
      MODULE 26 — DRAWER (Add / Edit Expense)
      ============================================================ -->
 <div class="drawer-overlay" id="drawerOverlay"></div>
-<aside class="drawer scrollbar-thin" id="expenseDrawer">
+<aside class="drawer scrollbar-thin" id="expenseDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" inert>
   <div class="drawer-header">
-    <h3 id="drawerTitle" data-i18n="drawer.add">Thêm khoản chi</h3>
+    <h3 id="drawerTitle" tabindex="-1" data-i18n="drawer.add">Thêm khoản chi</h3>
     <button class="icon-btn" id="drawerCloseBtn" aria-label="Đóng khoản chi"><span data-icon="x"></span></button>
   </div>
   <div class="drawer-body scrollbar-thin">
@@ -1302,13 +1302,13 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <label data-i18n="field.category">Danh mục</label>
         <div class="chip-select" id="fCategoryChips"></div>
       </div>
-      <div class="field-row">
+      <div class="field-row expense-date-row">
         <div class="field">
-          <label data-i18n="field.createdDate">Ngày tạo</label>
+          <label for="fCreatedDate" data-i18n="field.createdDate">Ngày tạo</label>
           <input type="date" id="fCreatedDate">
         </div>
         <div class="field">
-          <label data-i18n="field.dueDate">Hạn thanh toán</label>
+          <label for="fDueDate" data-i18n="field.dueDate">Hạn thanh toán</label>
           <input type="date" id="fDueDate">
         </div>
       </div>
@@ -2346,6 +2346,18 @@ function formatAmountInput(el){
 formatAmountInput(document.getElementById('fAmount'));
 formatAmountInput(document.getElementById('rAmount'));
 
+const expenseDrawer=document.getElementById('expenseDrawer');
+const expenseDrawerBody=expenseDrawer.querySelector('.drawer-body');
+const expenseDrawerMobile=matchMedia('(max-width:820px)');
+function sizeExpenseDrawer(){
+  if(!expenseDrawer.classList.contains('show')||!expenseDrawerMobile.matches||!window.visualViewport) return;
+  const viewport=window.visualViewport;
+  const keyboardInset=Math.max(0,document.documentElement.clientHeight-viewport.height-viewport.offsetTop);
+  expenseDrawer.style.setProperty('--expense-visible-height',Math.floor(viewport.height)+'px');
+  expenseDrawer.style.setProperty('--expense-bottom-inset',Math.round(keyboardInset)+'px');
+}
+window.visualViewport?.addEventListener('resize',sizeExpenseDrawer);
+window.visualViewport?.addEventListener('scroll',sizeExpenseDrawer);
 function openExpenseDrawer(id){
   const isEdit = !!id;
   const exp = isEdit ? STATE.expenses.find(e=>e.id===id) : null;
@@ -2374,9 +2386,13 @@ function openExpenseDrawer(id){
   renderCategoryChips(document.getElementById('fCategoryChips'), exp ? exp.categoryId : (STATE.categories[0]&&STATE.categories[0].id));
   if(!isEdit && STATE.ui.expenseDraft) applyExpenseDraft(STATE.ui.expenseDraft);
   document.getElementById('drawerOverlay').classList.add('show');
-  document.getElementById('expenseDrawer').classList.add('show');
-  setTimeout(()=>{
-    if(document.getElementById('expenseDrawer').classList.contains('show')) document.getElementById('fName').focus();
+  expenseDrawer.inert=false;
+  expenseDrawer.classList.add('show');
+  expenseDrawerBody.scrollTo(0,0);
+  sizeExpenseDrawer();
+  if(expenseDrawerMobile.matches) document.getElementById('drawerTitle').focus({preventScroll:true});
+  else setTimeout(()=>{
+    if(expenseDrawer.classList.contains('show')) document.getElementById('fName').focus({preventScroll:true});
   },300);
 }
 function normalizeVietnamese(text){
@@ -2580,7 +2596,10 @@ function closeExpenseDrawer(preserveDraft=true){
     STATE.ui.expenseDraft = captureExpenseDraft();
   }
   document.getElementById('drawerOverlay').classList.remove('show');
-  document.getElementById('expenseDrawer').classList.remove('show');
+  expenseDrawer.classList.remove('show');
+  expenseDrawer.inert=true;
+  expenseDrawer.style.removeProperty('--expense-visible-height');
+  expenseDrawer.style.removeProperty('--expense-bottom-inset');
 }
 async function handleExpenseFormSubmit(e){
   e.preventDefault();
@@ -4190,7 +4209,7 @@ setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
 
 /* Kéo nội dung xuống rồi thả để cập nhật dữ liệu tại trang đang xem. */
 (function(){
-  const content=document.querySelector('.main-content');
+  const movingParts=document.querySelectorAll('.topbar,.main-content');
   const indicator=document.createElement('div');
   indicator.className='pull-refresh-indicator';
   indicator.setAttribute('role','status');
@@ -4200,15 +4219,18 @@ setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
   let origin=null, distance=0, refreshing=false;
   const reset=()=>{
     origin=null;distance=0;
-    content.classList.add('refresh-returning');
-    content.style.removeProperty('transform');
+    movingParts.forEach(part=>{
+      part.classList.add('refresh-returning');
+      part.style.removeProperty('transform');
+    });
   };
   addEventListener('touchstart',event=>{
     if(refreshing||!mobile.matches||!appBooted||scrollY>0||event.touches.length!==1||
-      !event.target.closest('.main-content')||event.target.closest('input,textarea,select,button,a')||
+      !event.target.closest('.main-content,.topbar')||event.target.closest('input,textarea,select')||
+      (event.target.closest('button,a')&&!event.target.closest('.topbar'))||
       document.querySelector('#qrxOv,.drawer.show,.modal-overlay.show,dialog[open]')) return;
     origin=event.touches[0];
-    content.classList.remove('refresh-returning');
+    movingParts.forEach(part=>part.classList.remove('refresh-returning'));
   },{passive:true});
   addEventListener('touchmove',event=>{
     if(!origin) return;
@@ -4221,9 +4243,9 @@ setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
     event.preventDefault();
     distance=Math.min(y,150);
     if(!matchMedia('(prefers-reduced-motion:reduce)').matches)
-      content.style.transform='translateY('+Math.round(distance*.48)+'px)';
+      movingParts.forEach(part=>part.style.transform='translateY('+Math.round(distance*.48)+'px)');
     indicator.textContent=distance>=85?'Thả để làm mới':'Kéo xuống để làm mới';
-    indicator.hidden=false;
+    indicator.hidden=distance<45;
   },{passive:false});
   addEventListener('touchcancel',()=>{
     if(origin){reset();indicator.hidden=true;}
@@ -4235,11 +4257,13 @@ setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
     if(!shouldRefresh){indicator.hidden=true;return;}
     refreshing=true;
     indicator.textContent='Đang làm mới…';
+    indicator.hidden=false;
+    indicator.classList.add('pull-refresh-active');
     try{
       await loadAllState();
       renderCurrentView(true);
     }catch(error){showToast('Chưa làm mới được dữ liệu. Vui lòng thử lại.');}
-    finally{refreshing=false;indicator.hidden=true;}
+    finally{refreshing=false;indicator.hidden=true;indicator.classList.remove('pull-refresh-active');}
   },{passive:true});
 })();
 const ICON='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><g fill="currentColor" stroke="none"><rect x="5.5" y="5.5" width="2" height="2"/><rect x="16.5" y="5.5" width="2" height="2"/><rect x="5.5" y="16.5" width="2" height="2"/><rect x="14" y="14" width="2.6" height="2.6"/><rect x="18.4" y="14" width="2.6" height="2.6"/><rect x="16.2" y="17" width="2.6" height="2.6"/><rect x="14" y="19" width="2.6" height="2"/><rect x="18.4" y="19" width="2.6" height="2"/></g></svg>';
@@ -4345,7 +4369,7 @@ window.renderSettlementPage=function(){
   document.addEventListener('click',e=>{ if(!mob()) return; const c=e.target.closest&&e.target.closest('.expense-card');
     if(!c||e.target.closest('button,a,input,label')||(c._sw&&Date.now()-c._sw<500)) return; const b=c.querySelector('[data-action="edit"]'); if(b) b.click(); });
   let sh=null,sy=0,dy=0;
-  addEventListener('touchstart',e=>{ const s=e.target.closest&&e.target.closest('.qrx-sheet,.drawer.show'); if(!s||!mob()||reduceSheetMotion.matches||e.target.closest('button,input,select,textarea,a')){sh=null;return;}
+  addEventListener('touchstart',e=>{ const s=e.target.closest&&e.target.closest('.qrx-sheet,.drawer.show:not(#expenseDrawer)'); if(!s||!mob()||reduceSheetMotion.matches||e.target.closest('button,input,select,textarea,a')){sh=null;return;}
     const t=e.touches[0]; if(t.clientY-s.getBoundingClientRect().top>44){sh=null;return;} sh=s;sy=t.clientY;dy=0;s.style.transition='none'; },{passive:true});
   addEventListener('touchmove',e=>{ if(!sh) return; dy=Math.max(0,e.touches[0].clientY-sy); sh.style.transform='translateY('+dy+'px)'; },{passive:true});
   const endSh=()=>{ if(!sh) return; const s=sh; sh=null; s.style.transition=''; s.style.transform=''; if(dy>110){ if(s.classList.contains('drawer')) closeExpenseDrawer(); else close(); } };
@@ -4682,7 +4706,7 @@ window.renderMenuPage=function(){
   const act=(id,label,danger=false)=>'<button type="button" class="qm-r'+(danger?' qm-danger':'')+'" data-act="'+id+'"><span>'+label+'</span>'
     +(danger?'':'<i class="qm-c" aria-hidden="true">›</i>')+'</button>';
   el.innerHTML='<h1 class="qm-page-title">Menu</h1><div class="qm-g">'+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+'</div>'
-    +'<div class="qm-g">'+go('settings','Cài đặt','Danh mục, ví, sao lưu')+'</div>'
+    +'<div class="qm-g">'+go('settings','Cài đặt','Danh mục, ví, theo dõi KPI')+'</div>'
     +'<div class="qm-g"><button type="button" class="qm-r" id="qmTheme" role="switch" aria-checked="'+dark+'"><span>Chế độ tối</span><span class="qm-sw'+(dark?' on':'')+'" aria-hidden="true"></span></button>'
       +act('editNameBtn','Đổi tên hiển thị')+act('passwordManageBtn','Mật khẩu đăng nhập')+'</div>'
     +'<div class="qm-g">'+act('signOutBtn','Đăng xuất',true)+'</div>'
@@ -4696,10 +4720,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=63"></script>
-<link rel="stylesheet" href="./layout.css?v=63">
-<script src="./layout.js?v=63"></script>
-<script src="./voice-expense.js?v=63"></script>
-<script src="./kpi.js?v=63"></script>
+<script src="./envelopes.js?v=64"></script>
+<link rel="stylesheet" href="./layout.css?v=64">
+<script src="./layout.js?v=64"></script>
+<script src="./voice-expense.js?v=64"></script>
+<script src="./kpi.js?v=64"></script>
 </body>
 </html>
