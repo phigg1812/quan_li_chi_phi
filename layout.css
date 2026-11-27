@@ -154,3 +154,40 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
   .envelope-dialog::before{content:"";display:block;width:36px;height:4px;margin:-7px auto 12px;border-radius:4px;background:var(--border)}
 }
 @media(max-width:360px){#view-history .cal-cell-amount{display:none}}
+
+/* Thống kê và lịch sử */
+.stats-tabs,.history-status{width:fit-content;margin-bottom:12px}
+.stats-tabs button,.history-status button{min-height:44px}
+#view-history .history-search{display:block}
+
+/* Điều hướng dưới và nút quét */
+@media(max-width:820px){
+  nav.qrx-tab{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) 64px repeat(2,minmax(0,1fr));gap:3px}
+  .qrx-tab .qtb{width:100%}
+  .qrx-tab .qrb{justify-self:center}
+  .qtb-icon{position:relative;display:grid;place-items:center}
+  .qtb-icon .qbd{top:-8px;right:-11px;padding-inline:3px;max-width:28px}
+}
+
+/* Sổ phong bì */
+#view-envelopes .envelope-filters{display:block}
+.envelope-search-row{display:flex;gap:8px;margin-bottom:10px}
+.envelope-filter-options{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.envelope-filter-options .envelope-groups{width:100%;margin:6px 0 0}
+#envelopeFilterButton{display:none;white-space:nowrap}
+#view-envelopes .envelope-header{margin-block:12px;justify-content:space-between;flex-wrap:wrap}
+#view-envelopes .envelope-totals{flex:1 1 220px;display:flex;gap:12px;margin:0}
+#view-envelopes .envelope-totals>div{flex:1;padding:8px 10px;border:0;background:transparent}
+#view-envelopes .envelope-totals strong{font-size:16px}
+.topbar:has(~ .main-content #view-envelopes.active) #quickAddBtn{display:none}
+@media(max-width:820px){
+  #envelopeFilterButton{display:inline-flex;min-height:44px}
+  #view-envelopes .envelope-filter-options{display:none}
+  #view-envelopes .envelope-header{gap:6px}
+  #view-envelopes .envelope-totals{flex-basis:160px;gap:4px}
+  #view-envelopes .envelope-totals>div{padding-inline:4px}
+  .envelope-filter-sheet .envelope-filter-options{display:grid;gap:10px}
+  .envelope-filter-sheet .filter-select{width:100%;min-height:44px;font-size:16px}
+  .envelope-filter-sheet .envelope-groups{margin-block:4px}
+  .envelope-filter-sheet footer button{min-height:44px}
+}

@@ -981,10 +981,6 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <span class="nav-icon" data-icon="archive"></span>
         <span class="nav-label">Sổ phong bì</span>
       </button>
-      <button class="nav-item" data-view="history">
-        <span class="nav-icon" data-icon="calendar"></span>
-        <span class="nav-label" data-i18n="nav.history">Lịch sử</span>
-      </button>
       <div class="nav-section-title" data-i18n="nav.system">Hệ thống</div>
       <button class="nav-item" data-view="settings">
         <span class="nav-icon" data-icon="settings"></span>
@@ -1125,59 +1121,69 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
       <!-- ============================================================
            MODULE 06 — CALENDAR VIEW
            ============================================================ -->
-      <section class="view" id="view-history">
-        <input class="history-search filter-select" type="search" aria-label="Tìm khoản đã trả" placeholder="Tìm theo tên hoặc ghi chú">
-        <div class="cal-toolbar">
-          <div class="cal-nav">
-            <button class="icon-btn" id="calPrev" aria-label="Tháng trước"><span data-icon="chevron-left"></span></button>
-            <div class="cal-title" id="calTitle">Tháng —</div>
-            <button class="icon-btn" id="calNext" aria-label="Tháng sau"><span data-icon="chevron-right"></span></button>
-          </div>
-          <button class="btn btn-sm" id="calTodayBtn" data-i18n="cal.today">Hôm nay</button>
-        </div>
-        <p class="qrx-note">Màu sóng thể hiện số tiền đã thanh toán so với ngày cao nhất tháng.</p>
-        <div class="cal-grid" id="calGrid"></div>
-        <section class="history-list" aria-labelledby="historyTitle">
-          <div class="history-summary"><h2 id="historyTitle"></h2><strong id="historyTotal" role="status"></strong></div>
-          <div id="historyExpenses" class="card-grid"></div>
-          <details id="historyUndated" hidden>
-            <summary></summary>
-            <p class="qrx-note">Mở khoản chi để bổ sung ngày thanh toán.</p>
-            <div id="historyUndatedExpenses" class="card-grid"></div>
-          </details>
-        </section>
-      </section>
-
       <!-- ============================================================
            MODULE 30 — STATS VIEW
            ============================================================ -->
       <section class="view" id="view-stats">
-        <div class="list-toolbar">
-          <div class="seg-toggle" id="statsRangeToggle">
-            <button class="active" data-range="day" data-i18n="stats.day">Ngày</button>
-            <button data-range="week" data-i18n="stats.week">Tuần</button>
-            <button data-range="month" data-i18n="stats.month">Tháng</button>
-            <button data-range="year" data-i18n="stats.year">Năm</button>
+        <div class="seg-toggle stats-tabs" role="group" aria-label="Nội dung thống kê">
+          <button type="button" data-stats-panel="charts" class="active" aria-pressed="true">Biểu đồ</button>
+          <button type="button" data-stats-panel="history" aria-pressed="false">Lịch sử</button>
+        </div>
+        <div id="statsCharts">
+
+          <div class="list-toolbar">
+            <div class="seg-toggle" id="statsRangeToggle">
+              <button class="active" data-range="day" data-i18n="stats.day">Ngày</button>
+              <button data-range="week" data-i18n="stats.week">Tuần</button>
+              <button data-range="month" data-i18n="stats.month">Tháng</button>
+              <button data-range="year" data-i18n="stats.year">Năm</button>
+            </div>
+          </div>
+          <div class="charts-grid">
+            <div class="panel" style="grid-column:1/-1;">
+              <div class="panel-header"><div class="panel-title" data-i18n="stats.trend">Xu hướng chi tiêu</div></div>
+              <div class="chart-wrap" style="height:280px;"><canvas id="chartStatsTrend"></canvas></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title" data-i18n="chart.category">Chi theo danh mục</div></div>
+              <div class="chart-wrap"><canvas id="chartStatsCategory"></canvas></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title" data-i18n="stats.wallet">Chi theo ví</div></div>
+              <div class="chart-wrap"><canvas id="chartStatsWallet"></canvas></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title" data-i18n="chart.status">Đã thanh toán / Chưa trả</div></div>
+              <div class="chart-wrap"><canvas id="chartStatsStatus"></canvas></div>
+            </div>
           </div>
         </div>
-        <div class="charts-grid">
-          <div class="panel" style="grid-column:1/-1;">
-            <div class="panel-header"><div class="panel-title" data-i18n="stats.trend">Xu hướng chi tiêu</div></div>
-            <div class="chart-wrap" style="height:280px;"><canvas id="chartStatsTrend"></canvas></div>
+        <section id="view-history" hidden>
+          <input class="history-search filter-select" type="search" aria-label="Tìm khoản chi trong lịch sử" placeholder="Tìm theo tên hoặc ghi chú">
+          <div class="seg-toggle history-status" role="group" aria-label="Trạng thái khoản chi">
+            <button type="button" data-history-paid="false" aria-pressed="true" class="active">Chưa trả</button>
+            <button type="button" data-history-paid="true" aria-pressed="false">Đã trả</button>
           </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title" data-i18n="chart.category">Chi theo danh mục</div></div>
-            <div class="chart-wrap"><canvas id="chartStatsCategory"></canvas></div>
+          <div class="cal-toolbar">
+            <div class="cal-nav">
+              <button class="icon-btn" id="calPrev" aria-label="Tháng trước"><span data-icon="chevron-left"></span></button>
+              <div class="cal-title" id="calTitle">Tháng —</div>
+              <button class="icon-btn" id="calNext" aria-label="Tháng sau"><span data-icon="chevron-right"></span></button>
+            </div>
+            <button class="btn btn-sm" id="calTodayBtn" data-i18n="cal.today">Hôm nay</button>
           </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title" data-i18n="stats.wallet">Chi theo ví</div></div>
-            <div class="chart-wrap"><canvas id="chartStatsWallet"></canvas></div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title" data-i18n="chart.status">Đã thanh toán / Chưa trả</div></div>
-            <div class="chart-wrap"><canvas id="chartStatsStatus"></canvas></div>
-          </div>
-        </div>
+          <p class="qrx-note" id="historyLegend"></p>
+          <div class="cal-grid" id="calGrid"></div>
+          <section class="history-list" aria-labelledby="historyTitle">
+            <div class="history-summary"><h2 id="historyTitle"></h2><strong id="historyTotal" role="status"></strong></div>
+            <div id="historyExpenses" class="card-grid"></div>
+            <details id="historyUndated" hidden>
+              <summary></summary>
+              <p class="qrx-note">Mở khoản chi để bổ sung ngày thanh toán.</p>
+              <div id="historyUndatedExpenses" class="card-grid"></div>
+            </details>
+          </section>
+        </section>
       </section>
 
       <!-- ============================================================
@@ -1479,7 +1485,7 @@ function renderIcons(root){
 const I18N = {
   vi:{
     'nav.menu':'Menu','nav.dashboard':'Tổng quan','nav.pending':'Chưa trả','nav.paid':'Đã thanh toán',
-    'nav.stats':'Thống kê','nav.history':'Lịch sử','nav.system':'Hệ thống','nav.settings':'Cài đặt','nav.backup':'Sao lưu','nav.collapse':'Thu gọn',
+    'nav.stats':'Thống kê','nav.system':'Hệ thống','nav.settings':'Cài đặt','nav.backup':'Sao lưu','nav.collapse':'Thu gọn',
     'search.placeholder':'Tìm khoản chi...',
     'hero.totalPending':'Tổng số tiền chưa trả',
     'quick.add':'Thêm khoản chi','quick.exportExcel':'Xuất Excel','quick.importExcel':'Nhập Excel','quick.backup':'Backup',
@@ -1650,7 +1656,7 @@ const STATE = {
   settings:{ language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false },
   ui:{ currentView:'dashboard', listViewMode:'card', search:'', sort:{field:'dueDate',dir:'asc'},
        filters:{category:'all', wallet:'all', period:'all', minAmount:'', maxAmount:''},
-       calDate:new Date(), historyDay:null, statsRange:'month', pendingDrawerId:null, pendingDeleteId:null,
+       calDate:new Date(), historyDay:null, historyPaid:false, statsPanel:'charts', statsRange:'month', pendingDrawerId:null, pendingDeleteId:null,
        pendingDeleteType:null, dashExpanded:false, dashCategory:'all', smartPrediction:null }
 };
 function uid(prefix){ return (prefix||'id')+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
@@ -1852,7 +1858,7 @@ async function setCurrency(cur){
    ============================================================ */
 const VIEW_TITLE_KEYS = {
   dashboard:'nav.dashboard', pending:'nav.pending',
-  stats:'nav.stats', history:'nav.history', settings:'nav.settings', backup:'nav.backup'
+  stats:'nav.stats', settings:'nav.settings', backup:'nav.backup'
 };
 function switchView(name){
   const showBackup = name==='backup';
@@ -1881,8 +1887,7 @@ function renderCurrentView(force){
     case 'dashboard': renderDashboard(); break;
     case 'pending': renderListView('pending', force); break;
     case 'envelopes': renderEnvelopeView(); break;
-    case 'history': renderHistory(); break;
-    case 'stats': renderStats(); break;
+    case 'stats': renderStatistics(); break;
     case 'settings': renderSettings(); break;
     case 'budget': window.renderBudgetPage(); break;
     case 'settle': window.renderSettlementPage(); break;
@@ -2682,16 +2687,49 @@ function shortHistoryAmount(amount){
   const millions=amount>=1e6;
   return new Intl.NumberFormat('vi-VN',{maximumFractionDigits:millions && amount<1e8?1:0}).format(amount/(millions?1e6:1e3))+(millions?'tr':'k');
 }
+function renderStatistics(){
+  const history=STATE.ui.statsPanel==='history';
+  document.getElementById('statsCharts').hidden=history;
+  document.getElementById('view-history').hidden=!history;
+  document.querySelectorAll('[data-stats-panel]').forEach(button=>{
+    const selected=button.dataset.statsPanel===STATE.ui.statsPanel;
+    button.setAttribute('aria-pressed',String(selected));
+    button.classList.toggle('active',selected);
+  });
+  if(history) renderHistory();
+  else renderStats();
+}
+document.querySelectorAll('[data-stats-panel]').forEach(button=>{
+  button.onclick=()=>{ STATE.ui.statsPanel=button.dataset.statsPanel; renderStatistics(); };
+});
+document.querySelectorAll('[data-history-paid]').forEach(button=>{
+  button.onclick=()=>{
+    STATE.ui.historyPaid=button.dataset.historyPaid==='true';
+    STATE.ui.historyDay=null;
+    renderHistory();
+  };
+});
 function renderHistory(){
   const cur=STATE.ui.calDate;
   const month=dateISO(cur).slice(0,7);
   const selected=STATE.ui.historyDay;
-  const paid=STATE.expenses.filter(exp=>exp.paid);
-  const monthExpenses=paid.filter(exp=>paymentDay(exp).startsWith(month)).sort((a,b)=>
-    paymentDay(b).localeCompare(paymentDay(a)) || expenseCreatedTime(b)-expenseCreatedTime(a));
+  const isPaid=STATE.ui.historyPaid;
+  const status=isPaid?'Đã trả':'Chưa trả';
+  const expenses=STATE.expenses.filter(exp=>Boolean(exp.paid)===isPaid);
+  const expenseDay=isPaid ? paymentDay : exp=>exp.createdDate||'';
+  document.getElementById('historyLegend').textContent=isPaid
+    ? 'Theo ngày thanh toán. Mức màu xanh tỷ lệ với ngày trả nhiều nhất tháng.'
+    : 'Theo ngày ghi nhận. Mức màu xanh tỷ lệ với ngày có nhiều tiền chưa trả nhất tháng.';
+  document.querySelectorAll('[data-history-paid]').forEach(button=>{
+    const active=(button.dataset.historyPaid==='true')===isPaid;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
+  const monthExpenses=expenses.filter(exp=>expenseDay(exp).startsWith(month)).sort((a,b)=>
+    expenseDay(b).localeCompare(expenseDay(a)) || expenseCreatedTime(b)-expenseCreatedTime(a));
   const dailyTotals=new Map();
   for(const exp of monthExpenses){
-    const day=paymentDay(exp);
+    const day=expenseDay(exp);
     dailyTotals.set(day,(dailyTotals.get(day)||0)+(Number(exp.amount)||0));
   }
   const highest=Math.max(0,...dailyTotals.values());
@@ -2704,17 +2742,17 @@ function renderHistory(){
   for(let day=1;day<=days;day++){
     const iso=month+'-'+String(day).padStart(2,'0');
     const total=dailyTotals.get(iso)||0;
-    html+=`<button type="button" class="cal-cell ${iso===today?'today':''}" data-date="${iso}" aria-pressed="${iso===selected}" ${iso===today?'aria-current="date"':''} aria-label="${formatDateShort(iso)}, ${formatCurrency(total)} đã trả">
+    html+=`<button type="button" class="cal-cell ${iso===today?'today':''}" data-date="${iso}" aria-pressed="${iso===selected}" ${iso===today?'aria-current="date"':''} aria-label="${formatDateShort(iso)}, ${formatCurrency(total)} ${status.toLowerCase()}">
       ${calendarAmountFill(total,highest)}<span class="cal-date">${day}</span>
       ${total?`<span class="cal-cell-amount" aria-hidden="true">${shortHistoryAmount(total)}</span>`:''}
     </button>`;
   }
   const grid=document.getElementById('calGrid');
   grid.innerHTML=html;
-  const shown=selected?monthExpenses.filter(exp=>paymentDay(exp)===selected):monthExpenses;
-  document.getElementById('historyTitle').textContent=selected?'Ngày '+formatDateShort(selected):'Đã trả trong tháng';
+  const shown=selected?monthExpenses.filter(exp=>expenseDay(exp)===selected):monthExpenses;
+  document.getElementById('historyTitle').textContent=selected?'Ngày '+formatDateShort(selected):status+' trong tháng';
   document.getElementById('historyTotal').textContent=formatCurrency(shown.reduce((sum,exp)=>sum+(Number(exp.amount)||0),0));
-  renderHistoryExpenses(shown,paid.filter(exp=>!paymentDay(exp)));
+  renderHistoryExpenses(shown,isPaid?expenses.filter(exp=>!paymentDay(exp)):[]);
 }
 function renderHistoryExpenses(shown,withoutDate){
   const selected=STATE.ui.historyDay;
@@ -2726,7 +2764,7 @@ function renderHistoryExpenses(shown,withoutDate){
   const renderCards=(root,expenses)=>{ root.innerHTML=expenses.map(expenseCardHTML).join(''); bindCardEvents(root); };
   const visible=shown.filter(matches);
   renderCards(list,visible);
-  if(!visible.length) list.innerHTML='<p class="qd-empty">'+(search?'Không tìm thấy khoản phù hợp.':'Không có khoản đã trả trong '+(selected?'ngày này.':'tháng này.'))+'</p>';
+  if(!visible.length) list.innerHTML='<p class="qd-empty">'+(search?'Không tìm thấy khoản phù hợp.':'Không có khoản '+(STATE.ui.historyPaid?'đã trả':'chưa trả')+' trong '+(selected?'ngày này.':'tháng này.'))+'</p>';
   const undated=document.getElementById('historyUndated');
   const undatedMatches=withoutDate.filter(matches);
   undated.hidden=!undatedMatches.length || !!selected;
@@ -4144,9 +4182,9 @@ window.renderSettlementPage=function(){
 (function(){
   const hb=document.getElementById('heroAddBtn');
   if(hb){const b=document.createElement('button'); b.className='hero-btn'; b.id='heroSettleBtn'; b.textContent='Quyết toán'; b.onclick=openSettle; hb.insertAdjacentElement('afterend',b);}
-  const pn=document.querySelector('.nav-item[data-view="history"]');
+  const pn=document.querySelector('.nav-item[data-view="envelopes"]');
   if(pn){const c=pn.cloneNode(true); c.removeAttribute('data-view'); c.classList.remove('active'); c.querySelectorAll('[data-i18n]').forEach(x=>x.removeAttribute('data-i18n'));
-    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Lịch sử') n.nodeValue='Quyết toán'; } c.dataset.qrx='settle'; c.dataset.view='settle';
+    const w=document.createTreeWalker(c,NodeFilter.SHOW_TEXT); let n; while((n=w.nextNode())){ if(n.nodeValue.trim()==='Sổ phong bì') n.nodeValue='Quyết toán'; } c.dataset.qrx='settle'; c.dataset.view='settle';
     c.querySelectorAll('.nav-badge,.badge').forEach(x=>x.remove());
     { const ni=c.querySelector('.nav-icon'); if(ni){ ni.removeAttribute('data-icon'); ni.innerHTML='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg>'; } }
     c.onclick=e=>{e.preventDefault(); e.stopPropagation(); const o=document.querySelector('.sidebar-overlay'); if(o) o.click(); openSettle();};
@@ -4454,7 +4492,9 @@ try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body)
   const syncTitle=()=>{big.textContent=tt.textContent;};
   new MutationObserver(syncTitle).observe(tt,{childList:true,characterData:true,subtree:true}); syncTitle();
   const bar=document.createElement('nav'); bar.className='qrx-tab'; bar.setAttribute('aria-label','Điều hướng');
-  bar.innerHTML='<span class="qpill" aria-hidden="true"></span>'+T.map(t=>t?'<button class="qtb" data-v="'+t[0]+'">'+t[2]+'<span>'+t[1]+'</span>'+(t[0]==='pending'?'<i class="qbd" id="qrxBadge"></i>':'')+'</button>':'<button class="qrb" id="qrxTabQR" aria-label="Quét QR thanh toán">'+ICON+'</button>').join('');
+  bar.innerHTML='<span class="qpill" aria-hidden="true"></span>'+T.map(t=>t
+    ? '<button class="qtb" data-v="'+t[0]+'"><span class="qtb-icon">'+t[2]+(t[0]==='pending'?'<i class="qbd" id="qrxBadge"></i>':'')+'</span><span>'+t[1]+'</span></button>'
+    : '<button class="qrb" id="qrxTabQR" aria-label="Quét QR thanh toán">'+ICON+'</button>').join('');
   shell.appendChild(bar);
   const place=on=>{const pill=bar.querySelector('.qpill'); if(!on||!on.offsetWidth) return; pill.style.opacity=1; pill.style.width=on.offsetWidth+'px'; pill.style.transform='translateX('+on.offsetLeft+'px)';};
   bar.querySelectorAll('.qtb').forEach(b=>b.onclick=()=>{bar.querySelectorAll('.qtb').forEach(x=>x.classList.toggle('on',x===b)); place(b); switchView(b.dataset.v);});
@@ -4493,7 +4533,7 @@ window.renderMenuPage=function(){
     +(sub?'<small>'+sub+'</small>':'')+'<i class="qm-c" aria-hidden="true">›</i></button>';
   const act=(id,label,danger=false)=>'<button type="button" class="qm-r'+(danger?' qm-danger':'')+'" data-act="'+id+'"><span>'+label+'</span>'
     +(danger?'':'<i class="qm-c" aria-hidden="true">›</i>')+'</button>';
-  el.innerHTML='<div class="qm-g">'+go('history','Lịch sử')+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+'</div>'
+  el.innerHTML='<div class="qm-g">'+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+'</div>'
     +'<div class="qm-g">'+go('settings','Cài đặt','Danh mục, ví, sao lưu')+'</div>'
     +'<div class="qm-g"><button type="button" class="qm-r" id="qmTheme" role="switch" aria-checked="'+dark+'"><span>Chế độ tối</span><span class="qm-sw'+(dark?' on':'')+'" aria-hidden="true"></span></button>'
       +act('editNameBtn','Đổi tên hiển thị')+act('passwordManageBtn','Mật khẩu đăng nhập')+'</div>'
@@ -4508,8 +4548,8 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=50"></script>
-<link rel="stylesheet" href="./layout.css?v=50">
-<script src="./layout.js?v=50"></script>
+<script src="./envelopes.js?v=51"></script>
+<link rel="stylesheet" href="./layout.css?v=51">
+<script src="./layout.js?v=51"></script>
 </body>
 </html>

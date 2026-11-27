@@ -9,31 +9,41 @@ function renderEnvelopeView(){
   const section = document.getElementById('view-envelopes');
   if(!section.querySelector('.envelope-list')){
     section.innerHTML = `
-      <div class="envelope-header"><h1>Sổ phong bì</h1><button class="btn btn-primary" id="envelopeAdd">+ Ghi phong bì</button></div>
-      <div class="envelope-totals" aria-label="Tổng tiền phong bì"></div>
       <div class="envelope-filters">
-        <input class="filter-select" type="search" aria-label="Tìm phong bì" placeholder="Tên, sự kiện hoặc ghi chú">
-        <select class="filter-select" aria-label="Lọc phong bì" id="envelopeDirection">
-          <option value="all">Tất cả</option><option value="received">Đã nhận</option><option value="sent">Đã đi</option>
-        </select>
-        <select class="filter-select" aria-label="Sắp xếp phong bì" id="envelopeSort">
-          <option value="recent">Sắp xếp: Mới nhất</option>
-          <option value="amount-desc">Tiền: Lớn → nhỏ</option>
-          <option value="amount-asc">Tiền: Nhỏ → lớn</option>
-          <option value="name-asc">Tên: A → Z</option>
-          <option value="name-desc">Tên: Z → A</option>
-        </select>
+        <div class="envelope-search-row">
+          <input class="filter-select" type="search" aria-label="Tìm phong bì" placeholder="Tên, sự kiện hoặc ghi chú">
+          <button type="button" class="btn" id="envelopeFilterButton" aria-haspopup="dialog">Bộ lọc</button>
+        </div>
+        <div class="envelope-filter-options">
+          <select class="filter-select" aria-label="Lọc phong bì" id="envelopeDirection">
+            <option value="all">Tất cả</option><option value="received">Đã nhận</option><option value="sent">Đã đi</option>
+          </select>
+          <select class="filter-select" aria-label="Sắp xếp phong bì" id="envelopeSort">
+            <option value="recent">Sắp xếp: Mới nhất</option>
+            <option value="amount-desc">Tiền: Lớn → nhỏ</option>
+            <option value="amount-asc">Tiền: Nhỏ → lớn</option>
+            <option value="name-asc">Tên: A → Z</option>
+            <option value="name-desc">Tên: Z → A</option>
+          </select>
+          <fieldset class="envelope-groups">
+            <legend>Nhóm người gửi hoặc nhận</legend>
+            ${Object.entries(ENVELOPE_SCOPES).map(([key,label])=>`<label><input type="checkbox" value="${key}">${label}</label>`).join('')}
+          </fieldset>
+        </div>
       </div>
-      <fieldset class="envelope-groups">
-        <legend>Nhóm người gửi hoặc nhận</legend>
-        ${Object.entries(ENVELOPE_SCOPES).map(([key,label])=>`<label><input type="checkbox" value="${key}">${label}</label>`).join('')}
-      </fieldset>
+      <div class="envelope-header">
+        <div class="envelope-totals" aria-label="Tổng tiền phong bì"></div>
+        <button type="button" class="btn btn-primary" id="envelopeAdd">+ Ghi phong bì</button>
+      </div>
       <div class="seg-toggle envelope-status" role="group" aria-label="Trạng thái đi lại">
         <button type="button" data-status="open">Chờ đi lại</button>
         <button type="button" data-status="completed">Đã đi lại</button>
       </div>
       <p class="envelope-result-count" role="status"></p>
       <div class="envelope-list"></div>`;
+    const filterButton=section.querySelector('#envelopeFilterButton');
+    const options=section.querySelector('.envelope-filter-options');
+    filterButton.onclick=()=>openEnvelopeFilters(options,filterButton);
     section.querySelector('#envelopeAdd').onclick = ()=>openEnvelopeForm();
     section.querySelector('input[type=search]').oninput = renderEnvelopeView;
     section.querySelector('.envelope-groups').onchange = ({target})=>{
@@ -58,7 +68,9 @@ function renderEnvelopeView(){
   }
   section.querySelector('#envelopeAdd').disabled = STATE.envelopesUnavailable;
   const entries = STATE.envelopes;
-  const query = normalizeVietnamese(section.querySelector('input').value.trim());
+  const query = normalizeVietnamese(section.querySelector('input[type=search]').value.trim());
+  const filterCount=selectedEnvelopeScopes.size+Number(envelopeFilter!=='all')+Number(envelopeSort!=='recent');
+  section.querySelector('#envelopeFilterButton').textContent=filterCount?`Bộ lọc (${filterCount})`:'Bộ lọc';
   const matching = entries.filter(entry=>{
     if(selectedEnvelopeScopes.size && !selectedEnvelopeScopes.has(entry.scope)) return false;
     if(!normalizeVietnamese([entry.person,entry.event,entry.notes,entry.method,entry.reciprocal?.event,entry.reciprocal?.notes].join(' ')).includes(query)) return false;
@@ -94,6 +106,38 @@ function renderEnvelopeView(){
       if(entry) openEnvelopeForm(entry,button.dataset.action==='reciprocal');
     };
   });
+}
+
+function openEnvelopeFilters(options,trigger){
+  const holder=options.parentElement;
+  const dialog=document.createElement('dialog');
+  const mobile=matchMedia('(max-width:820px)');
+  dialog.className='envelope-dialog envelope-filter-sheet';
+  dialog.setAttribute('aria-labelledby','envelopeFilterTitle');
+  dialog.innerHTML=`<h2 id="envelopeFilterTitle" tabindex="-1" autofocus>Bộ lọc phong bì</h2>
+    <footer><button class="btn" type="button" data-reset>Đặt lại</button>
+    <button class="btn btn-primary" type="button" data-done>Xong</button></footer>`;
+  dialog.querySelector('footer').before(options);
+  dialog.querySelector('[data-done]').onclick=()=>dialog.close();
+  dialog.querySelector('[data-reset]').onclick=()=>{
+    envelopeFilter='all';
+    envelopeSort='recent';
+    selectedEnvelopeScopes.clear();
+    options.querySelector('#envelopeDirection').value=envelopeFilter;
+    options.querySelector('#envelopeSort').value=envelopeSort;
+    options.querySelectorAll('input[type=checkbox]').forEach(input=>input.checked=false);
+    renderEnvelopeView();
+  };
+  const closeOnResize=event=>{ if(!event.matches) dialog.close(); };
+  mobile.addEventListener('change',closeOnResize);
+  dialog.addEventListener('close',()=>{
+    mobile.removeEventListener('change',closeOnResize);
+    holder.append(options);
+    dialog.remove();
+    if(mobile.matches) trigger.focus({preventScroll:true});
+  },{once:true});
+  document.body.append(dialog);
+  dialog.showModal();
 }
 
 function compareEnvelopes(a,b){
