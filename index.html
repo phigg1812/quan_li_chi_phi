@@ -1008,6 +1008,8 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <input type="text" id="globalSearch" data-i18n-ph="search.placeholder" placeholder="Tìm khoản chi...">
       </div>
       <button class="icon-btn" id="themeToggleBtn" aria-label="Đổi chế độ sáng hoặc tối"><span data-icon="moon"></span></button>
+      <button type="button" class="icon-btn" id="headerSearchBtn" aria-label="Tìm khoản chi" aria-expanded="false"><span data-icon="search"></span></button>
+      <button type="button" class="icon-btn" id="voiceExpenseBtn" aria-label="Nhập khoản chi bằng giọng nói" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-3 0h6"/></svg></button>
       <button class="icon-btn" id="quickAddBtn" title="Thêm nhanh (N)"><span data-icon="plus"></span></button>
       <div class="avatar-wrap">
         <button class="avatar-btn" id="userAvatar" title="Tài khoản">
@@ -1754,7 +1756,13 @@ async function saveSettings(){
 }
 function catById(id){ return STATE.categories.find(c=>c.id===id) || {name:'—',icon:'📦',color:'#6B7280'}; }
 function walById(id){ return STATE.wallets.find(w=>w.id===id) || {name:'—',icon:'👛'}; }
-function pmById(id){ return STATE.paymentMethods.find(p=>p.id===id) || {name:'—'}; }
+const CREDIT_CARD_METHOD={id:'pm_credit_card',name:'Thẻ tín dụng'};
+function isCreditCardMethod(method){
+  return /the tin dung|credit card|^credit$/.test(normalizeVietnamese(method.name));
+}
+function pmById(id){
+  return STATE.paymentMethods.find(p=>p.id===id) || (id===CREDIT_CARD_METHOD.id ? CREDIT_CARD_METHOD : {name:'—'});
+}
 </script>
 <script>
 /* ============================================================
@@ -2382,7 +2390,12 @@ function openExpenseDrawer(id){
   document.getElementById('fCreatedDate').value = exp ? exp.createdDate : todayISO();
   document.getElementById('fDueDate').value = exp ? exp.dueDate : endOfMonthISO();
   populateSelect(document.getElementById('fWallet'), STATE.wallets, true);
-  populateSelect(document.getElementById('fPaymentMethod'), STATE.paymentMethods, false);
+  const paymentOptions=STATE.paymentMethods.some(isCreditCardMethod) && exp?.paymentMethodId!==CREDIT_CARD_METHOD.id &&
+    STATE.ui.expenseDraft?.paymentMethodId!==CREDIT_CARD_METHOD.id ? STATE.paymentMethods :
+    [...STATE.paymentMethods.filter(p=>p.id!==CREDIT_CARD_METHOD.id),STATE.paymentMethods.find(p=>p.id===CREDIT_CARD_METHOD.id)||CREDIT_CARD_METHOD];
+  populateSelect(document.getElementById('fPaymentMethod'), paymentOptions, false);
+  document.getElementById('fPaymentMethod').removeAttribute('aria-invalid');
+  document.getElementById('fAmount').removeAttribute('aria-invalid');
   if(exp) document.getElementById('fWallet').value = exp.walletId;
   if(exp) document.getElementById('fPaymentMethod').value = exp.paymentMethodId;
   document.getElementById('fPaid').checked = exp ? !!exp.paid : false;
@@ -2394,7 +2407,9 @@ function openExpenseDrawer(id){
   if(!isEdit && STATE.ui.expenseDraft) applyExpenseDraft(STATE.ui.expenseDraft);
   document.getElementById('drawerOverlay').classList.add('show');
   document.getElementById('expenseDrawer').classList.add('show');
-  setTimeout(()=>document.getElementById('fName').focus(), 300);
+  setTimeout(()=>{
+    if(document.getElementById('expenseDrawer').classList.contains('show')) document.getElementById('fName').focus();
+  },300);
 }
 function normalizeVietnamese(text){
   return String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
@@ -2402,7 +2417,7 @@ function normalizeVietnamese(text){
 const NATURAL_STOP_WORDS = new Set(['mua','tra','thanh','toan','bang','ngay','thang','hom','nay','qua','luc','vao','cho','cua','toi','minh','mot','khoan','tien','chi','da','va','voi','theo','vi','tu']);
 function naturalLearningTokens(text){
   let n = normalizeVietnamese(text)
-    .replace(/vi dien tu|chuyen khoan|the ngan hang|tien mat|banking|momo|zalopay|shopeepay/g,' ')
+    .replace(/vi dien tu|chuyen khoan|the ngan hang|the tin dung|credit card|tien mat|banking|momo|zalopay|shopeepay/g,' ')
     .replace(/\d+(?:[.,]\d+)?\s*(?:trieu|tr|nghin|ngan|k)?/g,' ')
     .replace(/[^a-z0-9\s]/g,' ');
   return [...new Set(n.split(/\s+/).filter(x=>x.length>1 && !NATURAL_STOP_WORDS.has(x)))].slice(0,8);
@@ -2423,6 +2438,12 @@ function findLearnedRule(text){
   return best;
 }
 function parseNaturalAmount(text){
+  const words=normalizeVietnamese(text).match(/\b(?:(mot|hai|ba|bon|tu|nam|sau|bay|tam|chin)\s+muoi(?:\s+(mot|hai|ba|bon|tu|nam|lam|sau|bay|tam|chin))?|muoi(?:\s+(mot|hai|ba|bon|tu|nam|lam|sau|bay|tam|chin))?|(mot|hai|ba|bon|tu|nam|sau|bay|tam|chin))\s+(trieu|nghin|ngan)\b/);
+  if(words){
+    const numbers={mot:1,hai:2,ba:3,bon:4,tu:4,nam:5,lam:5,sau:6,bay:7,tam:8,chin:9};
+    const value=words[4] ? numbers[words[4]] : (numbers[words[1]]||1)*10+(numbers[words[2]||words[3]]||0);
+    return {amount:value*(words[5]==='trieu'?1000000:1000),token:text.slice(words.index,words.index+words[0].length)};
+  }
   const unitMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(triệu|tr|nghìn|ngàn|ngan|k)\b/i);
   if(unitMatch){
     const value = Number(unitMatch[1].replace(',','.'));
@@ -2458,7 +2479,7 @@ function parseNaturalDate(text){
 }
 function findNaturalCategory(text){
   const n = normalizeVietnamese(text)
-    .replace(/vi dien tu|chuyen khoan|the ngan hang|tien mat|banking|momo|zalopay|shopeepay/g,' ');
+    .replace(/vi dien tu|chuyen khoan|the ngan hang|the tin dung|credit card|tien mat|banking|momo|zalopay|shopeepay/g,' ');
   const groups = [
     {targets:['hoa don'],keys:['dien','nuoc','internet','wifi','cuoc','hoa don','truyen hinh']},
     {targets:['an uong'],keys:['an','com','pho','bun','tra sua','cafe','ca phe','nha hang']},
@@ -2468,7 +2489,7 @@ function findNaturalCategory(text){
     {targets:['nha o'],keys:['tien nha','thue nha','noi that','sua nha']},
     {targets:['mua sam'],keys:['mua','quan ao','giay','my pham','shopping']}
   ];
-  const group = groups.find(g=>g.keys.some(k=>n.includes(k)));
+  const group = groups.find(g=>g.keys.some(k=>new RegExp('\\b'+k+'\\b').test(n)));
   if(group){
     const found = STATE.categories.find(c=>group.targets.some(target=>normalizeVietnamese(c.name).includes(target)));
     if(found) return found;
@@ -2476,12 +2497,15 @@ function findNaturalCategory(text){
   return STATE.categories.find(c=>n.includes(normalizeVietnamese(c.name))) || STATE.categories[0];
 }
 function findNaturalPayment(text){
-  const n = normalizeVietnamese(text);
-  const desired = /(^|\s)(ck|banking)(\s|$)|chuyen khoan/.test(n) ? ['chuyen khoan']
-    : /(^|\s)tm(\s|$)|tien mat/.test(n) ? ['tien mat']
-    : /the ngan hang|quet the/.test(n) ? ['the ngan hang','the']
-    : /vi dien tu|momo|zalopay|shopeepay/.test(n) ? ['vi dien tu'] : [];
-  return STATE.paymentMethods.find(p=>desired.some(k=>normalizeVietnamese(p.name).includes(k))) || STATE.paymentMethods[0];
+  const n=normalizeVietnamese(text);
+  if(/\b(the tin dung|credit card)\b/.test(n)){
+    return {explicit:true,method:STATE.paymentMethods.find(isCreditCardMethod)||CREDIT_CARD_METHOD};
+  }
+  const desired = /\b(ck|banking|chuyen khoan)\b/.test(n) ? ['chuyen khoan']
+    : /\b(tm|tien mat)\b/.test(n) ? ['tien mat']
+    : /\b(the ngan hang|quet the)\b/.test(n) ? ['the ngan hang','the']
+    : /\b(vi dien tu|momo|zalopay|shopeepay)\b/.test(n) ? ['vi dien tu'] : [];
+  return {explicit:desired.length>0,method:STATE.paymentMethods.find(p=>desired.some(k=>normalizeVietnamese(p.name).includes(k)))};
 }
 function naturalExpenseName(text, amountToken, dateToken){
   const normalized = normalizeVietnamese(text);
@@ -2492,25 +2516,33 @@ function naturalExpenseName(text, amountToken, dateToken){
   if(amountToken) name = name.replace(amountToken,' ');
   if(dateToken) name = name.replace(dateToken,' ');
   name = name
-    .replace(/chuyển khoản|ví điện tử|thẻ ngân hàng|quẹt thẻ|tiền mặt|banking/gi,' ')
+    .replace(/chuyển khoản|ví điện tử|thẻ ngân hàng|thẻ tín dụng|credit card|quẹt thẻ|tiền mặt|banking|momo|zalopay|shopeepay/gi,' ')
     .replace(/(^|\s)(ck|tm)(?=\s|$)/gi,' ')
     .replace(/\btháng\s+\d{1,2}\b/gi,' ')
     .replace(/\s+/g,' ').replace(/^[,.;:\-\s]+|[,.;:\-\s]+$/g,'').trim();
   if(!name) return 'Khoản chi';
   return name.charAt(0).toUpperCase()+name.slice(1);
 }
-function prefillExpenseFromNaturalText(text){
+function prefillExpenseFromNaturalText(text,{voiceDate}={}){
+  text=text.normalize('NFC');
   const amountInfo = parseNaturalAmount(text);
   const dateInfo = parseNaturalDate(text);
   const learned = findLearnedRule(text);
   const category = (learned && catById(learned.categoryId).name!=='—') ? catById(learned.categoryId) : findNaturalCategory(text);
-  const payment = (learned && pmById(learned.paymentMethodId).name!=='—') ? pmById(learned.paymentMethodId) : findNaturalPayment(text);
+  const hint=findNaturalPayment(text);
+  const payment=hint.explicit ? hint.method : STATE.paymentMethods.find(p=>p.id===learned?.paymentMethodId)||STATE.paymentMethods[0];
   openExpenseDrawer();
-  document.getElementById('fName').value = (learned && learned.preferredName) || naturalExpenseName(text, amountInfo.token, dateInfo.token);
+  document.getElementById('fName').value = (!voiceDate && learned?.preferredName) || naturalExpenseName(text, amountInfo.token, dateInfo.token);
   document.getElementById('fAmount').value = amountInfo.amount ? new Intl.NumberFormat('vi-VN').format(amountInfo.amount) : '';
-  document.getElementById('fCreatedDate').value = dateInfo.date;
+  document.getElementById('fCreatedDate').value = voiceDate || dateInfo.date;
+  document.getElementById('fDueDate').value = endOfMonthISO(voiceDate || todayISO());
   document.getElementById('fWallet').value = (learned && walById(learned.walletId).name!=='—') ? learned.walletId : (STATE.wallets[0] ? STATE.wallets[0].id : '');
-  if(payment) document.getElementById('fPaymentMethod').value = payment.id;
+  const paymentInput=document.getElementById('fPaymentMethod');
+  if(payment && ![...paymentInput.options].some(option=>option.value===payment.id)){
+    paymentInput.add(new Option(payment.name,payment.id));
+  }
+  paymentInput.value=payment?.id || '';
+  if(hint.explicit && !payment) paymentInput.setAttribute('aria-invalid','true');
   renderCategoryChips(document.getElementById('fCategoryChips'), category && category.id);
   document.getElementById('fNotes').value = text;
   STATE.ui.expenseDraft = captureExpenseDraft();
@@ -2521,7 +2553,12 @@ function prefillExpenseFromNaturalText(text){
     paymentMethodId:document.getElementById('fPaymentMethod').value,
     walletId:document.getElementById('fWallet').value
   };
-  if(!amountInfo.amount) showToast('Chưa nhận ra số tiền — bạn hãy bổ sung trước khi lưu');
+  if(!amountInfo.amount){
+    document.getElementById('fAmount').setAttribute('aria-invalid','true');
+    showToast('Chưa nhận ra số tiền. Hãy bổ sung trước khi lưu.');
+  }else if(hint.explicit && !payment){
+    showToast('Hãy chọn phương thức thanh toán có trong danh sách.');
+  }
 }
 async function learnFromSmartCorrection(exp){
   const prediction = STATE.ui.smartPrediction;
@@ -3343,10 +3380,18 @@ document.addEventListener('keydown',(e)=>{
   const tag = (e.target.tagName||'').toLowerCase();
   const typing = tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable;
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='f'){
-    e.preventDefault(); globalSearchInput.focus(); return;
+    e.preventDefault();
+    const searchButton=document.getElementById('headerSearchBtn');
+    if(searchButton.getAttribute('aria-expanded')!=='true') searchButton.click();
+    globalSearchInput.focus();
+    return;
   }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
-    e.preventDefault(); globalSearchInput.focus(); return;
+    e.preventDefault();
+    const searchButton=document.getElementById('headerSearchBtn');
+    if(searchButton.getAttribute('aria-expanded')!=='true') searchButton.click();
+    globalSearchInput.focus();
+    return;
   }
   if(e.key==='Escape'){
     closeExpenseDrawer(); closeRecurDrawer(); closeConfirm(false); closeMobileSidebar();
@@ -4106,7 +4151,7 @@ const ICON='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="
 const qa=document.getElementById('quickAddBtn');
 const tb=document.createElement('button'); tb.type='button'; tb.id='qrxTopBtn'; tb.className=qa?'icon-btn':'fab qrx-fab';
 tb.title='Quét QR thanh toán'; tb.setAttribute('aria-label','Quét QR thanh toán'); tb.innerHTML=ICON; tb.onclick=openScan;
-if(qa) qa.parentNode.insertBefore(tb,qa); else document.body.appendChild(tb);
+if(qa) qa.parentNode.insertBefore(tb,document.getElementById('headerSearchBtn')); else document.body.appendChild(tb);
 
 function monthSelectOptions(selected, dates){
   const now=todayISO().slice(0,7);
@@ -4560,8 +4605,9 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=52"></script>
-<link rel="stylesheet" href="./layout.css?v=52">
-<script src="./layout.js?v=52"></script>
+<script src="./envelopes.js?v=53"></script>
+<link rel="stylesheet" href="./layout.css?v=53">
+<script src="./layout.js?v=53"></script>
+<script src="./voice-expense.js?v=53"></script>
 </body>
 </html>
