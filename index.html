@@ -4429,16 +4429,19 @@ window.renderMenuPage=function(){
   const el=document.getElementById('view-menu'); if(!el) return;
   const nm=(document.getElementById('profileMenuName')||{}).textContent||'', em=(document.getElementById('profileMenuEmail')||{}).textContent||'';
   const dark=STATE.settings.theme==='dark';
-  const go=(id,l,sub)=>'<div class="qm-r" data-go="'+id+'"><span>'+l+'</span>'+(sub?'<small>'+sub+'</small>':'')+'<i class="qm-c">›</i></div>';
-  const act=(id,l,style)=>'<div class="qm-r" data-act="'+id+'"'+(style?' style="'+style+'"':'')+'><span>'+l+'</span>'+(style?'':'<i class="qm-c">›</i>')+'</div>';
-  el.innerHTML='<div class="qm-g">'+go('calendar','Lịch')+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+go('paid','Đã thanh toán','lịch sử đã trả')+'</div>'
-    +'<div class="qm-g">'+go('settings','Cài đặt','danh mục, ví, sao lưu, Excel')+'</div>'
-    +'<div class="qm-g"><div class="qm-r" id="qmTheme"><span>Chế độ tối</span><span class="qm-sw'+(dark?' on':'')+'"></span></div>'+act('editNameBtn','Đổi tên hiển thị')+act('passwordManageBtn','Mật khẩu đăng nhập')+'</div>'
-    +'<div class="qm-g">'+act('signOutBtn','Đăng xuất','color:var(--danger)')+'</div>'
-    +((nm||em)?'<div class="qrx-note" style="text-align:center;margin:0 0 16px">'+esc(nm)+(em?' · '+esc(em):'')+'</div>':'');
+  const go=(id,label,sub)=>'<button type="button" class="qm-r" data-go="'+id+'"><span>'+label+'</span>'
+    +(sub?'<small>'+sub+'</small>':'')+'<i class="qm-c" aria-hidden="true">›</i></button>';
+  const act=(id,label,danger=false)=>'<button type="button" class="qm-r'+(danger?' qm-danger':'')+'" data-act="'+id+'"><span>'+label+'</span>'
+    +(danger?'':'<i class="qm-c" aria-hidden="true">›</i>')+'</button>';
+  el.innerHTML=((nm||em)?'<div class="qm-profile qm-g">'+(nm?'<strong>'+escapeHTML(nm)+'</strong>':'')+(em?'<small>'+escapeHTML(em)+'</small>':'')+'</div>':'')
+    +'<div class="qm-g">'+go('calendar','Lịch')+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+go('paid','Đã thanh toán')+'</div>'
+    +'<div class="qm-g">'+go('settings','Cài đặt','Danh mục, ví, sao lưu')+'</div>'
+    +'<div class="qm-g"><button type="button" class="qm-r" id="qmTheme" role="switch" aria-checked="'+dark+'"><span>Chế độ tối</span><span class="qm-sw'+(dark?' on':'')+'" aria-hidden="true"></span></button>'
+      +act('editNameBtn','Đổi tên hiển thị')+act('passwordManageBtn','Mật khẩu đăng nhập')+'</div>'
+    +'<div class="qm-g">'+act('signOutBtn','Đăng xuất',true)+'</div>';
   el.querySelectorAll('[data-go]').forEach(r=>r.onclick=()=>switchView(r.dataset.go));
   el.querySelectorAll('[data-act]').forEach(r=>r.onclick=()=>{ const b=document.getElementById(r.dataset.act); if(b) b.click(); });
-  el.querySelector('#qmTheme').onclick=async()=>{ await setTheme(STATE.settings.theme==='dark'?'light':'dark'); window.renderMenuPage(); };
+  el.querySelector('#qmTheme').onclick=async()=>{ await setTheme(STATE.settings.theme==='dark'?'light':'dark'); window.renderMenuPage(); el.querySelector('#qmTheme').focus({preventScroll:true}); };
 };
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#menuBtn'); if(b&&matchMedia('(max-width:820px)').matches){ e.stopPropagation(); e.preventDefault(); switchView('menu'); } },true);
 if('serviceWorker' in navigator && location.protocol==='https:'){
@@ -4446,7 +4449,7 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
 }
 </script>
 <script src="./envelopes.js"></script>
-<link rel="stylesheet" href="./layout.css?v=48">
-<script src="./layout.js?v=48"></script>
+<link rel="stylesheet" href="./layout.css?v=49">
+<script src="./layout.js?v=49"></script>
 </body>
 </html>

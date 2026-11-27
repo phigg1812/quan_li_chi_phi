@@ -83,3 +83,22 @@
   body.qrx-sub .topbar-menu-btn>*{display:none}
   body.qrx-sub .topbar-menu-btn::before{content:"\2039";font-size:32px;line-height:1;margin-top:-4px}
 }
+
+.qm-g button.qm-r{width:100%;background:transparent;color:var(--text);border:0;text-align:left;font:inherit;font-size:16px}
+.qm-g button.qm-r+.qm-r{border-top:1px solid var(--border)}
+.qm-g button.qm-r:active{background:var(--bg)}
+.qm-g button.qm-danger{color:var(--danger)}
+.qm-profile{display:grid;gap:4px;padding:14px 16px;overflow-wrap:anywhere}
+.qm-profile small{color:var(--text-secondary)}
+@media(max-width:820px){
+  .topbar{height:calc(55px + env(safe-area-inset-top));border-bottom:0}
+  .topbar .topbar-title{opacity:1;font-size:clamp(21px,6vw,29px);letter-spacing:-.035em;line-height:1.15;flex-shrink:1;min-width:0}
+  .main-content>.qrx-large{display:none}
+  .main-content{padding-top:12px}
+  .topbar:has(~ .main-content #view-menu.active) #quickAddBtn{display:none}
+  #view-menu.active{width:100%;min-height:calc(100dvh - 150px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+}
+@media(max-width:820px){
+  #view-envelopes .envelope-header h1{display:none}
+  #view-envelopes .envelope-header{justify-content:flex-end}
+}
