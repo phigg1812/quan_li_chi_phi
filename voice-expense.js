@@ -2,14 +2,14 @@
   const searchButton = document.getElementById('headerSearchBtn');
   const searchBox = globalSearchInput.closest('.search-box');
   const toggleSearch = open => {
-    searchBox.classList.toggle('header-search-open', open);
+    searchBox.hidden = !open;
     searchButton.setAttribute('aria-expanded', String(open));
-    if(open) globalSearchInput.focus();
+    if(open){
+      globalSearchInput.focus({preventScroll:true});
+      searchBox.scrollIntoView({block:'nearest'});
+    }
   };
   searchButton.onclick = () => toggleSearch(searchButton.getAttribute('aria-expanded') !== 'true');
-  document.addEventListener('pointerdown', event => {
-    if(!event.target.closest('.search-box,#headerSearchBtn')) toggleSearch(false);
-  });
   searchBox.addEventListener('keydown', event => {
     if(event.key==='Escape'){
       event.stopPropagation();

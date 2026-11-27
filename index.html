@@ -996,12 +996,8 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
       <button class="topbar-menu-btn" id="menuBtn" aria-label="Menu"><span data-icon="menu"></span></button>
       <div class="topbar-title" id="topbarTitle" data-i18n="nav.dashboard">Tổng quan</div>
       <div class="topbar-spacer"></div>
-      <div class="search-box">
-        <span data-icon="search"></span>
-        <input type="text" id="globalSearch" data-i18n-ph="search.placeholder" placeholder="Tìm khoản chi...">
-      </div>
       <button class="icon-btn" id="themeToggleBtn" aria-label="Đổi chế độ sáng hoặc tối"><span data-icon="moon"></span></button>
-      <button type="button" class="icon-btn" id="headerSearchBtn" aria-label="Tìm khoản chi" aria-expanded="false"><span data-icon="search"></span></button>
+      <button type="button" class="icon-btn" id="headerSearchBtn" aria-label="Tìm khoản chi" aria-controls="headerSearchBox" aria-expanded="false"><span data-icon="search"></span></button>
       <button type="button" class="icon-btn" id="voiceExpenseBtn" aria-label="Nhập khoản chi bằng giọng nói" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-3 0h6"/></svg></button>
       <button class="icon-btn" id="quickAddBtn" title="Thêm nhanh (N)"><span data-icon="plus"></span></button>
       <div class="avatar-wrap">
@@ -1025,6 +1021,10 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
     </header>
 
     <div class="main-content">
+      <div class="search-box" id="headerSearchBox" hidden>
+        <span data-icon="search"></span>
+        <input type="text" id="globalSearch" aria-label="Tìm khoản chi" data-i18n-ph="search.placeholder" placeholder="Tìm khoản chi...">
+      </div>
       <div id="connectionStatus" class="connection-status" role="status"></div>
       <section id="dataLoadPanel" class="data-load-panel">
         <p id="dataLoadMessage" role="status">Đang tải dữ liệu…</p>
@@ -1151,6 +1151,11 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
             </div>
           </div>
         </div>
+        <section class="panel stats-expense-history" aria-labelledby="statsExpenseHistoryTitle">
+          <h2 id="statsExpenseHistoryTitle">Toàn bộ lịch sử chi tiêu</h2>
+          <div id="statsExpenseHistoryList" class="card-grid"></div>
+          <button type="button" class="btn" id="statsExpenseHistoryMore" hidden>Xem thêm</button>
+        </section>
       </section>
 
       <!-- ============================================================
@@ -2690,7 +2695,25 @@ function statsMonthExpenses(){
 function renderStatistics(){
   renderHistory();
   renderStats();
+  renderStatsExpenseHistory();
 }
+let statsHistoryLimit=PAGE_SIZE;
+function renderStatsExpenseHistory(){
+  const sorted=[...STATE.expenses].sort((a,b)=>
+    (b.createdDate||'').localeCompare(a.createdDate||'') || expenseCreatedTime(b)-expenseCreatedTime(a));
+  const list=document.getElementById('statsExpenseHistoryList');
+  list.innerHTML=sorted.slice(0,statsHistoryLimit).map(expenseCardHTML).join('') ||
+    '<p class="qd-empty">Chưa có khoản chi nào.</p>';
+  bindCardEvents(list);
+  document.getElementById('statsExpenseHistoryMore').hidden=sorted.length<=statsHistoryLimit;
+}
+document.getElementById('statsExpenseHistoryMore').onclick=()=>{
+  const firstNew=statsHistoryLimit;
+  statsHistoryLimit+=PAGE_SIZE;
+  renderStatsExpenseHistory();
+  document.querySelectorAll('#statsExpenseHistoryList .expense-card')[firstNew]
+    ?.querySelector('button')?.focus();
+};
 function renderHistory(){
   const cur=STATE.ui.calDate;
   const month=dateISO(cur).slice(0,7);
@@ -4504,10 +4527,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=56"></script>
-<link rel="stylesheet" href="./layout.css?v=56">
-<script src="./layout.js?v=56"></script>
-<script src="./voice-expense.js?v=56"></script>
+<script src="./envelopes.js?v=57"></script>
+<link rel="stylesheet" href="./layout.css?v=57">
+<script src="./layout.js?v=57"></script>
+<script src="./voice-expense.js?v=57"></script>
 <dialog id="statsMonthDialog" class="envelope-dialog stats-month-sheet" aria-labelledby="statsMonthHeading">
   <form id="statsMonthForm">
     <h2 id="statsMonthHeading">Chọn tháng</h2>

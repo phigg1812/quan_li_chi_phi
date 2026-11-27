@@ -190,9 +190,6 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .qd-category .qb-bar{display:block}
 .expense-category-chip{margin-bottom:12px;background:var(--primary-soft);color:var(--text)}
 
-.topbar .search-box{display:none}
-.topbar .search-box.header-search-open{display:flex;position:absolute;top:100%;inset-inline:16px;max-width:none;width:auto;z-index:2;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow)}
-.topbar .search-box.header-search-open input{width:100%;min-height:44px}
 #headerSearchBtn,#voiceExpenseBtn{flex-shrink:0}
 #appShell:not([data-load-state="ready"]) :is(#headerSearchBtn,#voiceExpenseBtn){display:none}
 [aria-invalid="true"]{outline:2px solid var(--danger);outline-offset:1px}
@@ -263,3 +260,11 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
   #qrxDash .qd-stats .l{font-size:11px}
   #qrxDash .qd-budget-summary{margin-inline:14px}
 }
+
+
+#headerSearchBox{display:flex;width:100%;max-width:none;margin-bottom:12px;background:var(--card);border:1px solid var(--border);scroll-margin-top:calc(64px + env(safe-area-inset-top))}
+#headerSearchBox input{min-width:0;min-height:44px;font-size:16px}
+.stats-expense-history{margin-top:16px}
+.stats-expense-history h2{font-size:18px;margin-bottom:12px}
+.stats-expense-history .card-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}
+#statsExpenseHistoryMore{display:flex;min-height:44px;margin:14px auto 0}
