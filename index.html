@@ -4726,7 +4726,7 @@ window.renderSettlementPage=function(){
     const percent=b.total>0?Math.round(total/b.total*100):0;
     const budgetText=total>b.total?'Vượt '+fmt(total-b.total)+' hạn mức':'Còn '+fmt(b.total-total)+' trong hạn mức';
     B.innerHTML='<div class="qd-head"><h2>Tổng khoản ghi nhận</h2><button type="button" class="btn btn-sm" id="qdBud">Hạn mức</button></div>'
-      +'<div class="qd-big">'+esc(fmt(total))+'</div><p class="qd-summary-date">'+esc('1–'+Number(today.slice(8))+'/'+formatDateShort(today).slice(3))+' · Tháng đang diễn ra</p>'
+      +'<div class="qd-big">'+esc(fmt(total))+'</div><p class="qd-summary-date">Tổng chi phí ghi nhận từ ngày 01 đến ngày '+esc(formatDateShort(today))+'</p>'
       +'<div class="qd-stats"><div><div class="l">Đã thanh toán</div><div class="v">'+esc(fmt(total-unpaid))+'</div></div>'
       +'<div><div class="l">Chưa trả</div><div class="v">'+esc(fmt(unpaid))+'</div></div>'
       +'<div><div class="l">Trong đó quá hạn</div><div class="v" style="color:var(--danger)">'+esc(fmt(overdue))+'</div></div></div>'
@@ -4986,10 +4986,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=82"></script>
-<link rel="stylesheet" href="./layout.css?v=82">
-<script src="./layout.js?v=82"></script>
-<script src="./voice-expense.js?v=82"></script>
-<script src="./kpi.js?v=82"></script>
+<script src="./envelopes.js?v=83"></script>
+<link rel="stylesheet" href="./layout.css?v=83">
+<script src="./layout.js?v=83"></script>
+<script src="./voice-expense.js?v=83"></script>
+<script src="./kpi.js?v=83"></script>
 </body>
 </html>
