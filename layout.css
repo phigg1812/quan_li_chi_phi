@@ -438,3 +438,25 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
     background:var(--card)
   }
 }
+
+.qrx-sheet.settlement-share-sheet{max-height:80vh;max-height:80dvh;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.settlement-share-sheet::before{flex:none;margin-bottom:0}
+.settlement-share-heading,.settlement-share-actions,.settlement-share-items li{
+  display:flex;align-items:center;justify-content:space-between;gap:12px
+}
+.settlement-share-heading h3{margin:0;font-size:var(--font-lg,18px)}
+.settlement-share-heading button{flex:none;width:44px;padding:0;display:grid;place-items:center}
+.settlement-share-preview{
+  min-height:0;overflow:auto;overscroll-behavior:contain;user-select:text;-webkit-user-select:text;
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)
+}
+.settlement-share-summary{display:grid;gap:4px;padding:12px 14px}
+.settlement-share-summary span{color:var(--text-secondary);font-size:14px}
+.settlement-share-summary strong{font-size:24px}
+.settlement-share-items{list-style:none;margin:0;padding:0 14px}
+.settlement-share-items li{min-height:40px;padding:8px 0;border-top:1px solid var(--border);font-size:14px}
+.settlement-share-items li span{overflow-wrap:anywhere}
+.settlement-share-items li strong{flex:none}
+.settlement-share-actions .qrx-btn,.settlement-share-heading .qrx-btn{min-height:44px}
+.settlement-share-actions .qrx-btn{flex:1}
+.settlement-share-status{margin:0;color:var(--text-secondary);font-size:14px}

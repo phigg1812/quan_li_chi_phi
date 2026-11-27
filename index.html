@@ -4426,9 +4426,41 @@ window.renderSettlementPage=function(){
       $('#qsC').textContent=it.length+' / '+list.length+' khoản được chọn'; $('#qsT').textContent=fmt(tot); $('#qsD').disabled=$('#qsS').disabled=!it.length; armed=false; $('#qsD').textContent='Xác nhận quyết toán'; return {it,tot};};
     sh.querySelectorAll('.qs-row input').forEach(c=>c.onchange=()=>{c.checked?off.delete(c.dataset.id):off.add(c.dataset.id); refresh();});
     refresh();
-    $('#qsS').onclick=()=>{const {it,tot}=refresh(); if(!it.length) return;
-      const txt='Quyết toán tháng '+label()+'\n'+it.map(e=>'- '+e.name+': '+fmt(e.amount)).join('\n')+'\nTổng: '+fmt(tot);
-      if(navigator.share) navigator.share({text:txt}).catch(()=>{}); else if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>showToast('Đã sao chép bản tóm tắt'));};
+    $('#qsS').onclick=()=>{
+      const it=picked();
+      if(!it.length) return;
+      const total=fmt(it.reduce((sum,expense)=>sum+Number(expense.amount||0),0));
+      const period='Tháng '+label();
+      const lines=it.map(expense=>({name:expense.name,amount:fmt(expense.amount)}));
+      const txt='Quyết toán '+period.toLowerCase()+'\n'+lines.map(line=>'- '+line.name+': '+line.amount).join('\n')+'\nTổng: '+total;
+      const sheet=overlay('<header class="settlement-share-heading"><h3>Chia sẻ quyết toán</h3>'
+        +'<button type="button" class="qrx-btn" id="qsShareClose" aria-label="Đóng bản xem trước">'+iconSVG('x',18)+'</button></header>'
+        +'<div class="settlement-share-preview"><div class="settlement-share-summary"><span>'+esc(period)+' · '+it.length+' khoản đã chọn</span>'
+        +'<strong>'+esc(total)+'</strong></div><ul class="settlement-share-items" aria-label="Các khoản được chia sẻ">'
+        +lines.map(line=>'<li><span>'+esc(line.name)+'</span><strong>'+esc(line.amount)+'</strong></li>').join('')+'</ul></div>'
+        +'<p id="qsShareStatus" class="settlement-share-status" role="status" hidden></p>'
+        +'<footer class="settlement-share-actions"><button type="button" class="qrx-btn" id="qsCopy">Sao chép</button>'
+        +(navigator.share?'<button type="button" class="qrx-btn p" id="qsNativeShare">Chia sẻ…</button>':'')+'</footer>');
+      sheet.classList.add('settlement-share-sheet');
+      const status=sheet.querySelector('#qsShareStatus');
+      const announce=message=>{status.hidden=false;status.textContent=message;};
+      sheet.querySelector('#qsShareClose').onclick=close;
+      sheet.querySelector('#qsCopy').onclick=async()=>{
+        try{
+          await navigator.clipboard.writeText(txt);
+          announce('Đã sao chép bản tóm tắt.');
+        }catch{
+          announce('Chưa sao chép được. Bạn có thể chọn nội dung trong bản xem trước.');
+        }
+      };
+      const share=sheet.querySelector('#qsNativeShare');
+      if(share) share.onclick=async()=>{
+        share.disabled=true;
+        try{await navigator.share({text:txt});}
+        catch(error){if(error.name!=='AbortError') announce('Chưa chia sẻ được. Bạn có thể dùng nút Sao chép.');}
+        finally{share.disabled=false;}
+      };
+    };
     $('#qsD').onclick=async()=>{const it=picked(); if(!it.length) return;
       if(!armed){armed=true; $('#qsD').textContent='Bấm lần nữa để xác nhận ('+it.length+' khoản)'; return;}
       const tot=it.reduce((s,e)=>s+Number(e.amount||0),0);
@@ -4882,10 +4914,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=78"></script>
-<link rel="stylesheet" href="./layout.css?v=78">
-<script src="./layout.js?v=78"></script>
-<script src="./voice-expense.js?v=78"></script>
-<script src="./kpi.js?v=78"></script>
+<script src="./envelopes.js?v=79"></script>
+<link rel="stylesheet" href="./layout.css?v=79">
+<script src="./layout.js?v=79"></script>
+<script src="./voice-expense.js?v=79"></script>
+<script src="./kpi.js?v=79"></script>
 </body>
 </html>
