@@ -131,7 +131,7 @@
         <div class="kpi-progress"><b>${total&&done===total?'Đã hoàn thành hôm nay':'Tiến độ hôm nay'}</b><span>${done}/${total}</span></div>
         <div class="kpi-track"><i style="width:${percent(done,total)}%"></i></div>
       </section>
-      <section class="panel"><div class="kpi-section-head"><h2>Hạng mục hôm nay</h2>
+      <section class="panel"><div class="kpi-section-head"><h2>KPI Hôm nay</h2>
         <div class="kpi-task-actions">
           <button type="button" class="btn btn-primary" data-kpi-add aria-label="Thêm hạng mục">${iconSVG('plus',24)} Thêm</button>
           <button type="button" class="btn" data-kpi-manage aria-label="Quản lý hạng mục">${iconSVG('settings',24)} Quản lý</button>
