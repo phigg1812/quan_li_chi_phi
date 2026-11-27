@@ -115,7 +115,7 @@ function openEnvelopeFilters(options,trigger){
   const dialog=document.createElement('dialog');
   dialog.className='envelope-dialog envelope-filter-sheet';
   dialog.setAttribute('aria-labelledby','envelopeFilterTitle');
-  dialog.innerHTML=`<h2 id="envelopeFilterTitle" tabindex="-1" autofocus>Bộ lọc phong bì</h2>
+  dialog.innerHTML=`<header class="envelope-filter-handle"><h2 id="envelopeFilterTitle" tabindex="-1" autofocus>Bộ lọc phong bì</h2></header>
     <footer><button class="btn" type="button" data-reset>Đặt lại</button>
     <button class="btn btn-primary" type="button" data-done>Xong</button></footer>`;
   dialog.querySelector('footer').before(options);
@@ -140,6 +140,7 @@ function openEnvelopeFilters(options,trigger){
   dialog.addEventListener('pointerdown',event=>{pressedBackdrop=onBackdrop(event);});
   dialog.addEventListener('click',event=>{if(pressedBackdrop&&onBackdrop(event)) dismiss();});
   dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
+  bindSheetDrag(dialog,dialog.querySelector('.envelope-filter-handle'),dismiss);
   dialog.querySelector('[data-done]').onclick=dismiss;
   dialog.querySelector('[data-reset]').onclick=()=>{
     envelopeFilter='all';

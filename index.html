@@ -1285,7 +1285,6 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
 <aside class="drawer scrollbar-thin" id="expenseDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" inert>
   <div class="drawer-header">
     <h3 id="drawerTitle" tabindex="-1" data-i18n="drawer.add">Thêm khoản chi</h3>
-    <button class="icon-btn" id="drawerCloseBtn" aria-label="Đóng khoản chi"><span data-icon="x"></span></button>
   </div>
   <div class="drawer-body scrollbar-thin">
     <form id="expenseForm">
@@ -2645,6 +2644,41 @@ function closeExpenseDrawer(preserveDraft=true){
   expenseDrawer.style.removeProperty('--expense-visible-height');
   expenseDrawer.style.removeProperty('--expense-bottom-inset');
 }
+function bindSheetDrag(sheet,handle,dismiss){
+  const mobile=matchMedia('(max-width:820px)');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  let drag;
+  handle.addEventListener('pointerdown',event=>{
+    if(!mobile.matches||event.pointerType!=='touch'||!event.isPrimary) return;
+    drag={id:event.pointerId,x:event.clientX,y:event.clientY,distance:0};
+    handle.setPointerCapture(event.pointerId);
+  });
+  handle.addEventListener('pointermove',event=>{
+    if(drag?.id!==event.pointerId) return;
+    const dy=event.clientY-drag.y;
+    const dx=Math.abs(event.clientX-drag.x);
+    if(dy<0||dx>Math.max(12,dy)){
+      finish(event,false);
+      return;
+    }
+    drag.distance=dy;
+    if(dy>6&&!reduced.matches){
+      sheet.classList.add('sheet-dragging');
+      sheet.style.transform='translateY('+dy+'px)';
+    }
+  });
+  function finish(event,released){
+    if(drag?.id!==event.pointerId) return;
+    const close=released&&drag.distance>=90;
+    drag=null;
+    if(close) dismiss();
+    sheet.classList.remove('sheet-dragging');
+    sheet.style.removeProperty('transform');
+  }
+  handle.addEventListener('pointerup',event=>finish(event,true));
+  handle.addEventListener('pointercancel',event=>finish(event,false));
+  handle.addEventListener('lostpointercapture',event=>finish(event,false));
+}
 async function handleExpenseFormSubmit(e){
   e.preventDefault();
   const id = document.getElementById('expenseId').value || uid('exp');
@@ -2715,9 +2749,8 @@ document.getElementById('fPaid').onchange=()=>{
   syncPaymentDateField();
 };
 document.getElementById('expenseForm').addEventListener('submit', handleExpenseFormSubmit);
-document.getElementById('drawerCloseBtn').addEventListener('click', closeExpenseDrawer);
+bindSheetDrag(expenseDrawer,expenseDrawer.querySelector('.drawer-header'),()=>closeExpenseDrawer());
 document.getElementById('drawerCancelBtn').addEventListener('click', ()=>{ STATE.ui.expenseDraft=null; STATE.ui.smartPrediction=null; closeExpenseDrawer(false); });
-document.getElementById('drawerOverlay').addEventListener('click', closeExpenseDrawer);
 document.getElementById('drawerDeleteBtn').addEventListener('click', handleDeleteFromDrawer);
 document.getElementById('confirmCancelBtn').addEventListener('click', ()=>closeConfirm(false));
 document.getElementById('confirmOkBtn').addEventListener('click', ()=>closeConfirm(true));
@@ -5003,10 +5036,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=85"></script>
-<link rel="stylesheet" href="./layout.css?v=85">
-<script src="./layout.js?v=85"></script>
-<script src="./voice-expense.js?v=85"></script>
-<script src="./kpi.js?v=85"></script>
+<script src="./envelopes.js?v=86"></script>
+<link rel="stylesheet" href="./layout.css?v=86">
+<script src="./layout.js?v=86"></script>
+<script src="./voice-expense.js?v=86"></script>
+<script src="./kpi.js?v=86"></script>
 </body>
 </html>

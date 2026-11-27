@@ -385,7 +385,13 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
   html:has(#expenseDrawer.show){overflow:hidden}
   #drawerOverlay.show{touch-action:none}
   #expenseDrawer{width:auto;inset-inline:0;bottom:var(--expense-bottom-inset,0px);max-height:calc(var(--expense-visible-height,100dvh) - max(10px,env(safe-area-inset-top)));touch-action:pan-y}
-  #expenseDrawer::before{display:none}
+  #expenseDrawer .drawer-header,.envelope-filter-handle{touch-action:none;user-select:none}
+  #expenseDrawer .drawer-header{display:block}
+  #expenseDrawer .drawer-header::before,.envelope-filter-handle::before{content:"";display:block;width:36px;height:4px;margin:0 auto 10px;border-radius:4px;background:var(--border)}
+  .envelope-filter-sheet::before{display:none}
+  .envelope-filter-handle{margin-top:-10px;padding-top:3px}
+  #expenseDrawer.sheet-dragging,.envelope-filter-sheet.sheet-dragging{transition:none}
+  .envelope-filter-sheet.sheet-dragging[open]{animation:none}
   #expenseDrawer .drawer-header{padding:12px 16px}
   #expenseDrawer .drawer-body{padding:14px 16px}
   #expenseDrawer .drawer-footer{padding:10px 16px max(10px,env(safe-area-inset-bottom))}
