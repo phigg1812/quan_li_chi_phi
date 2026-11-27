@@ -1861,11 +1861,13 @@ const VIEW_TITLE_KEYS = {
 };
 const MENU_SUBVIEWS = ['kpi','envelopes','budget','settle','settings'];
 let pageSlideAnimations = [];
+let dashboardEntryMotion = true;
 function switchView(name,{keepSearchOpen=false,slideFrom}={}){
   const showBackup = name==='backup';
   if(showBackup)name='settings';
   const previousView = STATE.ui.currentView;
   if(previousView!==name && !keepSearchOpen) setHeaderSearchOpen(false);
+  if(name==='dashboard' && previousView!==name) dashboardEntryMotion=true;
   STATE.ui.currentView = name;
   const quickAdd=document.getElementById('quickAddBtn');
   const addLabel=name==='envelopes'?'Ghi phong bì':'Thêm khoản chi';
@@ -2776,7 +2778,7 @@ document.getElementById('statsExpenseHistoryMore').onclick=()=>{
   document.querySelectorAll('#statsExpenseHistoryList .expense-card')[firstNew]
     ?.querySelector('button')?.focus();
 };
-function renderHistory(){
+function renderHistory(animateFill=true){
   const cur=STATE.ui.calDate;
   const month=dateISO(cur).slice(0,7);
   const selected=STATE.ui.historyDay;
@@ -2805,6 +2807,7 @@ function renderHistory(){
   }
   const grid=document.getElementById('calGrid');
   grid.innerHTML=html;
+  grid.classList.toggle('calendar-wave-entry',animateFill);
   const shown=selected?monthExpenses.filter(exp=>expenseDay(exp)===selected):monthExpenses;
   document.querySelector('.history-list').hidden=!selected;
   document.getElementById('historyTitle').textContent=selected?'Ngày '+formatDateShort(selected):'';
@@ -2817,7 +2820,7 @@ document.getElementById('calGrid').addEventListener('click',event=>{
   const day=event.target.closest('[data-date]')?.dataset.date;
   if(!day) return;
   STATE.ui.historyDay=STATE.ui.historyDay===day?null:day;
-  renderHistory();
+  renderHistory(false);
   if(statsTrendRange==='day') renderStatsTrend();
   document.querySelector('#calGrid [data-date="'+day+'"]').focus({preventScroll:true});
 });
@@ -4687,9 +4690,37 @@ window.renderSettlementPage=function(){
       +'<div><div class="l">Chưa trả</div><div class="v">'+esc(fmt(unpaid))+'</div></div>'
       +'<div><div class="l">Trong đó quá hạn</div><div class="v" style="color:var(--danger)">'+esc(fmt(overdue))+'</div></div></div>'
       +(b.total>0?'<div class="qd-budget-summary"><div><b>'+esc(budgetText)+'</b><span>'+percent+'%</span></div>'
-        +'<div class="qb-bar" style="height:7px"><i style="width:'+Math.min(100,Math.max(0,percent))+'%;background:'+color(percent)+'"></i></div>'
+        +'<div class="qb-bar" style="height:7px"><i style="width:'+Math.min(100,Math.max(0,total/b.total*100))+'%;background:'+(total>b.total?'var(--danger)':'var(--primary)')+'"></i></div>'
         +'<p class="qrx-note">Hạn mức tính trên tổng khoản ghi nhận</p></div>':'');
     B.querySelector('#qdBud').onclick=openBudget;
+    if(dashboardEntryMotion && STATE.ui.currentView==='dashboard' && B.closest('.view.active')){
+      dashboardEntryMotion=false;
+      const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+      if(!reduced.matches){
+        for(const bar of document.querySelectorAll('#qdB .qb-bar i,#qdC .qb-bar i')){
+          bar.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],
+            {delay:160,duration:580,easing:'cubic-bezier(.22,.75,.25,1)',fill:'backwards'});
+        }
+        if(total>0){
+          const amount=B.querySelector('.qd-big');
+          const visual=document.createElement('span');
+          visual.setAttribute('aria-hidden','true');
+          const accessible=document.createElement('span');
+          accessible.className='visually-hidden';
+          accessible.textContent=fmt(total);
+          amount.replaceChildren(accessible,visual);
+          visual.textContent=fmt(0);
+          const start=performance.now()+160;
+          const count=now=>{
+            if(!visual.isConnected) return;
+            const progress=STATE.ui.currentView!=='dashboard'||reduced.matches ? 1 : Math.max(0,Math.min(1,(now-start)/580));
+            visual.textContent=fmt(total*(1-(1-progress)**3));
+            if(progress<1) requestAnimationFrame(count);
+          };
+          requestAnimationFrame(count);
+        }
+      }
+    }
     const ms=[-5,-4,-3,-2,-1,0].map(mShift), vals=ms.map(key=>key===month?total:spentOf(key).total), mx=Math.max(...vals,1);
     const previousToDate=sum(STATE.expenses.filter(e=>e.createdDate?.slice(0,7)===ms[4]&&e.createdDate.slice(8)<=today.slice(8)));
     const delta=previousToDate>0?Math.round((total-previousToDate)/previousToDate*100):null;
@@ -4914,10 +4945,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=79"></script>
-<link rel="stylesheet" href="./layout.css?v=79">
-<script src="./layout.js?v=79"></script>
-<script src="./voice-expense.js?v=79"></script>
-<script src="./kpi.js?v=79"></script>
+<script src="./envelopes.js?v=80"></script>
+<link rel="stylesheet" href="./layout.css?v=80">
+<script src="./layout.js?v=80"></script>
+<script src="./voice-expense.js?v=80"></script>
+<script src="./kpi.js?v=80"></script>
 </body>
 </html>
