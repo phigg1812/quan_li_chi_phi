@@ -2856,6 +2856,57 @@ document.querySelector('.trend-segments').onclick=event=>{
   renderStatsTrend();
   document.querySelector('.trend-segments [data-range="'+range+'"]').focus({preventScroll:true});
 };
+const categoryPercentLeaders={
+  id:'categoryPercentLeaders',
+  afterDatasetsDraw(chart){
+    const values=chart.data.datasets[0].data;
+    const total=values.reduce((sum,amount)=>sum+amount,0);
+    if(total<=0) return;
+    const {ctx,chartArea:area}=chart;
+    const colors=chartColors();
+    const cardColor=getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
+    const sides=[[],[]];
+    chart.getDatasetMeta(0).data.forEach((arc,index)=>{
+      if(!chart.getDataVisibility(index)||values[index]<=0||arc.circumference<=0.01) return;
+      const angle=(arc.startAngle+arc.endAngle)/2;
+      const direction=Math.cos(angle)>=0?1:-1;
+      sides[direction===1?1:0].push({
+        x:arc.x+Math.cos(angle)*arc.outerRadius,y:arc.y+Math.sin(angle)*arc.outerRadius,
+        elbow:arc.x+direction*(arc.outerRadius+8),direction,
+        text:new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(values[index]/total*100)+'%'
+      });
+    });
+    ctx.save();
+    ctx.font='600 11px system-ui, sans-serif';
+    ctx.textBaseline='middle';
+    ctx.lineWidth=1;
+    for(const side of sides){
+      side.sort((a,b)=>a.y-b.y);
+      const top=area.top+8,bottom=area.bottom-8;
+      const gap=Math.min(19,(bottom-top)/Math.max(1,side.length-1));
+      side.forEach((label,index)=>label.labelY=Math.max(top,index?side[index-1].labelY+gap:top,label.y));
+      for(let i=side.length-1;i>=0;i--){
+        const label=side[i];
+        label.labelY=Math.min(label.labelY,i===side.length-1?bottom:side[i+1].labelY-gap);
+        const width=ctx.measureText(label.text).width+10;
+        const x=label.direction===1?label.elbow+6:label.elbow-width-6;
+        ctx.strokeStyle=colors.text;
+        ctx.beginPath();
+        ctx.moveTo(label.x,label.y);
+        ctx.lineTo(label.elbow,label.labelY);
+        ctx.lineTo(label.direction===1?x:x+width,label.labelY);
+        ctx.stroke();
+        ctx.fillStyle=cardColor;
+        ctx.fillRect(x,label.labelY-8,width,16);
+        ctx.strokeStyle=colors.border;
+        ctx.strokeRect(x,label.labelY-8,width,16);
+        ctx.fillStyle=colors.text;
+        ctx.fillText(label.text,x+5,label.labelY);
+      }
+    }
+    ctx.restore();
+  }
+};
 function renderStats(){
   const inRange=statsMonthExpenses();
   const c=chartColors();
@@ -2866,8 +2917,9 @@ function renderStats(){
   destroyChart('statsCategory');
   chartInstances.statsCategory = new Chart(document.getElementById('chartStatsCategory'), {
     type:'doughnut',
+    plugins:[categoryPercentLeaders],
     data:{ labels:catEntries.map(([id,amount])=>catById(id).name+' · '+new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(categoryTotal?amount/categoryTotal*100:0)+'%'), datasets:[{ data:catEntries.map(([,v])=>v), backgroundColor:catEntries.map(([id])=>catById(id).color), borderWidth:0 }] },
-    options:{ onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0], inRange); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
+    options:{ layout:{padding:{left:56,right:56,top:10}}, onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0], inRange); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
   });
 
   const byWal = {}; inRange.forEach(e=>{ byWal[e.walletId]=(byWal[e.walletId]||0)+Number(e.amount||0); });
@@ -4602,9 +4654,9 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=60"></script>
-<link rel="stylesheet" href="./layout.css?v=60">
-<script src="./layout.js?v=60"></script>
-<script src="./voice-expense.js?v=60"></script>
+<script src="./envelopes.js?v=61"></script>
+<link rel="stylesheet" href="./layout.css?v=61">
+<script src="./layout.js?v=61"></script>
+<script src="./voice-expense.js?v=61"></script>
 </body>
 </html>
