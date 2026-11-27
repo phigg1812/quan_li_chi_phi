@@ -356,7 +356,7 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .stats-trend-header{--stats-title-line:18px;align-items:flex-start}
 .stats-trend-heading .panel-title{line-height:var(--stats-title-line)}
 .stats-trend-heading .stats-trend-period{margin:3px 0 0}
-.stats-trend-header .trend-segments{min-height:0;height:calc(var(--stats-title-line) * 1.2);align-items:stretch;box-sizing:border-box}
+.stats-trend-header .trend-segments{min-height:0;height:calc(var(--stats-title-line) * 1.5);align-items:stretch;box-sizing:border-box}
 .stats-trend-header .trend-segments button{min-height:0;line-height:1;padding-block:0}
 :is(.topbar,.main-content).refresh-returning{transition:transform .3s cubic-bezier(.2,.78,.32,1.16)}
 .pull-refresh-indicator{position:fixed;top:calc(4px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:31;padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:999px;color:var(--text-secondary);font-size:12px;pointer-events:none;white-space:nowrap}
