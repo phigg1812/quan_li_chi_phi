@@ -40,7 +40,7 @@
       status.textContent = message+' Bạn có thể dùng mic trên bàn phím hoặc nhập nội dung.';
       done.disabled = false;
     };
-    form.querySelector('[data-cancel]').onclick = () => dialog.close();
+    form.querySelector('[data-cancel]').onclick = bindNativeSheetDismiss(dialog);
     form.onsubmit = event => {
       event.preventDefault();
       if(recognition && !failed){
@@ -72,25 +72,25 @@
       recognition.continuous = false;
       transcript.readOnly = true;
       recognition.onstart = () => {
-        if(!dialog.open || stopping) return;
+        if(!dialog.open || stopping || dialog.classList.contains('sheet-closing')) return;
         voiceDate = todayISO();
         status.textContent = 'Đang nghe…';
         dialog.classList.add('listening');
       };
       recognition.onresult = event => {
-        if(!dialog.open) return;
+        if(!dialog.open || dialog.classList.contains('sheet-closing')) return;
         const results = [...event.results];
         finalText = results.filter(result=>result.isFinal).map(result=>result[0].transcript).join(' ').trim();
         transcript.value = results.map(result=>result[0].transcript).join(' ').trim();
       };
       recognition.onerror = event => {
-        if(!dialog.open) return;
+        if(!dialog.open || dialog.classList.contains('sheet-closing')) return;
         transcript.readOnly = false;
         stopWithFallback(['not-allowed','service-not-allowed'].includes(event.error)
           ? 'Chưa được cấp quyền dùng mic.' : 'Chưa nhận được giọng nói.');
       };
       recognition.onend = () => {
-        if(!dialog.open) return;
+        if(!dialog.open || dialog.classList.contains('sheet-closing')) return;
         recognition = null;
         transcript.readOnly = false;
         dialog.classList.remove('listening');

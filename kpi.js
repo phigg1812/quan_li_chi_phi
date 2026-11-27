@@ -167,9 +167,10 @@
     const dialog=document.createElement('dialog');
     dialog.className='envelope-dialog kpi-editor';
     dialog.setAttribute('aria-labelledby','kpiEditorTitle');
-    dialog.innerHTML=manage?`<h2 id="kpiEditorTitle">Quản lý hạng mục</h2>${active(today()).map(task=>`<label>${escapeHTML(taskName(task,today()))}<input autocomplete="off" maxlength="80" data-rename="${task.id}" value="${escapeHTML(taskName(task,today()))}"><button class="btn" type="button" data-archive="${task.id}">Ngừng theo dõi từ ngày mai</button></label>`).join('')}<footer><button class="btn" data-close>Đóng</button></footer>`:
+    dialog.innerHTML=manage?`<h2 id="kpiEditorTitle" tabindex="-1" autofocus>Quản lý hạng mục</h2>${active(today()).map(task=>`<label>${escapeHTML(taskName(task,today()))}<input autocomplete="off" maxlength="80" data-rename="${task.id}" value="${escapeHTML(taskName(task,today()))}"><button class="btn" type="button" data-archive="${task.id}">Ngừng theo dõi từ ngày mai</button></label>`).join('')}`:
       '<form><h2 id="kpiEditorTitle">Thêm hạng mục hằng ngày</h2><label>Tên hạng mục<input required autocomplete="off" maxlength="80" name="taskTitle"></label><footer><button class="btn" type="button" data-close>Hủy</button><button class="btn btn-primary">Thêm</button></footer></form>';
-    dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+    const dismiss=bindNativeSheetDismiss(dialog);
+    if(!manage) dialog.querySelector('[data-close]').onclick=dismiss;
     dialog.querySelectorAll('[data-rename]').forEach(input=>input.onchange=()=>{
       const task=state.tasks.find(item=>item.id===input.dataset.rename);
       const name=input.value.trim();

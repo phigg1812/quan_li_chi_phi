@@ -115,32 +115,11 @@ function openEnvelopeFilters(options,trigger){
   const dialog=document.createElement('dialog');
   dialog.className='envelope-dialog envelope-filter-sheet';
   dialog.setAttribute('aria-labelledby','envelopeFilterTitle');
-  dialog.innerHTML=`<header class="envelope-filter-handle"><h2 id="envelopeFilterTitle" tabindex="-1" autofocus>Bộ lọc phong bì</h2></header>
+  dialog.innerHTML=`<h2 id="envelopeFilterTitle" tabindex="-1" autofocus>Bộ lọc phong bì</h2>
     <footer><button class="btn" type="button" data-reset>Đặt lại</button>
     <button class="btn btn-primary" type="button" data-done>Xong</button></footer>`;
   dialog.querySelector('footer').before(options);
-  const dismiss=()=>{
-    if(dialog.classList.contains('envelope-filter-closing')) return;
-    if(!matchMedia('(max-width:820px) and (prefers-reduced-motion: no-preference)').matches){
-      dialog.close();
-      return;
-    }
-    const offset=getComputedStyle(dialog).transform;
-    dialog.classList.add('envelope-filter-closing');
-    const slide=dialog.animate([{transform:offset},{transform:'translateY(100%)'}],
-      {duration:210,easing:'ease-in',fill:'forwards'});
-    slide.finished.then(()=>dialog.close(),()=>dialog.close());
-  };
-  const onBackdrop=event=>{
-    if(event.target!==dialog) return false;
-    const bounds=dialog.getBoundingClientRect();
-    return event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom;
-  };
-  let pressedBackdrop=false;
-  dialog.addEventListener('pointerdown',event=>{pressedBackdrop=onBackdrop(event);});
-  dialog.addEventListener('click',event=>{if(pressedBackdrop&&onBackdrop(event)) dismiss();});
-  dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
-  bindSheetDrag(dialog,dialog.querySelector('.envelope-filter-handle'),dismiss);
+  const dismiss=bindNativeSheetDismiss(dialog);
   dialog.querySelector('[data-done]').onclick=dismiss;
   dialog.querySelector('[data-reset]').onclick=()=>{
     envelopeFilter='all';
@@ -297,8 +276,7 @@ function openEnvelopeForm(entry, isReciprocal=false){
       amountInput.setCustomValidity('');
     };
   });
-  cancel.onclick = ()=>dialog.close();
-  dialog.addEventListener('cancel',event=>{ if(submit.disabled) event.preventDefault(); });
+  cancel.onclick = bindNativeSheetDismiss(dialog,()=>!submit.disabled);
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   form.onsubmit = async event=>{
     event.preventDefault();
@@ -405,9 +383,8 @@ function openEnvelopeImport(){
   const cancel = dialog.querySelector('[type=button]');
   const status = dialog.querySelector('[role=status]');
   let records;
-  cancel.onclick = ()=>dialog.close();
+  cancel.onclick = bindNativeSheetDismiss(dialog,()=>!cancel.disabled);
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
-  dialog.addEventListener('cancel',event=>{ if(cancel.disabled) event.preventDefault(); });
   fileInput.onchange = async ()=>{
     records = null;
     submit.disabled = true;
