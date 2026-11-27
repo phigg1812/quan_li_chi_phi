@@ -9,8 +9,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sổ Theo Dõi">
-<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F7">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>
+  function applyThemeChrome(theme){
+    const dark=theme==='dark';
+    document.documentElement.dataset.theme=dark?'dark':'light';
+    document.querySelector('meta[name="theme-color"]').content=dark?'#000000':'#F2F2F7';
+    document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content=dark?'black':'default';
+  }
+  try{ applyThemeChrome(localStorage.getItem('sd-theme')); }catch{}
+</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='11' fill='%23EAF1FE'/%3E%3Cg transform='translate(14.3730,33.0168) scale(0.039416,-0.039416)'%3E%3Cpath d='M141%20-63C234%20-63%20346%20-12%20389%2072C404%20101%20412%20130%20412%20157C412%20201%20389%20239%20336%20260C421%20290%20490%20377%20491%20469V470C491%20591%20350%20621%20251%20622H247C116%20622%20-6%20577%20-88%20505C-99%20496%20-104%20478%20-104%20458C-104%20410%20-79%20347%20-52%20341L-48%20340C-41%20340%20-34%20344%20-33%20350C-22%20399%209%20432%2045%20461C116%20518%20196%20554%20280%20554C290%20554%20299%20554%20308%20553C361%20548%20377%20517%20377%20484C377%20472%20374%20459%20371%20447C353%20379%20303%20328%20231%20316C235%20326%20268%20415%20283%20450L284%20454C284%20471%20241%20487%20209%20487C194%20487%20181%20483%20177%20474C151%20415%2071%20181%2071%2098L73%2081C79%2057%20116%2052%20146%2052H155C160%2052%20167%2058%20167%2064C167%20107%20189%20189%20209%20249C267%20249%20293%20221%20293%20182C293%20165%20288%20146%20279%20126C239%2042%20194%2013%20135%208L117%207C72%207%2025%2021%20-17%2054C-19%2056%20-21%2057%20-23%2057C-27%2057%20-31%2054%20-34%2049C-37%2044%20-39%2038%20-39%2032C-39%2028%20-38%2024%20-36%2021C10%20-36%2088%20-62%20133%20-63Z' fill='%234F8EF7'/%3E%3C/g%3E%3C/svg%3E">
 <!--
   ============================================================
@@ -182,7 +191,8 @@
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{-webkit-text-size-adjust:100%;}
+html{-webkit-text-size-adjust:100%;color-scheme:light;background:var(--bg);}
+html[data-theme="dark"]{color-scheme:dark;}
 body{
   font-family:var(--font-body);
   background:var(--bg);
@@ -1850,7 +1860,8 @@ function closeConfirm(result){
    MODULE — THEME + CURRENCY
    ============================================================ */
 function applyTheme(){
-  document.documentElement.setAttribute('data-theme', STATE.settings.theme);
+  applyThemeChrome(STATE.settings.theme);
+  try{ localStorage.setItem('sd-theme',STATE.settings.theme); }catch{}
   const icon = document.getElementById('themeToggleBtn');
   icon.innerHTML = iconSVG(STATE.settings.theme === 'dark' ? 'sun' : 'moon', 18);
   document.querySelectorAll('.theme-opt').forEach(el=>{
@@ -3898,7 +3909,6 @@ async function initApp(){
     if(guessedName){ STATE.settings.userName = guessedName; if(!dataFromCache && navigator.onLine) await saveSettings(); }
   }
   document.documentElement.setAttribute('lang', 'vi');
-  document.documentElement.setAttribute('data-theme', STATE.settings.theme);
   if(STATE.settings.sidebarCollapsed){
     document.getElementById('sidebar').classList.add('collapsed');
     document.getElementById('mainCol').classList.add('sidebar-collapsed');
@@ -5090,10 +5100,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=91"></script>
-<link rel="stylesheet" href="./layout.css?v=91">
-<script src="./layout.js?v=91"></script>
-<script src="./voice-expense.js?v=91"></script>
-<script src="./kpi.js?v=91"></script>
+<script src="./envelopes.js?v=92"></script>
+<link rel="stylesheet" href="./layout.css?v=92">
+<script src="./layout.js?v=92"></script>
+<script src="./voice-expense.js?v=92"></script>
+<script src="./kpi.js?v=92"></script>
 </body>
 </html>

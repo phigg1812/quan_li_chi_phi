@@ -109,7 +109,7 @@
 .settings-excel-card{padding:16px;margin-top:16px}
 :root .expense-card.paid{opacity:1}
 [data-theme="dark"]{--text-secondary:#b2b2ba}
-[data-theme="dark"] :is(.btn-primary,.qrx-btn.p,.rscan,.qrx-tab .qrb,.cal-cell.today .cal-date){color:#001120}
+[data-theme="dark"] :is(.btn-primary,.qrx-btn.p,.rscan,.qrx-tab .qrb,.cal-cell.today .cal-date,.chip-opt.active,.auth-submit,.seg-toggle button.active,.dash-category-filters .btn.active){color:#001120}
 button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .qtb:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
 
