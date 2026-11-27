@@ -4738,9 +4738,15 @@ window.renderSettlementPage=function(){
       dashboardEntryMotion=false;
       const reduced=matchMedia('(prefers-reduced-motion: reduce)');
       if(!reduced.matches){
+        const delay=160,duration=580;
         for(const bar of document.querySelectorAll('#qdB .qb-bar i,#qdC .qb-bar i')){
           bar.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],
-            {delay:160,duration:580,easing:'cubic-bezier(.22,.75,.25,1)',fill:'backwards'});
+            {delay,duration,easing:'cubic-bezier(.22,.75,.25,1)',fill:'backwards'});
+        }
+        const budgetBar=B.querySelector('.qb-bar i');
+        if(budgetBar && total>b.total){
+          budgetBar.animate([{backgroundColor:'var(--primary)'},{backgroundColor:'var(--danger)'}],
+            {delay:delay+duration,duration:180,easing:'ease-out',fill:'backwards'});
         }
         if(total>0){
           const amount=B.querySelector('.qd-big');
@@ -4751,10 +4757,10 @@ window.renderSettlementPage=function(){
           accessible.textContent=fmt(total);
           amount.replaceChildren(accessible,visual);
           visual.textContent=fmt(0);
-          const start=performance.now()+160;
+          const start=performance.now()+delay;
           const count=now=>{
             if(!visual.isConnected) return;
-            const progress=STATE.ui.currentView!=='dashboard'||reduced.matches ? 1 : Math.max(0,Math.min(1,(now-start)/580));
+            const progress=STATE.ui.currentView!=='dashboard'||reduced.matches ? 1 : Math.max(0,Math.min(1,(now-start)/duration));
             visual.textContent=fmt(total*(1-(1-progress)**3));
             if(progress<1) requestAnimationFrame(count);
           };
@@ -4986,10 +4992,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=83"></script>
-<link rel="stylesheet" href="./layout.css?v=83">
-<script src="./layout.js?v=83"></script>
-<script src="./voice-expense.js?v=83"></script>
-<script src="./kpi.js?v=83"></script>
+<script src="./envelopes.js?v=84"></script>
+<link rel="stylesheet" href="./layout.css?v=84">
+<script src="./layout.js?v=84"></script>
+<script src="./voice-expense.js?v=84"></script>
+<script src="./kpi.js?v=84"></script>
 </body>
 </html>
