@@ -1,11 +1,11 @@
 /* Keep the original chrome and give the app the same motion on both layouts. */
 .layout-month{min-height:44px;min-width:0}
 .cal-cell{isolation:isolate}
-.cal-cell-amount,.cal-date,.cal-dots{position:relative}
+.cal-cell-amount,.cal-date{position:relative}
 .layout-calendar-fill{position:absolute;inset:0;background:#c4e4ff;z-index:-1;pointer-events:none;transform-origin:bottom}
 [data-theme="dark"] .layout-calendar-fill{background:#205582}
 .cal-cell.other-month .layout-calendar-fill{display:none}
-@media(max-width:820px){.expense-list-content .list-toolbar .layout-month{width:100%}.cal-grid{grid-template-columns:repeat(7,minmax(0,1fr))}.cal-cell-amount{font-size:11px;overflow-wrap:anywhere}}
+@media(max-width:820px){.expense-list-content .list-toolbar .layout-month{width:100%}.cal-grid{grid-template-columns:repeat(7,minmax(0,1fr))}.cal-cell-amount{font-size:11px}}
 @media(prefers-reduced-motion:no-preference){
   .layout-calendar-fill{animation:preview-wave .4s cubic-bezier(.2,.72,.25,1)}
   @keyframes preview-wave{from{transform:scaleY(.15);opacity:.25}to{transform:scaleY(1);opacity:1}}
@@ -32,7 +32,6 @@
 .layout-backup-panel .panel{box-shadow:none}
 @media(max-width:1024px){#sidebar .sidebar-footer{display:none}}
 @media(max-width:820px){
-  .layout-feature-card .qb-f{bottom:calc(78px + env(safe-area-inset-bottom))}
   .layout-feature-card .qb-edit input,.layout-feature-card select{min-height:44px;font-size:16px}
 }
 .layout-period{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
@@ -58,8 +57,7 @@
 .layout-feature-empty h2{font-size:17px;margin-bottom:6px}
 .layout-feature-empty p{font-size:14px;color:var(--text-secondary)}
 @media(max-width:820px){
-  .layout-feature-actions{position:fixed;left:16px;right:16px;bottom:calc(87px + env(safe-area-inset-bottom));margin:0;z-index:34;box-shadow:var(--shadow)}
-  #view-settle:has(.layout-feature-actions),#view-budget:has(.layout-feature-actions){padding-bottom:70px}
+  .layout-feature-actions{position:static}
   .layout-feature-actions .p{flex:1}
   .layout-period select{font-size:16px;max-width:66%}
   .layout-settle-list .qs-row small,.layout-settle-list .qs-row .t b{overflow-wrap:anywhere}
@@ -67,7 +65,7 @@
 }
 
 /* Menu trang (điện thoại) */
-.qm-g{background:var(--card);border-radius:14px;overflow:hidden;margin:0 0 16px;box-shadow:var(--shadow-sm)}
+.qm-g{overflow:hidden;margin:0 0 16px}
 .qm-r{display:flex;align-items:center;gap:10px;padding:0 16px;min-height:50px;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .qm-r+.qm-r{border-top:1px solid var(--border)}
 .qm-r small{margin-left:auto;color:var(--text-secondary);font-size:12px}
@@ -102,3 +100,57 @@
   #view-envelopes .envelope-header h1{display:none}
   #view-envelopes .envelope-header{justify-content:flex-end}
 }
+
+
+/* Shared surfaces */
+:root{--surface-border:1px solid var(--border);--surface-radius:var(--radius-lg)}
+:root .qd-card,:root .panel,:root .kpi-card,:root .expense-card,:root .insight-card,
+:root .timeline-card,:root .settings-panel,:root .envelope-card,:root .envelope-totals>div,
+:root .envelope-empty,:root .layout-feature-card,:root .layout-feature-actions,:root .layout-period,
+:root .qm-g,:root .backup-card,:root .qb-card,:root .table-wrap,:root .settings-excel-card,.data-load-panel,.history-list{
+  background:var(--card);border:var(--surface-border);border-radius:var(--surface-radius);box-shadow:none
+}
+.settings-excel-card{padding:16px;margin-top:16px}
+:root .expense-card.paid{opacity:1}
+[data-theme="dark"]{--text-secondary:#b2b2ba}
+[data-theme="dark"] :is(.btn-primary,.qrx-btn.p,.rscan,.qrx-tab .qrb,.cal-cell.today .cal-date){color:#001120}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.qtb:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+
+/* Loading and connectivity */
+#appShell:not([data-load-state="ready"]) :is(.view,.qrx-tab,.sidebar-nav,#quickAddBtn,#menuBtn){display:none!important}
+.data-load-panel{max-width:580px;padding:20px}
+.data-load-panel .btn{margin-top:12px}
+.connection-status{margin-bottom:12px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--warning-soft);color:var(--text);font-size:13px}
+.connection-status:empty{display:none}
+
+/* Paid history */
+#view-history .cal-toolbar{margin-bottom:4px}
+#view-history .cal-title{min-width:110px}
+#view-history .cal-nav .icon-btn,#calTodayBtn{min-height:44px;min-width:44px}
+#view-history .cal-grid{margin:10px 0 16px;grid-template-columns:repeat(7,minmax(0,1fr));border-radius:var(--surface-radius)}
+#view-history .cal-cell{display:flex;align-items:center;flex-direction:column;justify-content:center;border:0;color:var(--text);font-family:inherit}
+#view-history .cal-cell[aria-pressed="true"],#view-history .cal-cell:focus-visible{outline:2px solid var(--primary);outline-offset:-3px}
+#view-history .cal-cell-amount{font-size:12px;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}
+#view-history .cal-dow{padding-inline:2px}
+.history-list{padding:16px}
+.history-search{width:100%;max-width:420px;min-height:44px;margin-bottom:12px;font-size:16px}
+#qdAlert{border:var(--surface-border);text-align:left}
+#qdAll{width:100%;text-align:left;background:transparent;border:0;border-top:var(--surface-border);font-family:inherit}
+body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-content:center}
+.history-summary{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.history-summary h2{font-size:17px}
+.history-summary strong{white-space:nowrap}
+#historyUndated{margin-top:14px;padding-top:10px;border-top:var(--surface-border)}
+#historyUndated summary{cursor:pointer;min-height:44px;align-content:center}
+#historyUndatedExpenses{margin-top:12px}
+#view-history .card-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}
+[hidden]{display:none!important}
+@media(max-width:820px){
+  #view-history .cal-cell{padding:3px;min-height:54px}
+  #view-history .cal-cell-amount{font-size:11px}
+  .envelope-dialog{inset:auto 0 0;margin:0;width:100%;max-width:none;max-height:calc(100dvh - env(safe-area-inset-top) - 12px);padding-bottom:calc(16px + env(safe-area-inset-bottom));border-radius:var(--radius-lg) var(--radius-lg) 0 0;overscroll-behavior:contain}
+  .envelope-dialog:has(form) footer{position:static;margin-inline:0;padding:0;border:0}
+  .envelope-dialog::before{content:"";display:block;width:36px;height:4px;margin:-7px auto 12px;border-radius:4px;background:var(--border)}
+}
+@media(max-width:360px){#view-history .cal-cell-amount{display:none}}

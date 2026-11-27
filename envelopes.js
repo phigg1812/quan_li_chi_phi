@@ -150,7 +150,7 @@ function openEnvelopeForm(entry, isReciprocal=false){
   dialog.className = 'envelope-dialog';
   dialog.setAttribute('aria-labelledby','envelopeFormTitle');
   dialog.innerHTML = `<form>
-    <h2 id="envelopeFormTitle">${isReciprocal ? (entry.direction==='sent' ? 'Họ đã đi lại' : 'Tôi đã đi lại') : entry ? 'Sửa phong bì' : 'Ghi phong bì'}</h2>
+    <h2 id="envelopeFormTitle" tabindex="-1" autofocus>${isReciprocal ? (entry.direction==='sent' ? 'Họ đã đi lại' : 'Tôi đã đi lại') : entry ? 'Sửa phong bì' : 'Ghi phong bì'}</h2>
     ${isReciprocal ? `<p class="envelope-person">${escapeHTML(entry.person)}</p>` : `
       <label>Người gửi hoặc nhận<input name="person" required maxlength="120" value="${escapeHTML(entry?.person)}"></label>
       <label>Chiều giao nhận<select name="direction" ${entry?.reciprocal ? 'disabled' : ''}>
@@ -261,7 +261,7 @@ function openEnvelopeForm(entry, isReciprocal=false){
     error.hidden = true;
     try{
       if(requireUid()!==owner) throw new Error('Tài khoản đã thay đổi');
-      await window.FB.setDoc(storeDoc('envelopes',record.id),record);
+      await trackWrite(window.FB.setDoc(storeDoc('envelopes',record.id),record));
       if(requireUid()!==owner){ dialog.close(); return; }
       const index = STATE.envelopes.findIndex(existing=>existing.id===record.id);
       if(index<0) STATE.envelopes.push(record);
@@ -331,7 +331,7 @@ function openEnvelopeImport(){
   dialog.className = 'envelope-dialog';
   dialog.setAttribute('aria-labelledby','envelopeImportTitle');
   dialog.innerHTML = `<form>
-    <h2 id="envelopeImportTitle">Nhập sổ phong bì</h2>
+    <h2 id="envelopeImportTitle" tabindex="-1" autofocus>Nhập sổ phong bì</h2>
     <label>Tệp đã đối soát<input type="file" accept=".json,application/json" required></label>
     <p role="status"></p>
     <footer><button type="button" class="btn">Đóng</button><button class="btn btn-primary" disabled>Nhập khoản</button></footer>
