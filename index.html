@@ -1859,6 +1859,7 @@ const VIEW_TITLE_KEYS = {
   dashboard:'nav.dashboard', pending:'nav.pending',
   stats:'nav.stats', settings:'nav.settings', backup:'nav.backup'
 };
+const MENU_SUBVIEWS = ['kpi','envelopes','budget','settle','settings'];
 let pageSlideAnimations = [];
 function switchView(name,{keepSearchOpen=false,slideFrom}={}){
   const showBackup = name==='backup';
@@ -1890,7 +1891,7 @@ function switchView(name,{keepSearchOpen=false,slideFrom}={}){
     pageSlideAnimations.forEach(animation=>animation.cancel());
     pageSlideAnimations = [];
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
-      const backToMenu = name==='menu' && ['kpi','envelopes','budget','settle','settings'].includes(previousView);
+      const backToMenu = name==='menu' && MENU_SUBVIEWS.includes(previousView);
       const from = slideFrom ?? (backToMenu ? '-100%' : '100%');
       const frames = [{translate:from},{translate:'0%'}];
       const timing = {duration:320,easing:'cubic-bezier(.22,.75,.25,1)'};
@@ -4339,7 +4340,7 @@ setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
     });
   };
   addEventListener('touchstart',event=>{
-    if(refreshing||!mobile.matches||!appBooted||scrollY>0||event.touches.length!==1||
+    if(event.defaultPrevented||refreshing||!mobile.matches||!appBooted||scrollY>0||event.touches.length!==1||
       !event.target.closest('.main-content,.topbar')||event.target.closest('input,textarea,select')||
       document.querySelector('#qrxOv,.drawer.show,.modal-overlay.show,dialog[open]')) return;
     origin=event.touches[0];
@@ -4790,15 +4791,20 @@ try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body)
   let tabSwipe=null;
   swipeArea.addEventListener('touchstart',event=>{
     tabSwipe=null;
-    const index=tabViews.indexOf(STATE.ui.currentView);
-    if(!mobileTabs.matches||!appBooted||index===-1||event.touches.length!==1||
+    if(!mobileTabs.matches||!appBooted||event.touches.length!==1||
       event.target.closest('.expense-card,input,textarea,select,[contenteditable],.dash-category-filters')||
       document.querySelector('#qrxOv,.drawer.show,.modal-overlay.show,dialog[open]')) return;
     const {clientX:x,clientY:y,identifier}=event.touches[0];
-    // Leave the screen edges available for iOS browser navigation.
-    if(x<24||x>document.documentElement.clientWidth-24) return;
-    tabSwipe={index,x,y,identifier,horizontal:false};
-  },{passive:true});
+    const view=STATE.ui.currentView;
+    const index=tabViews.indexOf(view);
+    const back=x<24&&MENU_SUBVIEWS.includes(view);
+    if(back){
+      if(!event.cancelable||event.target.closest('button,a,label')) return;
+      // Claim this edge touch before Safari starts its history gesture.
+      event.preventDefault();
+    }else if(index===-1||x<24||x>document.documentElement.clientWidth-24) return;
+    tabSwipe={view,index,back,x,y,identifier,horizontal:false};
+  },{passive:false});
   swipeArea.addEventListener('touchmove',event=>{
     if(!tabSwipe) return;
     if(event.touches.length!==1){tabSwipe=null;return;}
@@ -4814,10 +4820,14 @@ try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body)
   swipeArea.addEventListener('touchend',event=>{
     const swipe=tabSwipe;
     tabSwipe=null;
-    if(!swipe?.horizontal||STATE.ui.currentView!==tabViews[swipe.index]) return;
+    if(!swipe?.horizontal||STATE.ui.currentView!==swipe.view) return;
     const touch=Array.from(event.changedTouches).find(item=>item.identifier===swipe.identifier);
     if(!touch) return;
     const dx=touch.clientX-swipe.x, dy=touch.clientY-swipe.y;
+    if(swipe.back){
+      if(dx>=36&&dx>Math.abs(dy)*1.5) switchView('menu');
+      return;
+    }
     if(Math.abs(dx)<64||Math.abs(dx)<=Math.abs(dy)*1.5) return;
     const next=tabViews[swipe.index+(dx<0?1:-1)];
     if(next) switchView(next,{slideFrom:dx<0?'100%':'-100%'});
@@ -4872,10 +4882,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=77"></script>
-<link rel="stylesheet" href="./layout.css?v=77">
-<script src="./layout.js?v=77"></script>
-<script src="./voice-expense.js?v=77"></script>
-<script src="./kpi.js?v=77"></script>
+<script src="./envelopes.js?v=78"></script>
+<link rel="stylesheet" href="./layout.css?v=78">
+<script src="./layout.js?v=78"></script>
+<script src="./voice-expense.js?v=78"></script>
+<script src="./kpi.js?v=78"></script>
 </body>
 </html>
