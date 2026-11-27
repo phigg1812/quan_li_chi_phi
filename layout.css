@@ -352,7 +352,7 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .kpi-section-head{--kpi-title-line:20px}
 .kpi-section-head h2{line-height:var(--kpi-title-line)}
 @media(max-width:360px){.kpi-section-head h2{font-size:15px}}
-.kpi-section-head .kpi-task-actions>.btn{min-height:0;height:calc(var(--kpi-title-line) * 1.2);padding-block:0}
+.kpi-section-head .kpi-task-actions>.btn{min-height:0;height:var(--kpi-pill-height);padding-block:0}
 .kpi-section-head .kpi-task-actions svg{width:calc(var(--kpi-title-line) * 1.2);height:calc(var(--kpi-title-line) * 1.2);padding:4px;box-sizing:border-box}
 .stats-trend-header{--stats-title-line:18px;align-items:flex-start}
 .stats-trend-heading .panel-title{line-height:var(--stats-title-line)}
@@ -413,10 +413,10 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .stats-category-swatch{width:7px;height:7px;flex:none;border-radius:50%}
 .stats-expense-history{padding-inline:clamp(8px,4%,20px)}
 
-.kpi-page .kpi-today{padding-block:19px}
+.kpi-page .kpi-today{--kpi-pill-height:30px;padding-block:19px}
 .kpi-today .kpi-section-head{margin-bottom:12px}
 .kpi-today .kpi-task{min-height:56px}
-.kpi-today .exp-pay-action{position:relative;min-height:30px;padding-block:3px;border-color:transparent;background:var(--warning-soft);color:var(--warning)}
+.kpi-today .exp-pay-action{position:relative;min-height:var(--kpi-pill-height);padding-block:3px;border-color:transparent;background:var(--warning-soft);color:var(--warning)}
 .kpi-today .exp-pay-action::before{content:"";position:absolute;inset:-7px 0}
 .kpi-today .exp-pay-action.checked{background:var(--success-soft);color:var(--success)}
 
