@@ -4881,7 +4881,7 @@ window.renderSettlementPage=function(){
     const delta=previousToDate>0?Math.round((total-previousToDate)/previousToDate*100):null;
     D.innerHTML='<div class="qd-head"><h2>Xu hướng 6 tháng</h2>'
       +(delta===null?'':'<span class="qd-trend-badge">'+(delta>0?'+':'')+delta+'% cùng kỳ</span>')+'</div>'
-      +'<div class="qd-trend">'+vals.map((v,i)=>'<div class="qd-tc" title="'+esc(fmt(v))+'"><div class="qd-tv">'+(v?short(v):'')+'</div><div class="qd-track"><div class="qd-tb" style="height:'+Math.max(0,Math.round(v/mx*100))+'%;background:'+(i===5?'var(--primary)':'rgba(0,98,214,.25)')+'"></div></div><div class="qd-tl">T'+Number(ms[i].slice(5))+'</div></div>').join('')+'</div>'
+      +'<div class="qd-trend">'+vals.map((v,i)=>'<div class="qd-tc'+(i===vals.length-1?' qd-tc-current':'')+'" title="'+esc(fmt(v))+'"><div class="qd-tv">'+(v?short(v):'')+'</div><div class="qd-track"><div class="qd-tb" style="height:'+Math.max(0,Math.round(v/mx*100))+'%"></div></div><div class="qd-tl">T'+Number(ms[i].slice(5))+'</div></div>').join('')+'</div>'
       +'<p class="qd-summary-date">Tháng '+m+' · đến ngày '+Number(today.slice(8))+' · <b>'+esc(fmt(total))+'</b></p>';
   }
   window.qrxRenderBud=renderDash;
@@ -5100,10 +5100,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=92"></script>
-<link rel="stylesheet" href="./layout.css?v=92">
-<script src="./layout.js?v=92"></script>
-<script src="./voice-expense.js?v=92"></script>
-<script src="./kpi.js?v=92"></script>
+<script src="./envelopes.js?v=93"></script>
+<link rel="stylesheet" href="./layout.css?v=93">
+<script src="./layout.js?v=93"></script>
+<script src="./voice-expense.js?v=93"></script>
+<script src="./kpi.js?v=93"></script>
 </body>
 </html>

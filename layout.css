@@ -239,7 +239,11 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 #qrxDash .qd-stats>div{flex:1 1 0;min-width:0}
 #qdBud{white-space:nowrap}
 .qd-track{display:flex;align-items:flex-end;height:72px;background:var(--bg);border-radius:9px 9px 0 0;overflow:hidden}
-.qd-track .qd-tb{width:100%}
+.qd-track .qd-tb{width:100%;background:rgba(0,98,214,.25)}
+.qd-tc-current .qd-track .qd-tb{background:var(--primary)}
+[data-theme="dark"] .qd-track{background:#262c35}
+[data-theme="dark"] .qd-tc:not(.qd-tc-current) .qd-tb{background:#6886a8}
+[data-theme="dark"] .qd-tc-current :is(.qd-tv,.qd-tl){color:var(--primary);font-weight:600}
 #qrxDash .qd-trend{gap:8px;padding-top:8px}
 #qrxDash .qd-category .qd-share{margin-top:6px}
 @media(max-width:820px){
