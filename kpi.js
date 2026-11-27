@@ -122,7 +122,7 @@
         <article class="panel kpi-insight-card"><h3>Tỷ lệ ngày đạt đủ KPI</h3>
           <div class="kpi-result"><div class="kpi-result-ring" style="--ratio:${overall}%"><strong>${overall}%</strong></div>
           <p><b>${metrics.complete}/${metrics.elapsed.length} ngày</b><span>Hoàn thành đủ hạng mục</span></p></div></article>
-        <article class="panel kpi-insight-card"><h3>Đạt đủ KPI theo tuần</h3><div class="kpi-week-bars">${weeks.map(([date,week])=>`<div><b>${week.done}/${week.total}</b><div class="kpi-week-track"><i style="height:${percent(week.done,week.total)}%"></i></div>${formatDateShort(date).slice(0,5)}</div>`).join('')}</div></article>
+        <article class="panel kpi-insight-card"><h3>Đạt đủ KPI theo tuần</h3><div class="kpi-week-bars">${weeks.map(([date,week])=>`<div><b>${week.done}/${week.total}</b><div class="kpi-week-track${week.done===0?' is-zero':''}" aria-hidden="true"><i style="height:${percent(week.done,week.total)}%"></i></div>${formatDateShort(date).slice(0,5)}</div>`).join('')}</div></article>
         <article class="panel kpi-insight-card kpi-rank-card"><h3>Hoàn thành theo hạng mục</h3>${ranks.map(rank=>`<div class="kpi-rank"><b>${escapeHTML(rank.name)}</b><div class="kpi-track"><i style="width:${percent(rank.done,rank.total)}%"></i></div><span>${rank.done}/${rank.total} ngày · ${percent(rank.done,rank.total)}%</span></div>`).join('')}</article>
       </div>`;
   }
