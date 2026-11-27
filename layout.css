@@ -108,8 +108,14 @@
 }
 .settings-excel-card{padding:16px;margin-top:16px}
 :root .expense-card.paid{opacity:1}
-[data-theme="dark"]{--text-secondary:#b2b2ba}
-[data-theme="dark"] :is(.btn-primary,.qrx-btn.p,.rscan,.qrx-tab .qrb,.cal-cell.today .cal-date,.chip-opt.active,.auth-submit,.seg-toggle button.active,.dash-category-filters .btn.active){color:#001120}
+[data-theme="dark"]{--text-secondary:#b2b2ba;--control-border:#696974;--ink-on-bright:#001120}
+[data-theme="dark"] :is(.btn-primary,.qrx-btn.p,.rscan,.qrx-tab .qrb,.cal-cell.today .cal-date,.chip-opt.active,.auth-submit,.seg-toggle button.active,.dash-category-filters .btn.active,.nav-badge,.qbd){color:var(--ink-on-bright)}
+[data-theme="dark"] .settings-nav button.active{color:var(--primary)}
+[data-theme="dark"] .profile-menu-item.danger{color:var(--danger)}
+[data-theme="dark"] :is(input,textarea)::placeholder{color:var(--text-secondary);opacity:1}
+[data-theme="dark"] :is(.field input:not([type="checkbox"]),.field select,.field textarea,.filter-select,.expense-date-control,.kpi-reset-setting input,.envelope-dialog input:not([type="checkbox"]),.envelope-dialog select,.envelope-dialog textarea){border-color:var(--control-border)}
+[data-theme="dark"] :is(.field input,.field select,.field textarea,.filter-select,.expense-date-control,.kpi-reset-setting input,.envelope-dialog input,.envelope-dialog select,.envelope-dialog textarea):is(:focus,:focus-within){border-color:var(--primary)}
+
 button:focus-visible,summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .qtb:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
 
@@ -335,7 +341,7 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .kpi-task .exp-pay-action.checked{background:var(--success-soft);color:var(--success);border-color:transparent}
 .kpi-task-actions{display:flex;flex:none;gap:5px;margin:0}
 .kpi-task-actions>.btn{flex:1;justify-content:center;border-radius:999px;white-space:nowrap;gap:4px;padding-inline:8px;font-size:12px}
-.kpi-task-actions .btn-primary{background:var(--primary-soft);color:var(--primary);border-color:var(--primary-soft)}
+.kpi-task-actions .kpi-add{background:var(--primary-soft);color:var(--primary);border-color:var(--primary-soft)}
 .kpi-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
 .kpi-calendar>span{font-size:11px;color:var(--text-secondary)}
 .kpi-calendar .cal-cell{min-height:42px;padding:2px;border:1px solid var(--border);border-radius:8px;color:var(--text);font:inherit;font-size:12px;display:grid;place-content:center}

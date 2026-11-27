@@ -272,8 +272,8 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;letter-spacing:-0.02
 .btn-google{background:var(--card);}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-secondary);font-size:11.5px;}
 .auth-divider::before,.auth-divider::after{content:'';height:1px;flex:1;background:var(--border);}
-.auth-message{min-height:18px;margin:10px 0 0!important;font-size:12px!important;color:#16A34A!important;}
-.auth-message.error{color:#DC2626!important;}
+.auth-message{min-height:18px;margin:10px 0 0!important;font-size:12px!important;color:var(--auth-message-color,#16A34A)!important;}
+.auth-message.error{color:var(--auth-error-color,#DC2626)!important;}
 .auth-mode-title{margin-bottom:16px!important;}
 .auth-card .auth-note{margin-top:var(--space-5);margin-bottom:0;font-size:11.5px;color:var(--text-secondary);opacity:.75;}
 .boot-spinner{
@@ -872,7 +872,7 @@ table.exp-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760
 [data-theme="dark"]{
   --bg:#000000;--card:#1C1C1E;--primary:#4DA3FF;--primary-dark:#0A84FF;--primary-soft:#0F2A4A;--border:#2C2C2E;
   --text:#F2F2F7;--text-secondary:#98989F;--success:#32D74B;--success-soft:#0F3320;--warning:#FF9F0A;--warning-soft:#3A2A0A;
-  --danger:#FF6961;--danger-soft:#3A1517;--shadow-sm:0 1px 2px rgba(0,0,0,.4);--shadow:0 4px 18px rgba(0,0,0,.5);--shadow-lg:0 16px 44px rgba(0,0,0,.6);
+  --danger:#FF6961;--danger-soft:#3A1517;--auth-message-color:var(--success);--auth-error-color:var(--danger);--shadow-sm:0 1px 2px rgba(0,0,0,.4);--shadow:0 4px 18px rgba(0,0,0,.5);--shadow-lg:0 16px 44px rgba(0,0,0,.6);
 }
 [data-theme="dark"] .topbar{background:rgba(0,0,0,.72);}
 h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo-text,.auth-card h1{font-weight:700;}
@@ -1871,6 +1871,10 @@ function applyTheme(){
 async function setTheme(mode){
   STATE.settings.theme = mode;
   applyTheme();
+  if(dataLoadState==='ready'){
+    if(STATE.ui.currentView==='stats') renderStats();
+    if(STATE.ui.currentView==='dashboard') renderDashboardCharts();
+  }
   await saveSettings();
 }
 async function setCurrency(cur){
@@ -5100,10 +5104,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=93"></script>
-<link rel="stylesheet" href="./layout.css?v=93">
-<script src="./layout.js?v=93"></script>
-<script src="./voice-expense.js?v=93"></script>
-<script src="./kpi.js?v=93"></script>
+<script src="./envelopes.js?v=94"></script>
+<link rel="stylesheet" href="./layout.css?v=94">
+<script src="./layout.js?v=94"></script>
+<script src="./voice-expense.js?v=94"></script>
+<script src="./kpi.js?v=94"></script>
 </body>
 </html>

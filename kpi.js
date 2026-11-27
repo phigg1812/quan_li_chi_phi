@@ -149,7 +149,7 @@
       </section>
       <section class="panel kpi-today"><div class="kpi-section-head"><h2>KPI Hôm nay</h2>
         <div class="kpi-task-actions">
-          <button type="button" class="btn btn-primary" data-kpi-add aria-label="Thêm hạng mục">${iconSVG('plus',24)} Thêm</button>
+          <button type="button" class="btn kpi-add" data-kpi-add aria-label="Thêm hạng mục">${iconSVG('plus',24)} Thêm</button>
           <button type="button" class="btn" data-kpi-delete aria-label="Xóa hạng mục" ${removable(date).length?'':'disabled'}>${iconSVG('trash-2',24)} Xóa</button>
         </div></div>
         <ol class="kpi-task-list" role="list">${orderedTasks.map(task=>{
