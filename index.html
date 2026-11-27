@@ -1564,15 +1564,27 @@ async function dbGetAll(storeName){
 }
 let dataFromCache=false;
 const pendingWrites=new Map();
+let syncStatusTimer=null;
 function renderConnectionStatus(){
   const status=document.getElementById('connectionStatus');
   const owner=window.FB?.currentUser?.uid;
-  const messages=[];
-  if(!navigator.onLine) messages.push('Đang ngoại tuyến');
-  else if(dataFromCache) messages.push('Đang xem dữ liệu trên thiết bị');
-  if(owner && pendingWrites.has(owner)) messages.push('Có thay đổi đang chờ đồng bộ');
-  const message=messages.join(' · ');
-  if(status.textContent!==message) status.textContent=message;
+  const pending=Boolean(owner&&pendingWrites.has(owner));
+  const offline=!navigator.onLine;
+  const message=offline ? (pending?'Ngoại tuyến · Chờ đồng bộ':'Đang ngoại tuyến')
+    : dataFromCache ? (pending?'Bản lưu trên máy · Chờ đồng bộ':'Đang xem bản lưu trên máy')
+    : '';
+  const setMessage=value=>{if(status.textContent!==value) status.textContent=value;};
+  if(message||!pending){
+    clearTimeout(syncStatusTimer);
+    syncStatusTimer=null;
+    setMessage(message);
+  }else if(status.textContent!=='Đang đồng bộ…' && syncStatusTimer===null){
+    setMessage('');
+    syncStatusTimer=setTimeout(()=>{
+      syncStatusTimer=null;
+      if(window.FB?.currentUser?.uid===owner && pendingWrites.has(owner)) setMessage('Đang đồng bộ…');
+    },350);
+  }
 }
 function trackWrite(write){
   const owner=requireUid();
@@ -2911,18 +2923,21 @@ const categoryPercentLeaders={
     const values=chart.data.datasets[0].data;
     const total=values.reduce((sum,amount)=>sum+amount,0);
     if(total<=0) return;
-    const {ctx,chartArea:area}=chart;
+    const {ctx}=chart;
     const colors=chartColors();
     const cardColor=getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
     const sides=[[],[]];
     chart.getDatasetMeta(0).data.forEach((arc,index)=>{
-      if(!chart.getDataVisibility(index)||values[index]<=0||arc.circumference<=0.01) return;
+      if(!chart.getDataVisibility(index)||values[index]<=0||arc.circumference<=0) return;
       const angle=(arc.startAngle+arc.endAngle)/2;
-      const direction=Math.cos(angle)>=0?1:-1;
+      const dx=Math.cos(angle), dy=Math.sin(angle);
+      const direction=dx>=0?1:-1;
+      const lead=10+(index*5)%8;
+      const radius=arc.outerRadius;
       sides[direction===1?1:0].push({
-        x:arc.x+Math.cos(angle)*arc.outerRadius,y:arc.y+Math.sin(angle)*arc.outerRadius,
-        elbow:arc.x+direction*(arc.outerRadius+7),direction,
-        inset:5+(index*7)%15,
+        x:arc.x+dx*radius,y:arc.y+dy*radius,
+        elbowX:arc.x+dx*(radius+lead),elbowY:arc.y+dy*(radius+lead),
+        idealY:arc.y+dy*(radius+lead+8),centerX:arc.x,centerY:arc.y,radius,direction,
         text:new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(values[index]/total*100)+'%'
       });
     });
@@ -2931,19 +2946,24 @@ const categoryPercentLeaders={
     ctx.textBaseline='middle';
     ctx.lineWidth=1;
     for(const side of sides){
-      side.sort((a,b)=>a.y-b.y);
-      const top=area.top+8,bottom=area.bottom-8;
+      side.sort((a,b)=>a.idealY-b.idealY);
+      const top=10,bottom=chart.height-10;
       const gap=Math.min(24,(bottom-top)/Math.max(1,side.length-1));
-      side.forEach((label,index)=>label.labelY=Math.max(top,index?side[index-1].labelY+gap:top,label.y));
+      side.forEach((label,index)=>label.labelY=Math.max(top,index?side[index-1].labelY+gap:top,label.idealY));
       for(let i=side.length-1;i>=0;i--){
         const label=side[i];
         label.labelY=Math.min(label.labelY,i===side.length-1?bottom:side[i+1].labelY-gap);
         const width=ctx.measureText(label.text).width+10;
-        const x=label.direction===1?chart.width-width-label.inset:label.inset;
+        const nearestY=Math.max(0,Math.abs(label.labelY-label.centerY)-8);
+        const ringEdge=Math.sqrt(Math.max(0,label.radius**2-nearestY**2));
+        const outward=Math.max(Math.abs(label.elbowX-label.centerX)+6,ringEdge+6);
+        const edge=label.centerX+label.direction*outward;
+        const preferredX=label.direction===1?edge:edge-width;
+        const x=Math.max(3,Math.min(chart.width-width-3,preferredX));
         ctx.strokeStyle=colors.text;
         ctx.beginPath();
         ctx.moveTo(label.x,label.y);
-        ctx.lineTo(label.elbow,label.labelY);
+        ctx.lineTo(label.elbowX,label.elbowY);
         ctx.lineTo(label.direction===1?x:x+width,label.labelY);
         ctx.stroke();
         ctx.fillStyle=cardColor;
@@ -2977,7 +2997,7 @@ function renderStats(){
     data:{labels:categoryLabels.map(label=>label.name+' · '+label.share),datasets:[{data:categoryValues,backgroundColor:categoryLabels.map(label=>label.color),borderWidth:0}]},
     options:{
       rotation:balancedCategoryRotation(categoryValues),
-      layout:{padding:{left:70,right:70,top:12,bottom:12}},
+      layout:{padding:{left:63,right:63,top:30,bottom:30}},
       onClick:(event,items)=>{if(items.length&&window.qrxCatList) window.qrxCatList(catEntries[items[0].index][0],inRange);},
       onHover:(event,items)=>{if(event.native?.target) event.native.target.style.cursor=items.length?'pointer':'default';},
       cutout:'62%',
@@ -4785,10 +4805,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=70"></script>
-<link rel="stylesheet" href="./layout.css?v=70">
-<script src="./layout.js?v=70"></script>
-<script src="./voice-expense.js?v=70"></script>
-<script src="./kpi.js?v=70"></script>
+<script src="./envelopes.js?v=71"></script>
+<link rel="stylesheet" href="./layout.css?v=71">
+<script src="./layout.js?v=71"></script>
+<script src="./voice-expense.js?v=71"></script>
+<script src="./kpi.js?v=71"></script>
 </body>
 </html>
