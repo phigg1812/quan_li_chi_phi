@@ -2978,31 +2978,61 @@ const categoryPercentLeaders={
         const preferredX=label.direction===1?edge:edge-width;
         label.boxX=Math.max(3,Math.min(chart.width-width-3,preferredX));
         label.boxWidth=width;
-        ctx.strokeStyle=colors.text;
-        ctx.beginPath();
-        ctx.moveTo(label.x,label.y);
-        ctx.lineTo(label.leadX,label.leadY);
+        label.points=[[label.x,label.y],[label.leadX,label.leadY]];
         for(let step=1;step<=16;step++){
           const fraction=step/16;
           const y=label.leadY+(label.labelY-label.leadY)*fraction;
           const x=label.centerX+label.direction*(ringEdge(label.radius+radialLead,y-label.centerY)+clearance*fraction);
-          ctx.lineTo(x,y);
+          label.points.push([x,y]);
         }
-        ctx.lineTo(label.direction===1?label.boxX:label.boxX+width,label.labelY);
-        ctx.stroke();
+        label.points.push([label.direction===1?label.boxX:label.boxX+width,label.labelY]);
       }
-      for(const label of side){
-        ctx.fillStyle=label.color;
-        ctx.beginPath();
-        ctx.arc(label.x,label.y,2,0,2*Math.PI);
-        ctx.fill();
-        ctx.fillStyle=cardColor;
-        ctx.fillRect(label.boxX,label.labelY-boxHalfHeight,label.boxWidth,16);
-        ctx.strokeStyle=colors.border;
-        ctx.strokeRect(label.boxX,label.labelY-boxHalfHeight,label.boxWidth,16);
-        ctx.fillStyle=colors.text;
-        ctx.fillText(label.text,label.boxX+5,label.labelY);
-      }
+    }
+    const labels=sides.flat();
+    const intersects=(a,b,c,d)=>{
+      const cross=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+      return a.every((value,i)=>Math.max(value,b[i])>=Math.min(c[i],d[i])&&Math.max(c[i],d[i])>=Math.min(value,b[i]))
+        && cross(a,b,c)*cross(a,b,d)<=0 && cross(c,d,a)*cross(c,d,b)<=0;
+    };
+    // Prefer one diagonal whenever it leaves the ring outward and has a clear path to the label.
+    for(const label of labels){
+      const anchor=label.points[0];
+      const nearest=(value,min,max)=>Math.max(min,Math.min(max,value));
+      const top=label.labelY-boxHalfHeight,bottom=label.labelY+boxHalfHeight;
+      const inset=label.y<top||label.y>bottom?5:0;
+      const end=[
+        nearest(label.x,label.boxX+inset,label.boxX+label.boxWidth-inset),
+        nearest(label.y,top,bottom)
+      ];
+      const outward=(label.x-label.centerX)*(end[0]-label.x)+(label.y-label.centerY)*(end[1]-label.y);
+      if(outward<=0) continue;
+      const blocked=labels.some(other=>{
+        if(other===label) return false;
+        const x=other.boxX-1,y=other.labelY-boxHalfHeight-1,w=other.boxWidth+2,h=boxHalfHeight*2+2;
+        const corners=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+        return corners.some((point,i)=>intersects(anchor,end,point,corners[(i+1)%4]))
+          || other.points.slice(1).some((point,i)=>intersects(anchor,end,other.points[i],point));
+      });
+      if(!blocked) label.points=[anchor,end];
+    }
+    ctx.strokeStyle=colors.text;
+    for(const {points} of labels){
+      ctx.beginPath();
+      ctx.moveTo(...points[0]);
+      for(const point of points.slice(1)) ctx.lineTo(...point);
+      ctx.stroke();
+    }
+    for(const label of labels){
+      ctx.fillStyle=label.color;
+      ctx.beginPath();
+      ctx.arc(label.x,label.y,2,0,2*Math.PI);
+      ctx.fill();
+      ctx.fillStyle=cardColor;
+      ctx.fillRect(label.boxX,label.labelY-boxHalfHeight,label.boxWidth,16);
+      ctx.strokeStyle=colors.border;
+      ctx.strokeRect(label.boxX,label.labelY-boxHalfHeight,label.boxWidth,16);
+      ctx.fillStyle=colors.text;
+      ctx.fillText(label.text,label.boxX+5,label.labelY);
     }
     ctx.restore();
   }
@@ -4945,10 +4975,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=80"></script>
-<link rel="stylesheet" href="./layout.css?v=80">
-<script src="./layout.js?v=80"></script>
-<script src="./voice-expense.js?v=80"></script>
-<script src="./kpi.js?v=80"></script>
+<script src="./envelopes.js?v=81"></script>
+<link rel="stylesheet" href="./layout.css?v=81">
+<script src="./layout.js?v=81"></script>
+<script src="./voice-expense.js?v=81"></script>
+<script src="./kpi.js?v=81"></script>
 </body>
 </html>
