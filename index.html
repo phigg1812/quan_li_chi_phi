@@ -995,7 +995,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
     <header class="topbar">
       <button class="topbar-menu-btn" id="menuBtn" aria-label="Menu"><span data-icon="menu"></span></button>
       <div class="topbar-title" id="topbarTitle" data-i18n="nav.dashboard">Tổng quan</div>
-      <div class="topbar-spacer"></div>
+      <div class="topbar-menu-brand" hidden></div><div class="topbar-spacer"></div>
       <button class="icon-btn" id="themeToggleBtn" aria-label="Đổi chế độ sáng hoặc tối"><span data-icon="moon"></span></button>
       <button type="button" class="icon-btn" id="headerSearchBtn" aria-label="Tìm khoản chi" aria-controls="headerSearchBox" aria-expanded="false"><span data-icon="search"></span></button>
       <button type="button" class="icon-btn" id="voiceExpenseBtn" aria-label="Nhập khoản chi bằng giọng nói" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-3 0h6"/></svg></button>
@@ -1119,7 +1119,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <div class="cal-toolbar">
           <div class="cal-nav">
             <button class="icon-btn" id="calPrev" aria-label="Tháng trước"><span data-icon="chevron-left"></span></button>
-            <button class="btn cal-title" id="calTitle" aria-haspopup="dialog">Tháng —</button>
+            <select class="stats-month-native" id="calTitle" aria-label="Chọn tháng và năm"></select>
             <button class="icon-btn" id="calNext" aria-label="Tháng sau"><span data-icon="chevron-right"></span></button>
           </div>
         </div>
@@ -1134,7 +1134,11 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <div id="statsCharts">
           <div class="charts-grid">
             <div class="panel" style="grid-column:1/-1;">
-              <div class="panel-header"><div class="panel-title" data-i18n="stats.trend">Xu hướng chi tiêu</div></div>
+              <div class="panel-header stats-trend-header">
+                <div class="panel-title" data-i18n="stats.trend">Xu hướng chi tiêu</div>
+                <div class="seg-toggle trend-segments" role="group" aria-label="Nhóm xu hướng"></div>
+              </div>
+              <p class="stats-trend-period qrx-note"></p>
               <div class="chart-wrap" style="height:280px;"><canvas id="chartStatsTrend"></canvas></div>
             </div>
             <div class="panel">
@@ -1848,6 +1852,12 @@ function switchView(name){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===name));
   const titles={envelopes:'Sổ phong bì',settle:'Quyết toán',budget:'Hạn mức',menu:'Menu'};
   document.getElementById('topbarTitle').textContent = titles[name] || t(VIEW_TITLE_KEYS[name]||'nav.dashboard');
+  const menuBrand=document.querySelector('.topbar-menu-brand');
+  menuBrand.hidden=name!=='menu';
+  document.getElementById('topbarTitle').hidden=name==='menu';
+  if(name==='menu'&&!menuBrand.firstChild){
+    menuBrand.append(...[...document.querySelector('.sidebar-brand').children].map(node=>node.cloneNode(true)));
+  }
   closeMobileSidebar();
   renderCurrentView(true);
   if(showBackup) document.querySelector('#settingsNav [data-panel="backup"]').click();
@@ -2082,10 +2092,15 @@ function statusBadgeHTML(exp){
   const m = map[s];
   return `<span class="status-badge ${m.cls}">${iconSVG(m.icon,11)}${m.label}</span>`;
 }
+function expensePaymentButton(exp){
+  const label=exp.paid?'Đánh dấu chưa trả':'Đánh dấu đã trả';
+  return `<button type="button" class="exp-check exp-pay-action ${exp.paid?'checked':''}" data-action="toggle-paid" data-id="${escapeHTML(exp.id)}" aria-label="${label}: ${escapeHTML(exp.name)}">${label}</button>`;
+}
 function expenseCardHTML(exp){
   const cat = catById(exp.categoryId);
   const wal = walById(exp.walletId);
   const payment = pmById(exp.paymentMethodId);
+  const dueTag=dueSoonTagHTML(exp);
   return `<div class="expense-card ${exp.paid?'paid':''}" data-id="${exp.id}">
     <div class="row-top">
       <div class="cat-pill">
@@ -2095,20 +2110,15 @@ function expenseCardHTML(exp){
           <div class="exp-cat">${escapeHTML(cat.name)}</div>
         </div>
       </div>
-      <button class="exp-check ${exp.paid?'checked':''}" data-action="toggle-paid" data-id="${exp.id}" aria-pressed="${!!exp.paid}" aria-label="Đánh dấu thanh toán cho ${escapeHTML(exp.name)}">${exp.paid?iconSVG('check',15):''}</button>
+      ${expensePaymentButton(exp)}
     </div>
     <div class="exp-amount">${formatCurrency(exp.amount)}</div>
     <div class="exp-meta">
-      ${statusBadgeHTML(exp)}
-      <span class="dot-sep"></span>
-      <span title="Ngày tạo">${iconSVG('calendar',12)} Tạo ${formatDateShort(exp.createdDate)}</span>
-      <span class="dot-sep"></span>
-      <span title="Hạn thanh toán">Hạn ${formatDateShort(exp.dueDate)}</span>
-      <span class="dot-sep"></span>
-      <span>${wal.icon} ${escapeHTML(wal.name)}</span>
-      <span class="dot-sep"></span>
-      <span>${iconSVG('banknote',12)} ${escapeHTML(payment.name)}</span>
-      ${dueSoonTagHTML(exp)}
+      <div class="exp-meta-line">${statusBadgeHTML(exp)}
+        <span class="dot-sep" aria-hidden="true"></span><span>Ngày ghi ${formatDateShort(exp.createdDate)}</span>
+      </div>
+      ${exp.dueDate&&!exp.paid?`<div class="exp-meta-line">${dueTag}${dueTag?'<span class="dot-sep" aria-hidden="true"></span>':''}<span>Hạn ${formatDateShort(exp.dueDate)}</span></div>`:''}
+      <div class="exp-meta-line exp-meta-details"><span>${wal.icon} ${escapeHTML(wal.name)}</span><span class="dot-sep" aria-hidden="true"></span><span>${iconSVG('banknote',12)} ${escapeHTML(payment.name)}</span></div>
     </div>
     <div class="exp-actions">
       <button class="btn btn-sm" data-action="edit" data-id="${exp.id}">${iconSVG('edit',13)} ${t('action.edit')}</button>
@@ -2119,7 +2129,7 @@ function expenseCardHTML(exp){
 function expenseTableRowHTML(exp){
   const cat = catById(exp.categoryId), wal = walById(exp.walletId);
   return `<tr data-id="${exp.id}">
-    <td><button class="exp-check ${exp.paid?'checked':''}" style="width:22px;height:22px;" data-action="toggle-paid" data-id="${exp.id}" aria-pressed="${!!exp.paid}" aria-label="Đánh dấu thanh toán cho ${escapeHTML(exp.name)}">${exp.paid?iconSVG('check',12):''}</button></td>
+    <td>${expensePaymentButton(exp)}</td>
     <td><div style="font-weight:700;">${escapeHTML(exp.name)}</div><div style="font-size:11px;color:var(--text-secondary);">${escapeHTML(exp.notes||'')}</div></td>
     <td>${cat.icon} ${escapeHTML(cat.name)}</td>
     <td class="amount">${formatCurrency(exp.amount)}</td>
@@ -2238,16 +2248,7 @@ function renderListView(status, resetPage){
         <th></th><th>${t('table.name')}</th><th>${t('table.category')}</th><th>${t('table.amount')}</th>
         <th>${t('table.due')}</th><th>${t('table.status')}</th><th>${t('table.wallet')}</th><th></th>
       </tr></thead><tbody>${list.map(expenseTableRowHTML).join('')}</tbody></table>${list.length===0?emptyStateHTML():''}${loadMoreHTML}</div>`;
-  if(!section.querySelector('.expense-list-content')){
-    section.innerHTML = '<div class="mobile-expense-search"><input type="search" aria-label="Tìm khoản chi" placeholder="Tìm theo tên hoặc ghi chú"></div><div class="expense-list-content"></div>';
-    section.querySelector('input').addEventListener('input',event=>{
-      STATE.ui.search = event.target.value;
-      globalSearchInput.value = STATE.ui.search;
-      renderListView(status,true);
-    });
-  }
-  const search = section.querySelector('.mobile-expense-search input');
-  if(search.value!==STATE.ui.search) search.value = STATE.ui.search;
+  if(!section.querySelector('.expense-list-content')) section.innerHTML='<div class="expense-list-content"></div>';
   const results = section.querySelector('.expense-list-content');
   results.innerHTML = listToolbarHTML(status) + ((STATE.ui.search.trim() || STATE.ui.filters.category!=='all') && !fullList.length
     ? '<p class="mobile-expense-empty" role="status">Không tìm thấy khoản chi phù hợp.</p>' : bodyHTML);
@@ -2688,6 +2689,17 @@ function shortHistoryAmount(amount){
   const millions=amount>=1e6;
   return new Intl.NumberFormat('vi-VN',{maximumFractionDigits:millions && amount<1e8?1:0}).format(amount/(millions?1e6:1e3))+(millions?'tr':'k');
 }
+function monthSelectOptions(selected, dates){
+  const now=todayISO().slice(0,7);
+  const reference=parseISO(now+'-01');
+  const nearby=Array.from({length:14},(_,i)=>dateISO(new Date(reference.getFullYear(),reference.getMonth()+1-i,1)).slice(0,7));
+  return [...new Set([selected,...nearby,...dates.map(value=>String(value||'').slice(0,7))])]
+    .filter(value=>/^\d{4}-(0[1-9]|1[0-2])$/.test(value)).sort().reverse()
+    .map(value=>{
+      const label='Tháng '+Number(value.slice(5))+'/'+value.slice(0,4);
+      return '<option value="'+value+'"'+(value===selected?' selected':'')+'>'+label+'</option>';
+    }).join('');
+}
 function statsMonthExpenses(){
   const month=dateISO(STATE.ui.calDate).slice(0,7);
   return STATE.expenses.filter(exp=>(exp.createdDate||'').startsWith(month));
@@ -2730,9 +2742,7 @@ function renderHistory(){
   const first=new Date(cur.getFullYear(),cur.getMonth(),1);
   const days=new Date(cur.getFullYear(),cur.getMonth()+1,0).getDate();
   const today=todayISO();
-  const monthButton=document.getElementById('calTitle');
-  monthButton.textContent='Tháng '+(cur.getMonth()+1)+'/'+cur.getFullYear();
-  monthButton.setAttribute('aria-label',monthButton.textContent+' · Chọn tháng và năm');
+  document.getElementById('calTitle').innerHTML=monthSelectOptions(month,STATE.expenses.map(e=>e.createdDate));
   let html=dowNames().map(day=>'<div class="cal-dow">'+day+'</div>').join('');
   html+='<div class="cal-cell other-month" aria-hidden="true"></div>'.repeat(first.getDay());
   for(let day=1;day<=days;day++){
@@ -2758,6 +2768,7 @@ document.getElementById('calGrid').addEventListener('click',event=>{
   if(!day) return;
   STATE.ui.historyDay=STATE.ui.historyDay===day?null:day;
   renderHistory();
+  if(statsTrendRange==='day') renderStatsTrend();
   document.querySelector('#calGrid [data-date="'+day+'"]').focus({preventScroll:true});
 });
 function changeHistoryMonth(offset){
@@ -2768,40 +2779,88 @@ function changeHistoryMonth(offset){
 }
 document.getElementById('calPrev').onclick=()=>changeHistoryMonth(-1);
 document.getElementById('calNext').onclick=()=>changeHistoryMonth(1);
-document.getElementById('calTitle').onclick=()=>{
-  const dialog=document.getElementById('statsMonthDialog');
-  document.getElementById('statsMonthInput').value=STATE.ui.calDate.getMonth()+1;
-  document.getElementById('statsYearInput').value=STATE.ui.calDate.getFullYear();
-  dialog.showModal();
+document.getElementById('calTitle').onchange=event=>{
+  const [year,month]=event.target.value.split('-').map(Number);
+  STATE.ui.calDate=new Date(year,month-1,1);
+  STATE.ui.historyDay=null;
+  renderStatistics();
 };
 </script>
 <script>
 /* ============================================================
    MODULE 30 — STATISTICS VIEW
    ============================================================ */
-function renderStats(){
-  const inRange=statsMonthExpenses();
-  const c=chartColors();
+let statsTrendRange='week';
+function renderStatsTrend(){
   const cur=STATE.ui.calDate;
-  const days=new Date(cur.getFullYear(),cur.getMonth()+1,0).getDate();
-  const keys=Array.from({length:days},(_,i)=>dateISO(new Date(cur.getFullYear(),cur.getMonth(),i+1)));
-  const groups=Object.fromEntries(keys.map(day=>[day,0]));
-  for(const exp of inRange){
-    if(Object.hasOwn(groups,exp.createdDate)) groups[exp.createdDate]+=Number(exp.amount)||0;
+  const year=cur.getFullYear(), month=cur.getMonth();
+  const years=new Set(STATE.expenses.map(exp=>exp.createdDate?.slice(0,4)).filter(value=>/^\d{4}$/.test(value)));
+  const ranges=years.size>=2 ? [['day','Ngày'],['week','Tuần'],['month','Tháng'],['year','Năm']] : [['week','Tuần'],['month','Tháng'],['year','Năm']];
+  if(!ranges.some(([id])=>id===statsTrendRange)) statsTrendRange='week';
+  const segments=document.querySelector('.trend-segments');
+  segments.innerHTML=ranges.map(([id,label])=>`<button type="button" data-range="${id}" class="${id===statsTrendRange?'active':''}" aria-pressed="${id===statsTrendRange}">${label}</button>`).join('');
+  const start=new Date(year,month,1), end=new Date(year,month+1,0);
+  const periods=[];
+  const shortDate=date=>date.getDate()+'/'+(date.getMonth()+1);
+  let caption='Theo ngày trong tháng '+(month+1)+'/'+year;
+  if(statsTrendRange==='year'){
+    for(let i=0;i<12;i++) periods.push({start:new Date(year,i,1),end:new Date(year,i+1,0),label:'T'+(i+1)});
+    caption='Theo tháng trong năm '+year;
+  }else if(statsTrendRange==='month'){
+    for(let day=1;day<=end.getDate();){
+      const mondayOffset=(new Date(year,month,day).getDay()+6)%7;
+      const last=Math.min(end.getDate(),day+6-mondayOffset);
+      periods.push({start:new Date(year,month,day),end:new Date(year,month,last),label:day+'–'+last+'/'+(month+1)});
+      day=last+1;
+    }
+    caption='Theo tuần trong tháng '+(month+1)+'/'+year;
+  }else{
+    let first=1,last=end.getDate();
+    if(statsTrendRange==='day'){
+      const anchor=STATE.ui.historyDay ? parseISO(STATE.ui.historyDay) :
+        todayISO().slice(0,7)===dateISO(start).slice(0,7) ? parseISO(todayISO()) : start;
+      const monday=anchor.getDate()-(anchor.getDay()+6)%7;
+      first=Math.max(1,monday);
+      last=Math.min(end.getDate(),monday+6);
+      caption='Theo ngày · '+first+'–'+last+'/'+(month+1)+'/'+year;
+    }
+    for(let day=first;day<=last;day++){
+      const date=new Date(year,month,day);
+      periods.push({start:date,end:date,label:shortDate(date)});
+    }
   }
+  document.querySelector('.stats-trend-period').textContent=caption;
+  const totals=periods.map(period=>{
+    const from=dateISO(period.start), to=dateISO(period.end);
+    return STATE.expenses.reduce((sum,exp)=>exp.createdDate>=from && exp.createdDate<=to ? sum+(Number(exp.amount)||0) : sum,0);
+  });
+  const c=chartColors();
   destroyChart('statsTrend');
   chartInstances.statsTrend = new Chart(document.getElementById('chartStatsTrend'), {
     type:'line',
-    data:{ labels: keys.map(k=>k.slice(8)+'/'+k.slice(5,7)), datasets:[{ data:keys.map(k=>groups[k]), borderColor:c.primary, backgroundColor:c.primary+'22', fill:true, tension:.35, pointRadius:3 }] },
+    data:{ labels: periods.map(period=>period.label), datasets:[{ data:totals, borderColor:c.primary, backgroundColor:c.primary+'22', fill:true, tension:.35, pointRadius:3 }] },
     options:{ plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:c.text,font:{size:10}},grid:{display:false}}, y:{ticks:{color:c.text,font:{size:10}},grid:{color:c.border}} }, maintainAspectRatio:false }
   });
 
+}
+document.querySelector('.trend-segments').onclick=event=>{
+  const range=event.target.closest('[data-range]')?.dataset.range;
+  if(!range || range===statsTrendRange) return;
+  statsTrendRange=range;
+  renderStatsTrend();
+  document.querySelector('.trend-segments [data-range="'+range+'"]').focus({preventScroll:true});
+};
+function renderStats(){
+  const inRange=statsMonthExpenses();
+  const c=chartColors();
+  renderStatsTrend();
   const byCat = {}; inRange.forEach(e=>{ byCat[e.categoryId]=(byCat[e.categoryId]||0)+Number(e.amount||0); });
   const catEntries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const categoryTotal=catEntries.reduce((sum,[,amount])=>sum+amount,0);
   destroyChart('statsCategory');
   chartInstances.statsCategory = new Chart(document.getElementById('chartStatsCategory'), {
     type:'doughnut',
-    data:{ labels:catEntries.map(([id])=>catById(id).name), datasets:[{ data:catEntries.map(([,v])=>v), backgroundColor:catEntries.map(([id])=>catById(id).color), borderWidth:0 }] },
+    data:{ labels:catEntries.map(([id,amount])=>catById(id).name+' · '+new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(categoryTotal?amount/categoryTotal*100:0)+'%'), datasets:[{ data:catEntries.map(([,v])=>v), backgroundColor:catEntries.map(([id])=>catById(id).color), borderWidth:0 }] },
     options:{ onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0], inRange); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
   });
 
@@ -3637,7 +3696,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
   .expense-card{padding:12px 14px}
   .expense-card .exp-actions{display:none}
   .expense-card .exp-amount{margin:2px 0}
-  .expense-card .exp-meta>:nth-child(6),.expense-card .exp-meta>:nth-child(7),.expense-card .exp-meta>:nth-child(8),.expense-card .exp-meta>:nth-child(9){display:none}
 }
 .qrx-large{display:none}
 .qrx-tab{display:none}
@@ -3755,7 +3813,7 @@ body{max-width:100vw;touch-action:manipulation}
 .envelope-import-row { flex-wrap: wrap; }
 .envelope-import-row .btn { min-height: 44px; }
 
-.mobile-filter-button,.mobile-expense-search{display:none}
+.mobile-filter-button{display:none}
 .mobile-expense-empty{padding:16px 0;color:var(--text-secondary)}
 .qrx-ov{animation:sheetBackdropIn .18s ease-out both}
 .qrx-sheet{animation:sheetEnter .22s cubic-bezier(.2,.72,.25,1);overscroll-behavior:contain}
@@ -3784,8 +3842,6 @@ body{max-width:100vw;touch-action:manipulation}
   .expense-check,.exp-check,.qd-pay{min-width:44px;min-height:44px}
   .qrx-sheet[role=dialog]{max-height:92dvh}
   .qrx-sheet.qb-sheet{max-height:90dvh}
-  .mobile-expense-search{display:block;margin-bottom:10px}
-  .mobile-expense-search input{width:100%;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text)}
   .expense-list-content .list-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-bottom:10px}
   .expense-list-content .list-toolbar .grow,.expense-list-content .list-toolbar .seg-toggle{display:none}
   .expense-list-content [data-action=export-list],.expense-list-content [data-action=add-expense]{display:none}
@@ -4069,17 +4125,6 @@ const tb=document.createElement('button'); tb.type='button'; tb.id='qrxTopBtn'; 
 tb.title='Quét QR thanh toán'; tb.setAttribute('aria-label','Quét QR thanh toán'); tb.innerHTML=ICON; tb.onclick=openScan;
 if(qa) qa.parentNode.insertBefore(tb,document.getElementById('headerSearchBtn')); else document.body.appendChild(tb);
 
-function monthSelectOptions(selected, dates){
-  const now=todayISO().slice(0,7);
-  const reference=parseISO(now+'-01');
-  const nearby=Array.from({length:14},(_,i)=>dateISO(new Date(reference.getFullYear(),reference.getMonth()+1-i,1)).slice(0,7));
-  return [...new Set([selected,...nearby,...dates.map(value=>String(value||'').slice(0,7))])]
-    .filter(value=>/^\d{4}-(0[1-9]|1[0-2])$/.test(value)).sort().reverse()
-    .map(value=>{
-      const label='Tháng '+Number(value.slice(5))+'/'+value.slice(0,4);
-      return '<option value="'+value+'"'+(value===selected?' selected':'')+'>'+label+'</option>';
-    }).join('');
-}
 function periodToolbar(id, selected, dates){
   return '<div class="layout-period"><label for="'+id+'">Kỳ đang xem</label><select class="filter-select" id="'+id+'">'
     +monthSelectOptions(selected,dates)+'</select></div>';
@@ -4428,10 +4473,10 @@ window.renderSettlementPage=function(){
 /* Lọc theo tháng trong danh sách + bấm biểu đồ danh mục để xem khoản chi */
 window.qrxMonthHTML=status=>{
   const m=STATE.ui.filters.month||'';
-  return `<select class="filter-select layout-month" aria-label="Chọn tháng" data-list="${status}">
+  return `<label class="expense-month-control"><span data-icon="calendar" aria-hidden="true">${iconSVG('calendar',17)}</span><select class="layout-month" aria-label="Chọn tháng" data-list="${status}">
     <option value="">Tất cả tháng</option>
     ${monthSelectOptions(m,STATE.expenses.map(e=>e.createdDate))}
-  </select>`;
+  </select><span aria-hidden="true">${iconSVG('chevron-down',15)}</span></label>`;
 };
 document.addEventListener('change',event=>{
   if(!event.target.matches('.layout-month'))return;
@@ -4512,7 +4557,7 @@ window.renderMenuPage=function(){
     +(sub?'<small>'+sub+'</small>':'')+'<i class="qm-c" aria-hidden="true">›</i></button>';
   const act=(id,label,danger=false)=>'<button type="button" class="qm-r'+(danger?' qm-danger':'')+'" data-act="'+id+'"><span>'+label+'</span>'
     +(danger?'':'<i class="qm-c" aria-hidden="true">›</i>')+'</button>';
-  el.innerHTML='<div class="qm-g">'+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+'</div>'
+  el.innerHTML='<h1 class="qm-page-title">Menu</h1><div class="qm-g">'+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+'</div>'
     +'<div class="qm-g">'+go('settings','Cài đặt','Danh mục, ví, sao lưu')+'</div>'
     +'<div class="qm-g"><button type="button" class="qm-r" id="qmTheme" role="switch" aria-checked="'+dark+'"><span>Chế độ tối</span><span class="qm-sw'+(dark?' on':'')+'" aria-hidden="true"></span></button>'
       +act('editNameBtn','Đổi tên hiển thị')+act('passwordManageBtn','Mật khẩu đăng nhập')+'</div>'
@@ -4527,34 +4572,9 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=57"></script>
-<link rel="stylesheet" href="./layout.css?v=57">
-<script src="./layout.js?v=57"></script>
-<script src="./voice-expense.js?v=57"></script>
-<dialog id="statsMonthDialog" class="envelope-dialog stats-month-sheet" aria-labelledby="statsMonthHeading">
-  <form id="statsMonthForm">
-    <h2 id="statsMonthHeading">Chọn tháng</h2>
-    <div class="stats-month-fields">
-      <label>Tháng<select id="statsMonthInput" required></select></label>
-      <label>Năm<input id="statsYearInput" type="number" inputmode="numeric" min="1900" max="9999" required></label>
-    </div>
-    <footer><button class="btn" type="button" id="statsMonthClose">Đóng</button><button class="btn" type="button" id="statsMonthCurrent">Tháng này</button><button class="btn btn-primary">Xem tháng</button></footer>
-  </form>
-</dialog>
-<script>
-const monthDialog=document.getElementById('statsMonthDialog');
-document.getElementById('statsMonthInput').replaceChildren(...Array.from({length:12},(_,i)=>new Option('Tháng '+(i+1),i+1)));
-document.getElementById('statsMonthClose').onclick=()=>monthDialog.close();
-document.getElementById('statsMonthCurrent').onclick=()=>{monthDialog.close();changeHistoryMonth(0);};
-document.getElementById('statsMonthForm').onsubmit=event=>{
-  event.preventDefault();
-  const month=Number(document.getElementById('statsMonthInput').value);
-  const year=Number(document.getElementById('statsYearInput').value);
-  STATE.ui.calDate=new Date(year,month-1,1);
-  STATE.ui.historyDay=null;
-  monthDialog.close();
-  renderStatistics();
-};
-</script>
+<script src="./envelopes.js?v=58"></script>
+<link rel="stylesheet" href="./layout.css?v=58">
+<script src="./layout.js?v=58"></script>
+<script src="./voice-expense.js?v=58"></script>
 </body>
 </html>
