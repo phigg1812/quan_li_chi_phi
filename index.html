@@ -1144,9 +1144,10 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
               </div>
               <div class="chart-wrap" style="height:280px;"><canvas id="chartStatsTrend"></canvas></div>
             </div>
-            <div class="panel">
+            <div class="panel stats-category-panel">
               <div class="panel-header"><div class="panel-title" data-i18n="chart.category">Chi theo danh mục</div></div>
               <div class="chart-wrap stats-category-chart"><canvas id="chartStatsCategory"></canvas></div>
+              <div id="statsCategoryLegend" class="stats-category-legend" role="group" aria-label="Danh mục chi tiêu"></div>
             </div>
             <div class="panel">
               <div class="panel-header"><div class="panel-title" data-i18n="stats.wallet">Chi theo ví</div></div>
@@ -2881,6 +2882,29 @@ document.querySelector('.trend-segments').onclick=event=>{
   renderStatsTrend();
   document.querySelector('.trend-segments [data-range="'+range+'"]').focus({preventScroll:true});
 };
+function balancedCategoryRotation(values){
+  const positive=values.filter(amount=>amount>0);
+  if(positive.length<2) return 0;
+  const total=positive.reduce((sum,amount)=>sum+amount,0);
+  let position=-90;
+  const angles=positive.map(amount=>{
+    const arc=amount/total*360;
+    position+=arc;
+    return position-arc/2;
+  });
+  const normalize=angle=>((angle+180)%360+360)%360-180;
+  const boundaries=angles.flatMap(angle=>[normalize(90-angle),normalize(270-angle)]).sort((a,b)=>a-b);
+  const candidates=[0,...boundaries.map((edge,index)=>normalize((edge+(boundaries[index+1]??boundaries[0]+360))/2))];
+  let best=0,leastImbalance=Infinity;
+  for(const rotation of candidates){
+    const imbalance=Math.abs(angles.reduce((sum,angle)=>sum+(Math.cos((angle+rotation)*Math.PI/180)>=0?1:-1),0));
+    if(imbalance<leastImbalance || (imbalance===leastImbalance&&Math.abs(rotation)<Math.abs(best))){
+      best=rotation;
+      leastImbalance=imbalance;
+    }
+  }
+  return best;
+}
 const categoryPercentLeaders={
   id:'categoryPercentLeaders',
   afterDatasetsDraw(chart){
@@ -2898,6 +2922,7 @@ const categoryPercentLeaders={
       sides[direction===1?1:0].push({
         x:arc.x+Math.cos(angle)*arc.outerRadius,y:arc.y+Math.sin(angle)*arc.outerRadius,
         elbow:arc.x+direction*(arc.outerRadius+7),direction,
+        inset:5+(index*7)%15,
         text:new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(values[index]/total*100)+'%'
       });
     });
@@ -2914,7 +2939,7 @@ const categoryPercentLeaders={
         const label=side[i];
         label.labelY=Math.min(label.labelY,i===side.length-1?bottom:side[i+1].labelY-gap);
         const width=ctx.measureText(label.text).width+10;
-        const x=label.direction===1?chart.width-width-5:5;
+        const x=label.direction===1?chart.width-width-label.inset:label.inset;
         ctx.strokeStyle=colors.text;
         ctx.beginPath();
         ctx.moveTo(label.x,label.y);
@@ -2939,13 +2964,51 @@ function renderStats(){
   const byCat = {}; inRange.forEach(e=>{ byCat[e.categoryId]=(byCat[e.categoryId]||0)+Number(e.amount||0); });
   const catEntries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
   const categoryTotal=catEntries.reduce((sum,[,amount])=>sum+amount,0);
+  const categoryValues=catEntries.map(([,amount])=>amount);
+  const categoryLabels=catEntries.map(([id,amount])=>({
+    name:catById(id).name,
+    color:catById(id).color,
+    share:new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(categoryTotal?amount/categoryTotal*100:0)+'%'
+  }));
   destroyChart('statsCategory');
-  chartInstances.statsCategory = new Chart(document.getElementById('chartStatsCategory'), {
+  const categoryChart=new Chart(document.getElementById('chartStatsCategory'), {
     type:'doughnut',
     plugins:[categoryPercentLeaders],
-    data:{ labels:catEntries.map(([id,amount])=>catById(id).name+' · '+new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(categoryTotal?amount/categoryTotal*100:0)+'%'), datasets:[{ data:catEntries.map(([,v])=>v), backgroundColor:catEntries.map(([id])=>catById(id).color), borderWidth:0 }] },
-    options:{ layout:{padding:{left:66,right:66,top:12,bottom:8}}, onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0], inRange); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
+    data:{labels:categoryLabels.map(label=>label.name+' · '+label.share),datasets:[{data:categoryValues,backgroundColor:categoryLabels.map(label=>label.color),borderWidth:0}]},
+    options:{
+      rotation:balancedCategoryRotation(categoryValues),
+      layout:{padding:{left:70,right:70,top:12,bottom:12}},
+      onClick:(event,items)=>{if(items.length&&window.qrxCatList) window.qrxCatList(catEntries[items[0].index][0],inRange);},
+      onHover:(event,items)=>{if(event.native?.target) event.native.target.style.cursor=items.length?'pointer':'default';},
+      cutout:'62%',
+      plugins:{legend:{display:false}},
+      maintainAspectRatio:false
+    }
   });
+  chartInstances.statsCategory=categoryChart;
+  const legend=document.getElementById('statsCategoryLegend');
+  legend.replaceChildren();
+  for(const [index,label] of categoryLabels.entries()){
+    const button=document.createElement('button');
+    button.type='button';
+    button.setAttribute('aria-pressed','true');
+    const swatch=document.createElement('span');
+    swatch.className='stats-category-swatch';
+    swatch.style.backgroundColor=label.color;
+    swatch.setAttribute('aria-hidden','true');
+    const name=document.createElement('span');
+    name.textContent=label.name;
+    const percent=document.createElement('strong');
+    percent.textContent=label.share;
+    button.append(swatch,name,percent);
+    button.onclick=()=>{
+      categoryChart.toggleDataVisibility(index);
+      button.setAttribute('aria-pressed',String(categoryChart.getDataVisibility(index)));
+      categoryChart.options.rotation=balancedCategoryRotation(categoryValues.filter((_,i)=>categoryChart.getDataVisibility(i)));
+      categoryChart.update();
+    };
+    legend.append(button);
+  }
 
   const byWal = {}; inRange.forEach(e=>{ byWal[e.walletId]=(byWal[e.walletId]||0)+Number(e.amount||0); });
   const walEntries = Object.entries(byWal).sort((a,b)=>b[1]-a[1]);
@@ -4722,10 +4785,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=68"></script>
-<link rel="stylesheet" href="./layout.css?v=68">
-<script src="./layout.js?v=68"></script>
-<script src="./voice-expense.js?v=68"></script>
-<script src="./kpi.js?v=68"></script>
+<script src="./envelopes.js?v=69"></script>
+<link rel="stylesheet" href="./layout.css?v=69">
+<script src="./layout.js?v=69"></script>
+<script src="./voice-expense.js?v=69"></script>
+<script src="./kpi.js?v=69"></script>
 </body>
 </html>
