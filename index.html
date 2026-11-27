@@ -1842,11 +1842,17 @@ const VIEW_TITLE_KEYS = {
   dashboard:'nav.dashboard', pending:'nav.pending',
   stats:'nav.stats', settings:'nav.settings', backup:'nav.backup'
 };
-function switchView(name){
+function switchView(name,{keepSearchOpen=false}={}){
   const showBackup = name==='backup';
   if(showBackup)name='settings';
   const previousView = STATE.ui.currentView;
+  if(previousView!==name && !keepSearchOpen) setHeaderSearchOpen(false);
   STATE.ui.currentView = name;
+  const quickAdd=document.getElementById('quickAddBtn');
+  const addLabel=name==='envelopes'?'Ghi phong bì':'Thêm khoản chi';
+  quickAdd.setAttribute('aria-label',addLabel);
+  quickAdd.title=addLabel+' (N)';
+  quickAdd.disabled=name==='envelopes' && Boolean(STATE.envelopesUnavailable);
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===name));
@@ -3325,7 +3331,14 @@ document.getElementById('menuBtn').addEventListener('click', ()=>{
 });
 document.getElementById('sidebarOverlay').addEventListener('click', closeMobileSidebar);
 document.getElementById('themeToggleBtn').addEventListener('click', ()=>setTheme(STATE.settings.theme==='dark'?'light':'dark'));
-document.getElementById('quickAddBtn').addEventListener('click', ()=>openExpenseDrawer());
+function openQuickAdd(){
+  if(STATE.ui.currentView==='envelopes'){
+    if(!STATE.envelopesUnavailable) openEnvelopeForm();
+    return;
+  }
+  openExpenseDrawer();
+}
+document.getElementById('quickAddBtn').addEventListener('click',openQuickAdd);
 document.getElementById('fabAdd').addEventListener('click', ()=>openExpenseDrawer());
 document.getElementById('heroAddBtn').addEventListener('click', ()=>openExpenseDrawer());
 document.getElementById('dashViewAllBtn').addEventListener('click', toggleDashViewAll);
@@ -3344,12 +3357,29 @@ document.addEventListener('input', e=>{
   }
 },true);
 const globalSearchInput = document.getElementById('globalSearch');
-globalSearchInput.addEventListener('input', debounce((e)=>{
-  STATE.ui.search = e.target.value;
-  const listViews = ['pending','paid'];
-  if(listViews.includes(STATE.ui.currentView)){ renderListView(STATE.ui.currentView, true); }
-  else if(e.target.value.trim()){ switchView('pending'); }
-}, 200));
+const headerSearchBox = document.getElementById('headerSearchBox');
+const headerSearchButton = document.getElementById('headerSearchBtn');
+function setHeaderSearchOpen(open){
+  headerSearchBox.hidden=!open;
+  headerSearchButton.setAttribute('aria-expanded',String(open));
+  if(open){
+    globalSearchInput.focus({preventScroll:true});
+    headerSearchBox.scrollIntoView({block:'nearest'});
+  }
+}
+headerSearchButton.onclick=()=>setHeaderSearchOpen(headerSearchBox.hidden);
+headerSearchBox.addEventListener('keydown',event=>{
+  if(event.key!=='Escape') return;
+  event.stopPropagation();
+  setHeaderSearchOpen(false);
+  headerSearchButton.focus();
+});
+globalSearchInput.addEventListener('input',debounce(()=>{
+  if(headerSearchBox.hidden) return;
+  STATE.ui.search=globalSearchInput.value;
+  if(['pending','paid'].includes(STATE.ui.currentView)) renderListView(STATE.ui.currentView,true);
+  else if(globalSearchInput.value.trim()) switchView('pending',{keepSearchOpen:true});
+},200));
 
 /* Keyboard shortcuts: N, Ctrl+F, Ctrl+K, Esc, Delete */
 document.addEventListener('keydown',(e)=>{
@@ -3374,7 +3404,7 @@ document.addEventListener('keydown',(e)=>{
     return;
   }
   if(!typing && (e.key==='n' || e.key==='N')){
-    e.preventDefault(); openExpenseDrawer();
+    e.preventDefault(); openQuickAdd();
   }
 });
 
@@ -4572,9 +4602,9 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=58"></script>
-<link rel="stylesheet" href="./layout.css?v=58">
-<script src="./layout.js?v=58"></script>
-<script src="./voice-expense.js?v=58"></script>
+<script src="./envelopes.js?v=59"></script>
+<link rel="stylesheet" href="./layout.css?v=59">
+<script src="./layout.js?v=59"></script>
+<script src="./voice-expense.js?v=59"></script>
 </body>
 </html>

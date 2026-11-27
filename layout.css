@@ -95,10 +95,6 @@
   .topbar:has(~ .main-content #view-menu.active) #quickAddBtn{display:none}
   #view-menu.active{width:100%;min-height:calc(100dvh - 150px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
 }
-@media(max-width:820px){
-  #view-envelopes .envelope-header h1{display:none}
-  #view-envelopes .envelope-header{justify-content:flex-end}
-}
 
 
 /* Shared surfaces */
@@ -166,17 +162,9 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .envelope-filter-options{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .envelope-filter-options .envelope-groups{width:100%;margin:6px 0 0}
 #envelopeFilterButton{display:none;white-space:nowrap}
-#view-envelopes .envelope-header{margin-block:12px;justify-content:space-between;flex-wrap:wrap}
-#view-envelopes .envelope-totals{flex:1 1 220px;display:flex;gap:12px;margin:0}
-#view-envelopes .envelope-totals>div{flex:1;padding:8px 10px;border:0;background:transparent}
-#view-envelopes .envelope-totals strong{font-size:16px}
-.topbar:has(~ .main-content #view-envelopes.active) #quickAddBtn{display:none}
 @media(max-width:820px){
   #envelopeFilterButton{display:inline-flex;min-height:44px}
   #view-envelopes .envelope-filter-options{display:none}
-  #view-envelopes .envelope-header{gap:6px}
-  #view-envelopes .envelope-totals{flex-basis:160px;gap:4px}
-  #view-envelopes .envelope-totals>div{padding-inline:4px}
   .envelope-filter-sheet .envelope-filter-options{display:grid;gap:10px}
   .envelope-filter-sheet .filter-select{width:100%;min-height:44px;font-size:16px}
   .envelope-filter-sheet .envelope-groups{margin-block:4px}
@@ -292,4 +280,15 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
   .expense-card .exp-meta-details{display:none}
   .trend-segments button{min-height:38px}
   .topbar-menu-brand{font-size:clamp(15px,4.4vw,18px)}
+}
+
+#view-envelopes .envelope-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin:0 0 12px;background:var(--card);border:var(--surface-border);border-radius:16px}
+#view-envelopes .envelope-totals>div{padding:9px 12px;border:0;background:transparent;border-radius:0}
+#view-envelopes .envelope-totals>div+div{border-inline-start:1px solid var(--border)}
+#view-envelopes .envelope-totals strong{font-size:16px}
+.envelope-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(max-width:820px){
+  #view-envelopes .envelope-status{display:flex;width:100%;margin:0}
+  #view-envelopes .envelope-status button{flex:1;min-width:0;padding-inline:6px}
+  #view-envelopes .envelope-list{margin-top:12px}
 }

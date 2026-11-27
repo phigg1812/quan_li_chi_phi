@@ -1,23 +1,4 @@
 (() => {
-  const searchButton = document.getElementById('headerSearchBtn');
-  const searchBox = globalSearchInput.closest('.search-box');
-  const toggleSearch = open => {
-    searchBox.hidden = !open;
-    searchButton.setAttribute('aria-expanded', String(open));
-    if(open){
-      globalSearchInput.focus({preventScroll:true});
-      searchBox.scrollIntoView({block:'nearest'});
-    }
-  };
-  searchButton.onclick = () => toggleSearch(searchButton.getAttribute('aria-expanded') !== 'true');
-  searchBox.addEventListener('keydown', event => {
-    if(event.key==='Escape'){
-      event.stopPropagation();
-      toggleSearch(false);
-      searchButton.focus();
-    }
-  });
-
   for(const id of ['fAmount','fPaymentMethod']){
     document.getElementById(id).addEventListener('input',event=>event.target.removeAttribute('aria-invalid'));
   }

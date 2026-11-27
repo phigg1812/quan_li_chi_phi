@@ -9,6 +9,7 @@ function renderEnvelopeView(){
   const section = document.getElementById('view-envelopes');
   if(!section.querySelector('.envelope-list')){
     section.innerHTML = `
+      <div class="envelope-totals" aria-label="Tổng tiền phong bì"></div>
       <div class="envelope-filters">
         <div class="envelope-search-row">
           <input class="filter-select" type="search" aria-label="Tìm phong bì" placeholder="Tên, sự kiện hoặc ghi chú">
@@ -31,20 +32,15 @@ function renderEnvelopeView(){
           </fieldset>
         </div>
       </div>
-      <div class="envelope-header">
-        <div class="envelope-totals" aria-label="Tổng tiền phong bì"></div>
-        <button type="button" class="btn btn-primary" id="envelopeAdd">+ Ghi phong bì</button>
-      </div>
       <div class="seg-toggle envelope-status" role="group" aria-label="Trạng thái đi lại">
         <button type="button" data-status="open">Chờ đi lại</button>
         <button type="button" data-status="completed">Đã đi lại</button>
       </div>
-      <p class="envelope-result-count" role="status"></p>
+      <p class="envelope-result-count envelope-sr-only" role="status"></p>
       <div class="envelope-list"></div>`;
     const filterButton=section.querySelector('#envelopeFilterButton');
     const options=section.querySelector('.envelope-filter-options');
     filterButton.onclick=()=>openEnvelopeFilters(options,filterButton);
-    section.querySelector('#envelopeAdd').onclick = ()=>openEnvelopeForm();
     section.querySelector('input[type=search]').oninput = renderEnvelopeView;
     section.querySelector('.envelope-groups').onchange = ({target})=>{
       if(target.checked) selectedEnvelopeScopes.add(target.value);
@@ -66,7 +62,6 @@ function renderEnvelopeView(){
       renderEnvelopeView();
     };
   }
-  section.querySelector('#envelopeAdd').disabled = STATE.envelopesUnavailable;
   const entries = STATE.envelopes;
   const query = normalizeVietnamese(section.querySelector('input[type=search]').value.trim());
   const filterCount=selectedEnvelopeScopes.size+Number(envelopeFilter!=='all')+Number(envelopeSort!=='recent');
@@ -99,7 +94,7 @@ function renderEnvelopeView(){
   section.querySelector('.envelope-result-count').textContent = `${visible.length} khoản đang hiển thị`;
   const list = section.querySelector('.envelope-list');
   list.innerHTML = visible.map(envelopeCard).join('') ||
-    `<p class="envelope-empty" role="status">${STATE.envelopesUnavailable ? 'Chưa truy cập được Sổ phong bì. Cần cập nhật quy tắc Firestore.' : matching.length ? (envelopeStatus==='completed' ? 'Chưa có khoản đi lại.' : 'Đã xử lý hết các khoản trong nhóm này.') : entries.length ? 'Không tìm thấy phong bì phù hợp.' : 'Chưa có phong bì. Bấm “Ghi phong bì” để bắt đầu.'}</p>`;
+    `<p class="envelope-empty" role="status">${STATE.envelopesUnavailable ? 'Chưa truy cập được Sổ phong bì. Cần cập nhật quy tắc Firestore.' : matching.length ? (envelopeStatus==='completed' ? 'Chưa có khoản đi lại.' : 'Đã xử lý hết các khoản trong nhóm này.') : entries.length ? 'Không tìm thấy phong bì phù hợp.' : 'Chưa có phong bì. Bấm dấu + để ghi phong bì.'}</p>`;
   list.querySelectorAll('button').forEach(button=>{
     button.onclick = ()=>{
       const entry = entries.find(item=>item.id===button.closest('article').dataset.id);
@@ -345,7 +340,7 @@ function restoreEnvelopeScroll(anchor){
 function focusEnvelopeCard(id){
   const section = document.getElementById('view-envelopes');
   const card = [...section.querySelectorAll('.envelope-card')].find(item=>item.dataset.id===id);
-  (card?.querySelector('button') || section.querySelector('#envelopeAdd'))?.focus();
+  (card?.querySelector('button') || document.getElementById('quickAddBtn'))?.focus();
 }
 
 function envelopeImportRows(payload){
