@@ -4561,11 +4561,12 @@ window.qrxMonthHTML=status=>{
   </select><span aria-hidden="true">${iconSVG('chevron-down',15)}</span></label>`;
 };
 document.addEventListener('change',event=>{
-  if(!event.target.matches('.layout-month'))return;
-  STATE.ui.filters.month=event.target.value;
-  const status=event.target.dataset.list;
-  renderListView(status,true);
-  document.querySelector('#view-'+status+' .layout-month')?.focus({preventScroll:true});
+  const picker=event.target;
+  if(!picker.matches('.layout-month')) return;
+  STATE.ui.filters.month=picker.value;
+  // Release the native picker before replacing the list controls.
+  picker.blur();
+  renderListView(picker.dataset.list,true);
 });
 window.qrxCatList=function(catId,list){
   const cat=catById(catId), items=(list||STATE.expenses).filter(e=>e.categoryId===catId).sort((a,b)=>String(b.createdDate).localeCompare(String(a.createdDate)));
@@ -4654,9 +4655,9 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=61"></script>
-<link rel="stylesheet" href="./layout.css?v=61">
-<script src="./layout.js?v=61"></script>
-<script src="./voice-expense.js?v=61"></script>
+<script src="./envelopes.js?v=62"></script>
+<link rel="stylesheet" href="./layout.css?v=62">
+<script src="./layout.js?v=62"></script>
+<script src="./voice-expense.js?v=62"></script>
 </body>
 </html>
