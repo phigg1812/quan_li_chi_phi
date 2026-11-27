@@ -483,3 +483,9 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
   .qrx-sheet-grip{display:flow-root;min-height:18px;margin-top:-8px}
   .qrx-sheet-grip::before{margin-top:5px}
 }
+
+.kpi-editor h2:focus{outline:none}
+.kpi-delete-list{list-style:none;margin:12px 0 0;padding:0}
+.kpi-delete-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--border)}
+.kpi-delete-list li span{min-width:0;overflow-wrap:anywhere}
+.kpi-delete-list .btn{flex:none;min-height:44px;color:var(--danger)}

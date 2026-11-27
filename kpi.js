@@ -64,6 +64,7 @@
   }
   const compareTasks=(a,b)=>a.start.localeCompare(b.start)||(a.createdAt||0)-(b.createdAt||0)||a.id.localeCompare(b.id);
   const active=day=>state.tasks.filter(task=>task.start<=day && (!task.end || day<task.end)).sort(compareTasks);
+  const removable=day=>active(day).filter(task=>!task.end||task.end>move(day,1));
   const isDone=(day,id)=>state.ticks[day]?.has(id)===true;
   const count=day=>{const tasks=active(day);return {total:tasks.length,done:tasks.filter(task=>isDone(day,task.id)).length};};
   const percent=(n,d)=>d?Math.round(n/d*100):0;
@@ -148,7 +149,7 @@
       <section class="panel kpi-today"><div class="kpi-section-head"><h2>KPI Hôm nay</h2>
         <div class="kpi-task-actions">
           <button type="button" class="btn btn-primary" data-kpi-add aria-label="Thêm hạng mục">${iconSVG('plus',24)} Thêm</button>
-          <button type="button" class="btn" data-kpi-manage aria-label="Quản lý hạng mục">${iconSVG('settings',24)} Quản lý</button>
+          <button type="button" class="btn" data-kpi-delete aria-label="Xóa hạng mục" ${removable(date).length?'':'disabled'}>${iconSVG('trash-2',24)} Xóa</button>
         </div></div>
         <ol class="kpi-task-list" role="list">${orderedTasks.map(task=>{
           const complete=isDone(date,task.id);
@@ -163,22 +164,25 @@
       <section class="kpi-review"><h2>Nhìn lại</h2>${review(metrics)}</section>
     </div>`;
   }
-  function openEditor(manage=false){
+  function openEditor(deleting=false){
+    const date=today();
     const dialog=document.createElement('dialog');
     dialog.className='envelope-dialog kpi-editor';
     dialog.setAttribute('aria-labelledby','kpiEditorTitle');
-    dialog.innerHTML=manage?`<h2 id="kpiEditorTitle" tabindex="-1" autofocus>Quản lý hạng mục</h2>${active(today()).map(task=>`<label>${escapeHTML(taskName(task,today()))}<input autocomplete="off" maxlength="80" data-rename="${task.id}" value="${escapeHTML(taskName(task,today()))}"><button class="btn" type="button" data-archive="${task.id}">Ngừng theo dõi từ ngày mai</button></label>`).join('')}`:
+    dialog.innerHTML=deleting?`<h2 id="kpiEditorTitle" tabindex="-1" autofocus>Xóa hạng mục</h2>
+      <p class="qrx-note">Hạng mục sẽ ngừng theo dõi từ ngày KPI tiếp theo. Lịch sử được giữ nguyên.</p>
+      <ul class="kpi-delete-list">${removable(date).map(task=>{
+        const name=escapeHTML(taskName(task,date));
+        return `<li><span>${name}</span><button class="btn danger" type="button" data-archive="${task.id}" aria-label="Xóa hạng mục: ${name}">Xóa</button></li>`;
+      }).join('')}</ul>`:
       '<form><h2 id="kpiEditorTitle">Thêm hạng mục hằng ngày</h2><label>Tên hạng mục<input required autocomplete="off" maxlength="80" name="taskTitle"></label><footer><button class="btn" type="button" data-close>Hủy</button><button class="btn btn-primary">Thêm</button></footer></form>';
     const dismiss=bindNativeSheetDismiss(dialog);
-    if(!manage) dialog.querySelector('[data-close]').onclick=dismiss;
-    dialog.querySelectorAll('[data-rename]').forEach(input=>input.onchange=()=>{
-      const task=state.tasks.find(item=>item.id===input.dataset.rename);
-      const name=input.value.trim();
-      if(task&&name&&name!==taskName(task,today())) changeTask(task,{names:{...task.names,[today()]:name}});
-    });
+    if(!deleting) dialog.querySelector('[data-close]').onclick=dismiss;
     dialog.querySelectorAll('[data-archive]').forEach(button=>button.onclick=()=>{
-      const task=state.tasks.find(item=>item.id===button.dataset.archive);
-      if(task&&changeTask(task,{end:move(today(),1)})) dialog.close();
+      const day=today();
+      const task=removable(day).find(item=>item.id===button.dataset.archive);
+      if(!task){dismiss();return;}
+      if(changeTask(task,{end:move(day,1)})) dismiss();
     });
     const form=dialog.querySelector('form');
     if(form) form.onsubmit=event=>{
@@ -240,7 +244,7 @@
     if(!button) return;
     if(button.dataset.task) return toggleTask(button.dataset.task);
     if(button.hasAttribute('data-kpi-add')) return openEditor();
-    if(button.hasAttribute('data-kpi-manage')) return openEditor(true);
+    if(button.hasAttribute('data-kpi-delete')) return openEditor(true);
     if(button.dataset.day) selected=button.dataset.day;
     if(button.dataset.kpiMonth){month=new Date(month.getFullYear(),month.getMonth()+Number(button.dataset.kpiMonth),1);selected=null;}
     render();
