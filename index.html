@@ -2926,19 +2926,23 @@ const categoryPercentLeaders={
     const {ctx}=chart;
     const colors=chartColors();
     const cardColor=getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
+    const arcs=chart.getDatasetMeta(0).data;
+    if(arcs.some(arc=>Math.abs(arc.endAngle-arc.getProps(['endAngle'],true).endAngle)>.002)) return;
     const sides=[[],[]];
-    chart.getDatasetMeta(0).data.forEach((arc,index)=>{
+    const percent=new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1});
+    const clearance=9;
+    const boxHalfHeight=8;
+    const ringEdge=(radius,dy)=>Math.sqrt(Math.max(0,radius**2-dy**2));
+    arcs.forEach((arc,index)=>{
       if(!chart.getDataVisibility(index)||values[index]<=0||arc.circumference<=0) return;
       const angle=(arc.startAngle+arc.endAngle)/2;
-      const dx=Math.cos(angle), dy=Math.sin(angle);
+      const dx=Math.cos(angle),dy=Math.sin(angle);
       const direction=dx>=0?1:-1;
-      const lead=10+(index*5)%8;
       const radius=arc.outerRadius;
       sides[direction===1?1:0].push({
         x:arc.x+dx*radius,y:arc.y+dy*radius,
-        elbowX:arc.x+dx*(radius+lead),elbowY:arc.y+dy*(radius+lead),
-        idealY:arc.y+dy*(radius+lead+8),centerX:arc.x,centerY:arc.y,radius,direction,
-        text:new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(values[index]/total*100)+'%'
+        idealY:arc.y+dy*(radius+24),centerX:arc.x,centerY:arc.y,radius,direction,
+        extra:4+(index*5)%7,text:percent.format(values[index]/total*100)+'%'
       });
     });
     ctx.save();
@@ -2946,32 +2950,41 @@ const categoryPercentLeaders={
     ctx.textBaseline='middle';
     ctx.lineWidth=1;
     for(const side of sides){
-      side.sort((a,b)=>a.idealY-b.idealY);
+      side.sort((a,b)=>a.y-b.y);
       const top=10,bottom=chart.height-10;
       const gap=Math.min(24,(bottom-top)/Math.max(1,side.length-1));
       side.forEach((label,index)=>label.labelY=Math.max(top,index?side[index-1].labelY+gap:top,label.idealY));
       for(let i=side.length-1;i>=0;i--){
         const label=side[i];
         label.labelY=Math.min(label.labelY,i===side.length-1?bottom:side[i+1].labelY-gap);
+      }
+      // Every connector uses the same contour and preserves vertical order as it moves outward.
+      for(const label of side){
         const width=ctx.measureText(label.text).width+10;
-        const nearestY=Math.max(0,Math.abs(label.labelY-label.centerY)-8);
-        const ringEdge=Math.sqrt(Math.max(0,label.radius**2-nearestY**2));
-        const outward=Math.max(Math.abs(label.elbowX-label.centerX)+6,ringEdge+6);
-        const edge=label.centerX+label.direction*outward;
+        const nearestY=Math.max(0,Math.abs(label.labelY-label.centerY)-boxHalfHeight);
+        const edge=label.centerX+label.direction*(ringEdge(label.radius,nearestY)+clearance+label.extra);
         const preferredX=label.direction===1?edge:edge-width;
-        const x=Math.max(3,Math.min(chart.width-width-3,preferredX));
+        label.boxX=Math.max(3,Math.min(chart.width-width-3,preferredX));
+        label.boxWidth=width;
         ctx.strokeStyle=colors.text;
         ctx.beginPath();
         ctx.moveTo(label.x,label.y);
-        ctx.lineTo(label.elbowX,label.elbowY);
-        ctx.lineTo(label.direction===1?x:x+width,label.labelY);
+        for(let step=1;step<=16;step++){
+          const fraction=step/16;
+          const y=label.y+(label.labelY-label.y)*fraction;
+          const x=label.centerX+label.direction*(ringEdge(label.radius,y-label.centerY)+clearance*fraction);
+          ctx.lineTo(x,y);
+        }
+        ctx.lineTo(label.direction===1?label.boxX:label.boxX+width,label.labelY);
         ctx.stroke();
+      }
+      for(const label of side){
         ctx.fillStyle=cardColor;
-        ctx.fillRect(x,label.labelY-8,width,16);
+        ctx.fillRect(label.boxX,label.labelY-boxHalfHeight,label.boxWidth,16);
         ctx.strokeStyle=colors.border;
-        ctx.strokeRect(x,label.labelY-8,width,16);
+        ctx.strokeRect(label.boxX,label.labelY-boxHalfHeight,label.boxWidth,16);
         ctx.fillStyle=colors.text;
-        ctx.fillText(label.text,x+5,label.labelY);
+        ctx.fillText(label.text,label.boxX+5,label.labelY);
       }
     }
     ctx.restore();
@@ -2991,13 +3004,16 @@ function renderStats(){
     share:new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(categoryTotal?amount/categoryTotal*100:0)+'%'
   }));
   destroyChart('statsCategory');
-  const categoryChart=new Chart(document.getElementById('chartStatsCategory'), {
+  const categoryCanvas=document.getElementById('chartStatsCategory');
+  const visibleSides=Math.ceil(categoryValues.filter(amount=>amount>0).length/2);
+  categoryCanvas.parentElement.style.height=Math.max(250,visibleSides*24+20)+'px';
+  const categoryChart=new Chart(categoryCanvas, {
     type:'doughnut',
     plugins:[categoryPercentLeaders],
     data:{labels:categoryLabels.map(label=>label.name+' · '+label.share),datasets:[{data:categoryValues,backgroundColor:categoryLabels.map(label=>label.color),borderWidth:0}]},
     options:{
       rotation:balancedCategoryRotation(categoryValues),
-      layout:{padding:{left:63,right:63,top:30,bottom:30}},
+      layout:{padding:{left:70,right:70,top:30,bottom:30}},
       onClick:(event,items)=>{if(items.length&&window.qrxCatList) window.qrxCatList(catEntries[items[0].index][0],inRange);},
       onHover:(event,items)=>{if(event.native?.target) event.native.target.style.cursor=items.length?'pointer':'default';},
       cutout:'62%',
@@ -4805,10 +4821,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=72"></script>
-<link rel="stylesheet" href="./layout.css?v=72">
-<script src="./layout.js?v=72"></script>
-<script src="./voice-expense.js?v=72"></script>
-<script src="./kpi.js?v=72"></script>
+<script src="./envelopes.js?v=73"></script>
+<link rel="stylesheet" href="./layout.css?v=73">
+<script src="./layout.js?v=73"></script>
+<script src="./voice-expense.js?v=73"></script>
+<script src="./kpi.js?v=73"></script>
 </body>
 </html>
