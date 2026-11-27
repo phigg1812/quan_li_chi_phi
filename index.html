@@ -4230,7 +4230,6 @@ setInterval(()=>{if(localStorage.getItem(PKEY))checkPending();},3000);
   addEventListener('touchstart',event=>{
     if(refreshing||!mobile.matches||!appBooted||scrollY>0||event.touches.length!==1||
       !event.target.closest('.main-content,.topbar')||event.target.closest('input,textarea,select')||
-      (event.target.closest('button,a')&&!event.target.closest('.topbar'))||
       document.querySelector('#qrxOv,.drawer.show,.modal-overlay.show,dialog[open]')) return;
     origin=event.touches[0];
     movingParts.forEach(part=>part.classList.remove('refresh-returning'));
@@ -4723,10 +4722,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=66"></script>
-<link rel="stylesheet" href="./layout.css?v=66">
-<script src="./layout.js?v=66"></script>
-<script src="./voice-expense.js?v=66"></script>
-<script src="./kpi.js?v=66"></script>
+<script src="./envelopes.js?v=67"></script>
+<link rel="stylesheet" href="./layout.css?v=67">
+<script src="./layout.js?v=67"></script>
+<script src="./voice-expense.js?v=67"></script>
+<script src="./kpi.js?v=67"></script>
 </body>
 </html>
