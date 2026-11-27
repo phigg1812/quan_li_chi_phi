@@ -1,6 +1,6 @@
 /* Service worker của Sổ Theo Dõi: trang tải từ mạng trước (luôn có bản mới), có bản lưu đệm khi mất mạng. */
-const CACHE = 'sd-v54';
-const SHELL = ['./', './index.html', './manifest.json', './envelopes.js?v=54', './layout.css?v=54', './layout.js?v=54', './voice-expense.js?v=54', './icon-192.png', './icon-512.png'];
+const CACHE = 'sd-v55';
+const SHELL = ['./', './index.html', './manifest.json', './envelopes.js?v=55', './layout.css?v=55', './layout.js?v=55', './voice-expense.js?v=55', './icon-192.png', './icon-512.png'];
 const LIBS = /cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|cdn\.sheetjs\.com|www\.gstatic\.com\/firebasejs/;
 
 self.addEventListener('install', e => {

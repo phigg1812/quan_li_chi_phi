@@ -239,3 +239,27 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .stats-month-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stats-month-fields input,.stats-month-fields select{min-width:0}
 .stats-month-sheet footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:14px}
+
+#qrxDash{margin-top:0}
+#qrxDash .qd-head{align-items:center;gap:8px}
+#qrxDash .qd-head .qrx-note{margin:0;text-align:right}
+#qrxDash #qdB .qd-head h2{font-size:14px;color:var(--text-secondary)}
+#qrxDash .qd-big{font-size:clamp(29px,8vw,37px);line-height:1.08;letter-spacing:-.055em;font-variant-numeric:tabular-nums}
+#qrxDash .qd-stats>div{flex:1 1 0;min-width:0}
+#qdBud{white-space:nowrap}
+.qd-track{display:flex;align-items:flex-end;height:84px;background:var(--bg);border-radius:9px 9px 0 0;overflow:hidden}
+.qd-track .qd-tb{width:100%}
+#qrxDash .qd-trend{gap:8px}
+#qrxDash .qd-category .qd-share{margin-top:6px}
+@media(max-width:820px){
+  #qrxDash{gap:12px}
+  #qrxDash .qd-card{border-radius:18px}
+  #qrxDash .qd-head{padding:14px 14px 8px}
+  #qrxDash .qd-head h2{font-size:17px}
+  #qrxDash .qd-row{padding:10px 14px}
+  #qrxDash .qd-big{margin-inline:14px}
+  #qrxDash .qd-summary-date{margin:6px 14px 12px;font-size:12px}
+  #qrxDash .qd-stats{margin-inline:14px;padding-block:10px}
+  #qrxDash .qd-stats .l{font-size:11px}
+  #qrxDash .qd-budget-summary{margin-inline:14px}
+}

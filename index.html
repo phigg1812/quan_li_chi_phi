@@ -457,13 +457,6 @@ h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;letter-spacing:-0.02
 .hero-btn:hover{background:rgba(255,255,255,.28);}
 .hero-btn.solid{background:#fff;color:var(--primary-dark);border-color:transparent;}
 .hero-btn.solid:hover{background:#F0F5FF;}
-.smart-entry{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:14px;padding:9px 10px 9px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-sm);}
-.smart-entry:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
-.smart-entry input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;outline:none;padding:4px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.smart-entry input::placeholder{color:var(--text-secondary);}
-.smart-entry button{width:38px;height:38px;border:0;border-radius:10px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
-.smart-entry button:hover{filter:brightness(.96);}
-.smart-entry button:disabled{opacity:.55;cursor:wait;}
 
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);margin-bottom:var(--space-6);}
 .kpi-card{
@@ -1042,10 +1035,6 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
            MODULE 03 — DASHBOARD VIEW
            ============================================================ -->
       <section class="view active" id="view-dashboard">
-        <form class="smart-entry" id="smartExpenseForm">
-          <input type="text" id="smartExpenseInput" autocomplete="off" aria-label="Nhập khoản chi bằng câu tự nhiên">
-          <button type="submit" id="smartExpenseSend" aria-label="Phân tích và điền khoản chi" title="Điền khoản chi"><span data-icon="chevron-right"></span></button>
-        </form>
         <div class="hero">
           <div class="hero-eyebrow" id="heroGreeting">Chào buổi sáng, Phi 👋</div>
           <div class="hero-title" id="heroHeadline"><span id="heroPendingText1">Bạn còn</span> <span class="accent" id="heroPendingCount">0 khoản</span> <span id="heroPendingText2">cần thanh toán</span></div>
@@ -1925,19 +1914,7 @@ function renderHero(){
   document.getElementById('heroPendingText2').textContent = t('hero.needPay2');
   document.getElementById('heroPendingCount').textContent = `${pending.length} ${t('common.unit')}`;
   document.getElementById('heroAmount').textContent = formatCurrency(totalPending);
-  updateSmartExpensePlaceholder();
 }
-function updateSmartExpensePlaceholder(){
-  const smartInput = document.getElementById('smartExpenseInput');
-  if(!smartInput) return;
-  const fullName = (window.FB.currentUser && window.FB.currentUser.displayName) || STATE.settings.userName || 'bạn';
-  const fullText = `${fullName} ơi, hôm nay bạn đã chi tiêu những gì, mau ghi chép nào ~`;
-  smartInput.placeholder = window.matchMedia('(max-width: 600px)').matches
-    ? `${fullName} ơi, hôm nay chi gì...`
-    : fullText;
-  smartInput.title = fullText;
-}
-
 function renderKPIs(){
   const all = STATE.expenses;
   const pending = all.filter(e=>!e.paid && !isOverdue(e));
@@ -2617,7 +2594,6 @@ async function handleExpenseFormSubmit(e){
   const learned = !existing && await learnFromSmartCorrection(exp);
   STATE.ui.expenseDraft = null;
   STATE.ui.smartPrediction = null;
-  document.getElementById('smartExpenseInput').value = '';
   closeExpenseDrawer(false);
   showToast((learned||qrxL) ? 'Đã lưu khoản chi và ghi nhớ cách bạn chỉnh' : t('toast.saved')); setTimeout(()=>{ if(window.qrxCheckBudget) window.qrxCheckBudget(true); },2200);
   renderCurrentView(true);
@@ -2731,7 +2707,9 @@ function renderHistory(){
   const first=new Date(cur.getFullYear(),cur.getMonth(),1);
   const days=new Date(cur.getFullYear(),cur.getMonth()+1,0).getDate();
   const today=todayISO();
-  document.getElementById('calTitle').textContent='Tháng '+(cur.getMonth()+1)+'/'+cur.getFullYear()+' ▾';
+  const monthButton=document.getElementById('calTitle');
+  monthButton.textContent='Tháng '+(cur.getMonth()+1)+'/'+cur.getFullYear();
+  monthButton.setAttribute('aria-label',monthButton.textContent+' · Chọn tháng và năm');
   let html=dowNames().map(day=>'<div class="cal-dow">'+day+'</div>').join('');
   html+='<div class="cal-cell other-month" aria-hidden="true"></div>'.repeat(first.getDay());
   for(let day=1;day<=days;day++){
@@ -3283,15 +3261,6 @@ document.addEventListener('input', e=>{
     if(start!==null && end!==null) el.setSelectionRange(start,end);
   }
 },true);
-document.getElementById('smartExpenseForm').addEventListener('submit', e=>{
-  e.preventDefault();
-  const input = document.getElementById('smartExpenseInput');
-  const text = input.value.trim();
-  if(!text){ input.focus(); return; }
-  prefillExpenseFromNaturalText(text);
-});
-window.addEventListener('resize', debounce(updateSmartExpensePlaceholder, 150));
-
 const globalSearchInput = document.getElementById('globalSearch');
 globalSearchInput.addEventListener('input', debounce((e)=>{
   STATE.ui.search = e.target.value;
@@ -3545,7 +3514,7 @@ body:has(#authGate:not(.hidden)) .qrx-fab{display:none}
 .qs-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--border);font-size:15px}.qrx-sheet .qs-row input{width:22px;height:22px;padding:0;flex:none}.qs-row .t{flex:1;min-width:0}.qs-row small{display:block;color:var(--text-secondary);font-size:12px}.qs-cat{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--text-secondary)}.qs-total{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin:14px 2px 4px}
 .qb-row{padding:10px 2px;border-top:1px solid var(--border)}.qb-top{display:flex;justify-content:space-between;gap:8px;font-size:15px}.qb-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;overflow:hidden}.qb-bar i{display:block;height:100%;border-radius:3px}
 .qrx-more{display:none}
-#view-dashboard>:not(.qd-keep):not(#qrxDash){display:none!important}
+#view-dashboard>:not(#qrxDash){display:none!important}
 #qrxDash{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:start;margin-top:16px}
 .qd-col{display:flex;flex-direction:column;gap:20px;min-width:0}
 #qrxTools{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -4351,8 +4320,8 @@ window.renderSettlementPage=function(){
     const overdue=sum(current.filter(isOverdue));
     const percent=b.total>0?Math.round(total/b.total*100):0;
     const budgetText=total>b.total?'Vượt '+fmt(total-b.total)+' hạn mức':'Còn '+fmt(b.total-total)+' trong hạn mức';
-    B.innerHTML='<div class="qd-head"><h2>Tổng ghi nhận tháng này</h2><button type="button" class="btn btn-sm" id="qdBud">Hạn mức</button></div>'
-      +'<div class="qd-big">'+esc(fmt(total))+'</div><p class="qd-summary-date">Tính đến '+esc(formatDateShort(today))+'</p>'
+    B.innerHTML='<div class="qd-head"><h2>Tổng khoản ghi nhận</h2><button type="button" class="btn btn-sm" id="qdBud">Hạn mức</button></div>'
+      +'<div class="qd-big">'+esc(fmt(total))+'</div><p class="qd-summary-date">'+esc('1–'+Number(today.slice(8))+'/'+formatDateShort(today).slice(3))+' · Tháng đang diễn ra</p>'
       +'<div class="qd-stats"><div><div class="l">Đã thanh toán</div><div class="v">'+esc(fmt(total-unpaid))+'</div></div>'
       +'<div><div class="l">Chưa trả</div><div class="v">'+esc(fmt(unpaid))+'</div></div>'
       +'<div><div class="l">Trong đó quá hạn</div><div class="v" style="color:var(--danger)">'+esc(fmt(overdue))+'</div></div></div>'
@@ -4365,13 +4334,12 @@ window.renderSettlementPage=function(){
     const delta=previousToDate>0?Math.round((total-previousToDate)/previousToDate*100):null;
     D.innerHTML='<div class="qd-head"><h2>Xu hướng 6 tháng</h2>'
       +(delta===null?'':'<span class="qd-trend-badge">'+(delta>0?'+':'')+delta+'% cùng kỳ</span>')+'</div>'
-      +'<div class="qd-trend">'+vals.map((v,i)=>'<div class="qd-tc" title="'+esc(fmt(v))+'"><div class="qd-tv">'+(v?short(v):'')+'</div><div class="qd-tb" style="height:'+Math.max(0,Math.round(v/mx*84))+'px;background:'+(i===5?'var(--primary)':'rgba(0,98,214,.25)')+'"></div><div class="qd-tl">T'+Number(ms[i].slice(5))+'</div></div>').join('')+'</div>'
+      +'<div class="qd-trend">'+vals.map((v,i)=>'<div class="qd-tc" title="'+esc(fmt(v))+'"><div class="qd-tv">'+(v?short(v):'')+'</div><div class="qd-track"><div class="qd-tb" style="height:'+Math.max(0,Math.round(v/mx*84))+'px;background:'+(i===5?'var(--primary)':'rgba(0,98,214,.25)')+'"></div></div><div class="qd-tl">T'+Number(ms[i].slice(5))+'</div></div>').join('')+'</div>'
       +'<p class="qd-summary-date">Tháng '+m+' · đến ngày '+Number(today.slice(8))+' · <b>'+esc(fmt(total))+'</b></p>';
   }
   window.qrxRenderBud=renderDash;
   { const sec=document.getElementById('view-dashboard');
     if(sec&&sec.firstElementChild){
-      sec.firstElementChild.classList.add('qd-keep');
       const host=document.createElement('div'); host.id='qrxDash'; host.innerHTML='<div class="qd-card" id="qdB"></div><div class="qd-card" id="qdD"></div><div class="qd-card" id="qdC"></div><div class="qd-card" id="qdE"></div><div class="qd-card" id="qdA"></div>';
       sec.firstElementChild.insertAdjacentElement('afterend',host);
       { const bv=(document.getElementById('panel-backup')||document.getElementById('view-backup')), ex=document.getElementById('heroExportBtn'), im=document.getElementById('heroImportBtn');
@@ -4536,10 +4504,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=54"></script>
-<link rel="stylesheet" href="./layout.css?v=54">
-<script src="./layout.js?v=54"></script>
-<script src="./voice-expense.js?v=54"></script>
+<script src="./envelopes.js?v=55"></script>
+<link rel="stylesheet" href="./layout.css?v=55">
+<script src="./layout.js?v=55"></script>
+<script src="./voice-expense.js?v=55"></script>
 <dialog id="statsMonthDialog" class="envelope-dialog stats-month-sheet" aria-labelledby="statsMonthHeading">
   <form id="statsMonthForm">
     <h2 id="statsMonthHeading">Chọn tháng</h2>
