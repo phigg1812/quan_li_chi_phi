@@ -191,3 +191,10 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
   .envelope-filter-sheet .envelope-groups{margin-block:4px}
   .envelope-filter-sheet footer button{min-height:44px}
 }
+
+.qd-category{display:block;width:100%;min-height:44px;border:0;border-top:1px solid var(--border);background:transparent;color:inherit;font:inherit;text-align:left}
+.qd-category:hover,.qd-category:active{background:var(--bg)}
+.qd-category:focus-visible{outline-offset:-3px}
+.qd-category-summary{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.qd-category .qb-bar{display:block}
+.expense-category-chip{margin-bottom:12px;background:var(--primary-soft);color:var(--text)}

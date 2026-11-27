@@ -2226,6 +2226,8 @@ function listToolbarHTML(status){
     <button class="btn btn-sm" data-action="export-list">${iconSVG('download',14)} ${t('quick.exportExcel')}</button>
     <button class="btn btn-sm" data-action="add-expense">${iconSVG('plus',14)} ${t('quick.add')}</button>
   </div>
+  ${f.category==='all'?'':`<button type="button" class="btn btn-sm expense-category-chip" data-action="clear-category"
+    aria-label="Bỏ lọc danh mục ${escapeHTML(catById(f.category).name)}">${escapeHTML(catById(f.category).name)} ${iconSVG('x',14)}</button>`}
   <div class="filter-bar expense-filter-panel ${expanded ? 'filters-open' : ''}" id="expenseFilters-${status}">
     <select aria-label="Danh mục" class="filter-select" data-filter="category" id="filterCategory-${status}">
       <option value="all">${t('filter.allCategories')}</option>
@@ -2281,7 +2283,7 @@ function renderListView(status, resetPage){
   const search = section.querySelector('.mobile-expense-search input');
   if(search.value!==STATE.ui.search) search.value = STATE.ui.search;
   const results = section.querySelector('.expense-list-content');
-  results.innerHTML = listToolbarHTML(status) + (STATE.ui.search.trim() && !fullList.length
+  results.innerHTML = listToolbarHTML(status) + ((STATE.ui.search.trim() || STATE.ui.filters.category!=='all') && !fullList.length
     ? '<p class="mobile-expense-empty" role="status">Không tìm thấy khoản chi phù hợp.</p>' : bodyHTML);
   bindListToolbarEvents(results, status);
   bindCardEvents(results);
@@ -2302,6 +2304,11 @@ function bindCardEvents(root){
 }
 
 function bindListToolbarEvents(section, status){
+  const clearCategory=section.querySelector('[data-action="clear-category"]');
+  if(clearCategory) clearCategory.onclick=()=>{
+    STATE.ui.filters.category='all';
+    renderListView(status,true);
+  };
   const filters = section.querySelector('[data-action="filters"]');
   filters.onclick = ()=>{
     const expanded = mobileExpenseFilters[status] = !mobileExpenseFilters[status];
@@ -4348,8 +4355,13 @@ window.renderSettlementPage=function(){
     const lim=k=>Number(b.cats[k])||0, ks=Object.keys(sp.by).sort((x,z)=>sp.by[z]-sp.by[x]).slice(0,5), scale=Math.max(1,...ks.map(k=>Math.max(sp.by[k],lim(k))));
     C.innerHTML='<div class="qd-head"><h2>Chi theo danh mục</h2>'+(ks.some(k=>lim(k)>0)?'<span class="qrx-note" style="margin:0">vạch đen = hạn mức</span>':'')+'</div>'
       +(ks.length?ks.map(k=>{const c=catById(k), u=sp.by[k], l=lim(k), p=pv.by[k]; const d=p>0?Math.round((u-p)/p*100):null;
-        return '<div class="qd-row" data-c="'+esc(k)+'" style="display:block"><div style="display:flex;justify-content:space-between;font-size:14px"><span>'+esc(c.name)+(d===null||d===0?'':' <span class="'+(d>0?'up':'dn')+'">'+(d>0?'▲ ':'▼ ')+Math.abs(d)+'%</span>')+'</span><b>'+esc(fmt(u))+'</b></div><div class="qb-bar"><i style="width:'+Math.round(u/scale*100)+'%;background:'+(l>0?color(u/l*100):'var(--primary)')+'"></i>'+(l>0?'<u style="left:'+Math.min(99.5,l/scale*100)+'%"></u>':'')+'</div></div>';}).join(''):'<div class="qd-empty">Chưa có chi tiêu trong tháng này.</div>');
-    C.querySelectorAll('[data-c]').forEach(r=>r.onclick=()=>{ if(window.qrxCatList) window.qrxCatList(r.dataset.c); });
+        return '<button type="button" class="qd-row qd-category" data-c="'+esc(k)+'" aria-label="Xem khoản chưa trả: '+esc(c.name)+'"><span class="qd-category-summary"><span>'+esc(c.name)+(d===null||d===0?'':' <span class="'+(d>0?'up':'dn')+'">'+(d>0?'▲ ':'▼ ')+Math.abs(d)+'%</span>')+'</span><b>'+esc(fmt(u))+'</b></span><span class="qb-bar"><i style="width:'+Math.round(u/scale*100)+'%;background:'+(l>0?color(u/l*100):'var(--primary)')+'"></i>'+(l>0?'<u style="left:'+Math.min(99.5,l/scale*100)+'%"></u>':'')+'</span></button>';}).join(''):'<div class="qd-empty">Chưa có chi tiêu trong tháng này.</div>');
+    C.querySelectorAll('[data-c]').forEach(button=>button.onclick=()=>{
+      Object.assign(STATE.ui.filters,{category:button.dataset.c,wallet:'all',period:'all',minAmount:'',maxAmount:'',month:''});
+      STATE.ui.search=globalSearchInput.value='';
+      switchView('pending');
+      document.querySelector('#view-pending [data-action="clear-category"]')?.focus({preventScroll:true});
+    });
     A.innerHTML='<div class="qd-head"><h2>Cần xử lý</h2>'+(act.length?'<span style="color:var(--danger);font-weight:600">'+esc(fmt(tot))+'</span>':dataFromCache?'<span>Đang xem bản lưu</span>':'<span class="qd-ok">Ổn rồi</span>')+'</div>'
       +(act.length?act.slice(0,3).map(e=>row(e,1)).join(''):'<div class="qd-empty">Không có khoản quá hạn hoặc đến hạn trong 7 ngày tới.</div>')
       +(unp.length?'<button type="button" class="qd-link" id="qdAll">Xem tất cả '+unp.length+' khoản chưa trả ›</button>':'');
@@ -4548,8 +4560,8 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=51"></script>
-<link rel="stylesheet" href="./layout.css?v=51">
-<script src="./layout.js?v=51"></script>
+<script src="./envelopes.js?v=52"></script>
+<link rel="stylesheet" href="./layout.css?v=52">
+<script src="./layout.js?v=52"></script>
 </body>
 </html>
