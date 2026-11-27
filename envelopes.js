@@ -119,7 +119,28 @@ function openEnvelopeFilters(options,trigger){
     <footer><button class="btn" type="button" data-reset>Đặt lại</button>
     <button class="btn btn-primary" type="button" data-done>Xong</button></footer>`;
   dialog.querySelector('footer').before(options);
-  dialog.querySelector('[data-done]').onclick=()=>dialog.close();
+  const dismiss=()=>{
+    if(dialog.classList.contains('envelope-filter-closing')) return;
+    if(!matchMedia('(max-width:820px) and (prefers-reduced-motion: no-preference)').matches){
+      dialog.close();
+      return;
+    }
+    const offset=getComputedStyle(dialog).transform;
+    dialog.classList.add('envelope-filter-closing');
+    const slide=dialog.animate([{transform:offset},{transform:'translateY(100%)'}],
+      {duration:210,easing:'ease-in',fill:'forwards'});
+    slide.finished.then(()=>dialog.close(),()=>dialog.close());
+  };
+  const onBackdrop=event=>{
+    if(event.target!==dialog) return false;
+    const bounds=dialog.getBoundingClientRect();
+    return event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom;
+  };
+  let pressedBackdrop=false;
+  dialog.addEventListener('pointerdown',event=>{pressedBackdrop=onBackdrop(event);});
+  dialog.addEventListener('click',event=>{if(pressedBackdrop&&onBackdrop(event)) dismiss();});
+  dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
+  dialog.querySelector('[data-done]').onclick=dismiss;
   dialog.querySelector('[data-reset]').onclick=()=>{
     envelopeFilter='all';
     envelopeSort='recent';

@@ -1308,11 +1308,11 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
       <div class="field-row expense-date-row">
         <div class="field">
           <label for="fCreatedDate" data-i18n="field.createdDate">Ngày tạo</label>
-          <input type="date" id="fCreatedDate">
+          <div class="expense-date-control"><span aria-hidden="true"></span><input type="date" id="fCreatedDate"></div>
         </div>
         <div class="field">
           <label for="fDueDate" data-i18n="field.dueDate">Hạn thanh toán</label>
-          <input type="date" id="fDueDate">
+          <div class="expense-date-control"><span aria-hidden="true"></span><input type="date" id="fDueDate"></div>
         </div>
       </div>
       <div class="field-row">
@@ -1670,6 +1670,18 @@ function formatDateShort(iso){
   const d = parseISO(iso);
   return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
 }
+function syncExpenseDate(input){
+  input.previousElementSibling.textContent=input.value?formatDateShort(input.value):'Chọn ngày';
+}
+function setExpenseDate(id,value){
+  const input=document.getElementById(id);
+  input.value=value;
+  syncExpenseDate(input);
+}
+document.querySelectorAll('.expense-date-control input').forEach(input=>{
+  input.addEventListener('input',()=>syncExpenseDate(input));
+  input.addEventListener('change',()=>syncExpenseDate(input));
+});
 function debounce(fn,wait){ let tmr; return (...a)=>{ clearTimeout(tmr); tmr=setTimeout(()=>fn(...a),wait); }; }
 function daysDiff(a,b){ return Math.round((a-b)/86400000); }
 function isOverdue(exp){ return !exp.paid && exp.dueDate && parseISO(exp.dueDate) < parseISO(todayISO()); }
@@ -2399,8 +2411,8 @@ function openExpenseDrawer(id){
   document.getElementById('expenseId').value = id || '';
   document.getElementById('fName').value = exp ? exp.name : '';
   document.getElementById('fAmount').value = exp ? new Intl.NumberFormat('vi-VN').format(exp.amount) : '';
-  document.getElementById('fCreatedDate').value = exp ? exp.createdDate : todayISO();
-  document.getElementById('fDueDate').value = exp ? exp.dueDate : endOfMonthISO();
+  setExpenseDate('fCreatedDate',exp ? exp.createdDate : todayISO());
+  setExpenseDate('fDueDate',exp ? exp.dueDate : endOfMonthISO());
   populateSelect(document.getElementById('fWallet'), STATE.wallets, true);
   const paymentOptions=STATE.paymentMethods.some(isCreditCardMethod) && exp?.paymentMethodId!==CREDIT_CARD_METHOD.id &&
     STATE.ui.expenseDraft?.paymentMethodId!==CREDIT_CARD_METHOD.id ? STATE.paymentMethods :
@@ -2550,8 +2562,8 @@ function prefillExpenseFromNaturalText(text,{voiceDate}={}){
   openExpenseDrawer();
   document.getElementById('fName').value = (!voiceDate && learned?.preferredName) || naturalExpenseName(text, amountInfo.token, dateInfo.token);
   document.getElementById('fAmount').value = amountInfo.amount ? new Intl.NumberFormat('vi-VN').format(amountInfo.amount) : '';
-  document.getElementById('fCreatedDate').value = voiceDate || dateInfo.date;
-  document.getElementById('fDueDate').value = endOfMonthISO(voiceDate || todayISO());
+  setExpenseDate('fCreatedDate',voiceDate || dateInfo.date);
+  setExpenseDate('fDueDate',endOfMonthISO(voiceDate || todayISO()));
   document.getElementById('fWallet').value = (learned && walById(learned.walletId).name!=='—') ? learned.walletId : (STATE.wallets[0] ? STATE.wallets[0].id : '');
   const paymentInput=document.getElementById('fPaymentMethod');
   if(payment && ![...paymentInput.options].some(option=>option.value===payment.id)){
@@ -2613,8 +2625,8 @@ function captureExpenseDraft(){
 function applyExpenseDraft(draft){
   document.getElementById('fName').value = draft.name||'';
   document.getElementById('fAmount').value = draft.amount||'';
-  document.getElementById('fCreatedDate').value = draft.createdDate||todayISO();
-  document.getElementById('fDueDate').value = draft.dueDate||endOfMonthISO();
+  setExpenseDate('fCreatedDate',draft.createdDate||todayISO());
+  setExpenseDate('fDueDate',draft.dueDate||endOfMonthISO());
   if(draft.walletId) document.getElementById('fWallet').value = draft.walletId;
   if(draft.paymentMethodId) document.getElementById('fPaymentMethod').value = draft.paymentMethodId;
   document.getElementById('fPaid').checked = !!draft.paid;
@@ -4072,7 +4084,6 @@ body{max-width:100vw;touch-action:manipulation}
 }
 .envelope-groups label:has(input:checked) { background: var(--primary-soft); border-color: var(--primary); }
 .envelope-groups input { accent-color: var(--primary); }
-.envelope-status{width:fit-content;margin-bottom:8px}.envelope-status button{min-height:44px}
 .envelope-result-count { color: var(--text-secondary); }
 .envelope-import-row { flex-wrap: wrap; }
 .envelope-import-row .btn { min-height: 44px; }
@@ -4992,10 +5003,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=84"></script>
-<link rel="stylesheet" href="./layout.css?v=84">
-<script src="./layout.js?v=84"></script>
-<script src="./voice-expense.js?v=84"></script>
-<script src="./kpi.js?v=84"></script>
+<script src="./envelopes.js?v=85"></script>
+<link rel="stylesheet" href="./layout.css?v=85">
+<script src="./layout.js?v=85"></script>
+<script src="./voice-expense.js?v=85"></script>
+<script src="./kpi.js?v=85"></script>
 </body>
 </html>
