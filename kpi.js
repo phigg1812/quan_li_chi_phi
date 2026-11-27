@@ -124,7 +124,6 @@
     const date=today(), metrics=stats(), {done,total}=count(date);
     const detail=selected&&selected<=date?active(selected):[];
     view.innerHTML=`<div class="kpi-page">
-      <button type="button" class="btn kpi-desktop-back" data-kpi-back>‹ Cài đặt</button>
       <section class="panel kpi-hero"><h2>Chuỗi hoàn thành hiện tại</h2>
         <strong class="kpi-streak">${metrics.current} ngày liên tiếp</strong>
         <p class="kpi-record">Kỷ lục dài nhất ${metrics.record} ngày, hãy cố lên nhé!</p>
@@ -205,7 +204,6 @@
   view.onclick=event=>{
     const button=event.target.closest('button');
     if(!button) return;
-    if(button.hasAttribute('data-kpi-back')) return switchView('settings');
     if(button.dataset.task) return toggleTask(button.dataset.task);
     if(button.hasAttribute('data-kpi-add')) return openEditor();
     if(button.hasAttribute('data-kpi-manage')) return openEditor(true);
@@ -213,7 +211,6 @@
     if(button.dataset.kpiMonth){month=new Date(month.getFullYear(),month.getMonth()+Number(button.dataset.kpiMonth),1);selected=null;}
     render();
   };
-  document.getElementById('kpiSettingsLink').onclick=()=>switchView('kpi');
   window.renderKpiPage=render;
   let renderedDay=today();
   setInterval(()=>{if(renderedDay!==today()){renderedDay=today();if(STATE.ui.currentView==='kpi') render();}},15000);

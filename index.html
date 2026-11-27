@@ -970,6 +970,10 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <span class="nav-icon" data-icon="bar-chart"></span>
         <span class="nav-label" data-i18n="nav.stats">Thống kê</span>
       </button>
+      <button class="nav-item" data-view="kpi">
+        <span class="nav-icon" data-icon="check-circle"></span>
+        <span class="nav-label">Theo dõi KPI</span>
+      </button>
       <button class="nav-item" data-view="envelopes">
         <span class="nav-icon" data-icon="archive"></span>
         <span class="nav-label">Sổ phong bì</span>
@@ -1142,7 +1146,7 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
             </div>
             <div class="panel">
               <div class="panel-header"><div class="panel-title" data-i18n="chart.category">Chi theo danh mục</div></div>
-              <div class="chart-wrap"><canvas id="chartStatsCategory"></canvas></div>
+              <div class="chart-wrap stats-category-chart"><canvas id="chartStatsCategory"></canvas></div>
             </div>
             <div class="panel">
               <div class="panel-header"><div class="panel-title" data-i18n="stats.wallet">Chi theo ví</div></div>
@@ -1172,7 +1176,6 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
         <div class="settings-grid">
           <div class="settings-nav" id="settingsNav">
             <button class="active" data-panel="general" data-i18n="settings.general">Chung</button>
-            <button type="button" id="kpiSettingsLink">Theo dõi KPI</button>
             <button data-panel="categories" data-i18n="settings.categories">Danh mục</button>
             <button data-panel="wallets" data-i18n="settings.wallets">Ví</button>
             <button data-panel="payment" data-i18n="settings.payment">Phương thức thanh toán</button>
@@ -2894,7 +2897,7 @@ const categoryPercentLeaders={
       const direction=Math.cos(angle)>=0?1:-1;
       sides[direction===1?1:0].push({
         x:arc.x+Math.cos(angle)*arc.outerRadius,y:arc.y+Math.sin(angle)*arc.outerRadius,
-        elbow:arc.x+direction*(arc.outerRadius+8),direction,
+        elbow:arc.x+direction*(arc.outerRadius+7),direction,
         text:new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(values[index]/total*100)+'%'
       });
     });
@@ -2905,13 +2908,13 @@ const categoryPercentLeaders={
     for(const side of sides){
       side.sort((a,b)=>a.y-b.y);
       const top=area.top+8,bottom=area.bottom-8;
-      const gap=Math.min(19,(bottom-top)/Math.max(1,side.length-1));
+      const gap=Math.min(24,(bottom-top)/Math.max(1,side.length-1));
       side.forEach((label,index)=>label.labelY=Math.max(top,index?side[index-1].labelY+gap:top,label.y));
       for(let i=side.length-1;i>=0;i--){
         const label=side[i];
         label.labelY=Math.min(label.labelY,i===side.length-1?bottom:side[i+1].labelY-gap);
         const width=ctx.measureText(label.text).width+10;
-        const x=label.direction===1?label.elbow+6:label.elbow-width-6;
+        const x=label.direction===1?chart.width-width-5:5;
         ctx.strokeStyle=colors.text;
         ctx.beginPath();
         ctx.moveTo(label.x,label.y);
@@ -2941,7 +2944,7 @@ function renderStats(){
     type:'doughnut',
     plugins:[categoryPercentLeaders],
     data:{ labels:catEntries.map(([id,amount])=>catById(id).name+' · '+new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(categoryTotal?amount/categoryTotal*100:0)+'%'), datasets:[{ data:catEntries.map(([,v])=>v), backgroundColor:catEntries.map(([id])=>catById(id).color), borderWidth:0 }] },
-    options:{ layout:{padding:{left:56,right:56,top:10}}, onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0], inRange); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
+    options:{ layout:{padding:{left:66,right:66,top:12,bottom:8}}, onClick:(ev,els)=>{ if(els.length&&window.qrxCatList) window.qrxCatList(catEntries[els[0].index][0], inRange); }, onHover:(ev,els)=>{ if(ev.native&&ev.native.target) ev.native.target.style.cursor=els.length?'pointer':'default'; }, cutout:'62%', plugins:{legend:{position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:10}}}}, maintainAspectRatio:false }
   });
 
   const byWal = {}; inRange.forEach(e=>{ byWal[e.walletId]=(byWal[e.walletId]||0)+Number(e.amount||0); });
@@ -4637,7 +4640,7 @@ window.qrxCatList=function(catId,list){
   const cat=catById(catId), items=(list||STATE.expenses).filter(e=>e.categoryId===catId).sort((a,b)=>String(b.createdDate).localeCompare(String(a.createdDate)));
   const total=items.reduce((s,e)=>s+Number(e.amount||0),0), shown=items.slice(0,50);
   const rows=shown.map(e=>{const st=e.paid?'Đã thanh toán':(isOverdue(e)?'Quá hạn':'Chưa trả');
-    return '<button class="qrx-btn" data-id="'+esc(e.id)+'" style="text-align:left;width:100%;margin-top:8px"><b>'+esc(e.name)+'</b><br><span style="font-size:13px;color:var(--text-secondary)">'+esc(formatCurrency(e.amount))+' · '+esc((e.createdDate||'').split('-').reverse().join('/'))+' · '+st+'</span></button>';}).join('');
+    return '<button class="qrx-btn qrx-category-expense" data-id="'+esc(e.id)+'" ><span class="qrx-category-expense-main"><b>'+esc(e.name)+'</b><strong>'+esc(formatCurrency(e.amount))+'</strong></span><span class="qrx-category-expense-meta">'+esc((e.createdDate||'').split('-').reverse().join('/'))+' · '+st+'</span></button>';}).join('');
   const sh=overlay('<h3>'+esc(cat.name)+'</h3><div class="qrx-note" style="margin:0 0 4px">'+items.length+' khoản · tổng '+esc(formatCurrency(total))+(items.length>50?' (hiện 50 khoản mới nhất)':'')+'</div>'+rows+'<div class="qrx-row"><button class="qrx-btn" id="qcX">Đóng</button></div>');
   sh.querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>{close(); openExpenseDrawer(b.dataset.id);});
   sh.querySelector('#qcX').onclick=close;
@@ -4672,7 +4675,7 @@ try{ if(window.Chart) Chart.defaults.font.family=getComputedStyle(document.body)
   bar.querySelectorAll('.qtb').forEach(b=>b.onclick=()=>{bar.querySelectorAll('.qtb').forEach(x=>x.classList.toggle('on',x===b)); place(b); switchView(b.dataset.v);});
   bar.querySelector('#qrxTabQR').onclick=openScan;
   const sync=()=>{
-    const a=STATE.ui.currentView, v=(['dashboard','pending','stats'].includes(a)?a:'menu'), sub=!!a&&!['dashboard','pending','stats','menu'].includes(a); document.body.classList.toggle('qrx-sub',sub); { const mb=document.getElementById('menuBtn'); if(mb) mb.setAttribute('aria-label',sub&&matchMedia('(max-width:820px)').matches?(a==='kpi'?'Quay lại Cài đặt':'Quay lại Menu'):'Mở menu'); }
+    const a=STATE.ui.currentView, v=(['dashboard','pending','stats'].includes(a)?a:'menu'), sub=!!a&&!['dashboard','pending','stats','menu'].includes(a); document.body.classList.toggle('qrx-sub',sub); { const mb=document.getElementById('menuBtn'); if(mb) mb.setAttribute('aria-label',sub&&matchMedia('(max-width:820px)').matches?'Quay lại Menu':'Mở menu'); }
     if(a) bar.querySelectorAll('.qtb').forEach(b=>{
       const current=b.dataset.v===v;
       b.classList.toggle('on',current);
@@ -4705,8 +4708,8 @@ window.renderMenuPage=function(){
     +(sub?'<small>'+sub+'</small>':'')+'<i class="qm-c" aria-hidden="true">›</i></button>';
   const act=(id,label,danger=false)=>'<button type="button" class="qm-r'+(danger?' qm-danger':'')+'" data-act="'+id+'"><span>'+label+'</span>'
     +(danger?'':'<i class="qm-c" aria-hidden="true">›</i>')+'</button>';
-  el.innerHTML='<h1 class="qm-page-title">Menu</h1><div class="qm-g">'+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+'</div>'
-    +'<div class="qm-g">'+go('settings','Cài đặt','Danh mục, ví, theo dõi KPI')+'</div>'
+  el.innerHTML='<h1 class="qm-page-title">Menu</h1><div class="qm-g">'+go('kpi','Theo dõi KPI')+go('envelopes','Sổ phong bì')+go('budget','Hạn mức')+go('settle','Quyết toán')+'</div>'
+    +'<div class="qm-g">'+go('settings','Cài đặt','Danh mục, ví, sao lưu')+'</div>'
     +'<div class="qm-g"><button type="button" class="qm-r" id="qmTheme" role="switch" aria-checked="'+dark+'"><span>Chế độ tối</span><span class="qm-sw'+(dark?' on':'')+'" aria-hidden="true"></span></button>'
       +act('editNameBtn','Đổi tên hiển thị')+act('passwordManageBtn','Mật khẩu đăng nhập')+'</div>'
     +'<div class="qm-g">'+act('signOutBtn','Đăng xuất',true)+'</div>'
@@ -4715,15 +4718,15 @@ window.renderMenuPage=function(){
   el.querySelectorAll('[data-act]').forEach(r=>r.onclick=()=>{ const b=document.getElementById(r.dataset.act); if(b) b.click(); });
   el.querySelector('#qmTheme').onclick=async()=>{ await setTheme(STATE.settings.theme==='dark'?'light':'dark'); window.renderMenuPage(); el.querySelector('#qmTheme').focus({preventScroll:true}); };
 };
-document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#menuBtn'); if(b&&matchMedia('(max-width:820px)').matches){ e.stopPropagation(); e.preventDefault(); switchView(STATE.ui.currentView==='kpi'?'settings':'menu'); } },true);
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#menuBtn'); if(b&&matchMedia('(max-width:820px)').matches){ e.stopPropagation(); e.preventDefault(); switchView('menu'); } },true);
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=64"></script>
-<link rel="stylesheet" href="./layout.css?v=64">
-<script src="./layout.js?v=64"></script>
-<script src="./voice-expense.js?v=64"></script>
-<script src="./kpi.js?v=64"></script>
+<script src="./envelopes.js?v=65"></script>
+<link rel="stylesheet" href="./layout.css?v=65">
+<script src="./layout.js?v=65"></script>
+<script src="./voice-expense.js?v=65"></script>
+<script src="./kpi.js?v=65"></script>
 </body>
 </html>
