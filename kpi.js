@@ -64,8 +64,9 @@
   }
   const compareTasks=(a,b)=>a.start.localeCompare(b.start)||(a.createdAt||0)-(b.createdAt||0)||a.id.localeCompare(b.id);
   const active=day=>state.tasks.filter(task=>task.start<=day && (!task.end || day<task.end)).sort(compareTasks);
-  const removable=day=>active(day).filter(task=>!task.end||task.end>move(day,1));
   const isDone=(day,id)=>state.ticks[day]?.has(id)===true;
+  const removalDay=(task,day)=>isDone(day,task.id)?move(day,1):day;
+  const removable=day=>active(day).filter(task=>!task.end||task.end>removalDay(task,day));
   const count=day=>{const tasks=active(day);return {total:tasks.length,done:tasks.filter(task=>isDone(day,task.id)).length};};
   const percent=(n,d)=>d?Math.round(n/d*100):0;
   const filled=day=>{const {done,total}=count(day);return total>0&&done===total;};
@@ -170,7 +171,7 @@
     dialog.className='envelope-dialog kpi-editor';
     dialog.setAttribute('aria-labelledby','kpiEditorTitle');
     dialog.innerHTML=deleting?`<h2 id="kpiEditorTitle" tabindex="-1" autofocus>Xóa hạng mục</h2>
-      <p class="qrx-note">Hạng mục sẽ ngừng theo dõi từ ngày KPI tiếp theo. Lịch sử được giữ nguyên.</p>
+      <p class="qrx-note">Hạng mục chưa xong được bỏ ngay. Hạng mục đã xong vẫn được tính cho hôm nay. Lịch sử các ngày trước được giữ nguyên.</p>
       <ul class="kpi-delete-list">${removable(date).map(task=>{
         const name=escapeHTML(taskName(task,date));
         return `<li><span>${name}</span><button class="btn danger" type="button" data-archive="${task.id}" aria-label="Xóa hạng mục: ${name}">Xóa</button></li>`;
@@ -182,7 +183,7 @@
       const day=today();
       const task=removable(day).find(item=>item.id===button.dataset.archive);
       if(!task){dismiss();return;}
-      if(changeTask(task,{end:move(day,1)})) dismiss();
+      if(changeTask(task,{end:removalDay(task,day)})) dismiss();
     });
     const form=dialog.querySelector('form');
     if(form) form.onsubmit=event=>{
