@@ -16,18 +16,22 @@ function renderEnvelopeView(){
           <button type="button" class="btn" id="envelopeFilterButton" aria-haspopup="dialog">Bộ lọc</button>
         </div>
         <div class="envelope-filter-options">
-          <select class="filter-select" aria-label="Lọc phong bì" id="envelopeDirection">
+          <label class="envelope-filter-field"><span>Chiều giao nhận</span>
+            <select class="filter-select" id="envelopeDirection">
             <option value="all">Tất cả</option><option value="received">Đã nhận</option><option value="sent">Đã đi</option>
-          </select>
-          <select class="filter-select" aria-label="Sắp xếp phong bì" id="envelopeSort">
-            <option value="recent">Sắp xếp: Mới nhất</option>
+            </select>
+          </label>
+          <label class="envelope-filter-field"><span>Sắp xếp</span>
+            <select class="filter-select" id="envelopeSort">
+            <option value="recent">Mới nhất</option>
             <option value="amount-desc">Tiền: Lớn → nhỏ</option>
             <option value="amount-asc">Tiền: Nhỏ → lớn</option>
             <option value="name-asc">Tên: A → Z</option>
             <option value="name-desc">Tên: Z → A</option>
-          </select>
+            </select>
+          </label>
           <fieldset class="envelope-groups">
-            <legend>Nhóm người gửi hoặc nhận</legend>
+            <legend>Nhóm người</legend>
             ${Object.entries(ENVELOPE_SCOPES).map(([key,label])=>`<label><input type="checkbox" value="${key}">${label}</label>`).join('')}
           </fieldset>
         </div>

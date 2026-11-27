@@ -292,3 +292,14 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
   #view-envelopes .envelope-status button{flex:1;min-width:0;padding-inline:6px}
   #view-envelopes .envelope-list{margin-top:12px}
 }
+
+.envelope-filter-field{display:grid;gap:5px;min-width:0}
+.envelope-filter-field>span,.envelope-filter-sheet .envelope-groups legend{color:var(--text-secondary);font-size:13px;font-weight:600}
+.envelope-filter-sheet h2:focus{outline:none}
+.envelope-filter-sheet .envelope-filter-field{margin:0}
+.envelope-filter-sheet .envelope-groups{display:grid;gap:0;border:1px solid var(--border);border-radius:12px;padding:0 12px}
+.envelope-filter-sheet .envelope-groups legend{padding:0 4px}
+.envelope-filter-sheet .envelope-groups label{display:flex;flex-direction:row-reverse;justify-content:space-between;align-items:center;gap:12px;margin:0;padding:8px 0;border:0;border-radius:0;background:transparent;font-size:15px;font-weight:500}
+.envelope-filter-sheet .envelope-groups label+label{border-top:1px solid var(--border)}
+.envelope-filter-sheet .envelope-groups input[type="checkbox"]{appearance:auto;-webkit-appearance:checkbox;width:20px;height:20px;min-height:0;padding:0;flex:0 0 20px}
+.envelope-filter-sheet footer button:last-child{flex:1;justify-content:center}
