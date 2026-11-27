@@ -1,13 +1,15 @@
 (() => {
   const view=document.getElementById('view-kpi');
-  const dayFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'});
+  const dayFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
   const today=()=>{
     const fields=Object.fromEntries(dayFormat.formatToParts(new Date()).map(p=>[p.type,p.value]));
-    return fields.year+'-'+fields.month+'-'+fields.day;
+    const date=fields.year+'-'+fields.month+'-'+fields.day;
+    return fields.hour+':'+fields.minute<normalizeKpiResetTime(STATE.settings.kpiResetTime)?move(date,-1):date;
   };
   const move=(day,offset)=>dateISO(new Date(parseISO(day).getFullYear(),parseISO(day).getMonth(),parseISO(day).getDate()+offset));
   let state={tasks:[],ticks:{}};
-  let selected=null,month=parseISO(today()),recordNew=false;
+  let renderedDay=today();
+  let selected=null,month=parseISO(renderedDay),recordNew=false;
   let loadedOwner=null;
   const pendingTaskWrites=new Set();
   const pendingTickWrites=new Map();
@@ -18,7 +20,8 @@
     const owner=window.FB.currentUser?.uid;
     if(loadedOwner!==owner){
       selected=null;
-      month=parseISO(today());
+      renderedDay=today();
+      month=parseISO(renderedDay);
       recordNew=false;
       loadedOwner=owner;
     }
@@ -122,7 +125,13 @@
       </div>`;
   }
   function render(){
-    const date=today(), metrics=stats(), {done,total}=count(date);
+    const date=today();
+    if(date!==renderedDay){
+      if(dateISO(month).slice(0,7)===renderedDay.slice(0,7)) month=parseISO(date);
+      renderedDay=date;
+      recordNew=false;
+    }
+    const metrics=stats(), {done,total}=count(date);
     const detail=selected&&selected<=date?active(selected):[];
     const taskNumbers=new Map([...state.tasks].sort(compareTasks).map((task,index)=>[task.id,index+1]));
     const completionOrder=state.ticks[date];
@@ -236,6 +245,11 @@
     render();
   };
   window.renderKpiPage=render;
-  let renderedDay=today();
-  setInterval(()=>{if(renderedDay!==today()){renderedDay=today();if(STATE.ui.currentView==='kpi') render();}},15000);
+  const refreshDay=()=>{if(STATE.ui.currentView==='kpi'&&renderedDay!==today()) render();};
+  function checkDayAtMinute(){
+    refreshDay();
+    setTimeout(checkDayAtMinute,60000-Date.now()%60000);
+  }
+  checkDayAtMinute();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden) refreshDay();});
 })();

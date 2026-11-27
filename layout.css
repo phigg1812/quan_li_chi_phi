@@ -473,3 +473,5 @@ body.qrx-sub #menuBtn{min-width:44px;min-height:44px;align-items:center;justify-
 .settlement-share-actions .qrx-btn,.settlement-share-heading .qrx-btn{min-height:44px}
 .settlement-share-actions .qrx-btn{flex:1}
 .settlement-share-status{margin:0;color:var(--text-secondary);font-size:14px}
+
+.kpi-reset-setting input{flex:none;min-height:44px;max-width:45%;padding-inline:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font:inherit;font-size:16px}

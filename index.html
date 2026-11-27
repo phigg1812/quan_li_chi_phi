@@ -1198,6 +1198,10 @@ h1,h2,h3,h4,.hero-title,.hero-amount,.kpi-value,.panel-title,.topbar-title,.logo
                 <div class="theme-opt dark" data-theme-opt="dark"><div class="swatch"></div></div>
               </div>
             </div>
+            <div class="settings-row kpi-reset-setting">
+              <div><label class="s-label" for="kpiResetTime">Giờ bắt đầu ngày KPI</label><div class="s-sub" id="kpiResetHint">Giờ Việt Nam. Trước giờ này, dấu tick vẫn tính cho ngày trước.</div></div>
+              <input id="kpiResetTime" type="time" step="60" aria-describedby="kpiResetHint">
+            </div>
             <div class="settings-row envelope-import-row">
               <div><div class="s-label">Sổ phong bì</div><div class="s-sub">Thêm các khoản từ tệp JSON đã đối soát.</div></div>
               <button class="btn" id="envelopeImport" type="button" disabled>Nhập tệp phong bì</button>
@@ -1642,9 +1646,11 @@ async function dbClear(storeName){
 /* ============================================================
    MODULE 09b — GLOBAL STATE + UTILITIES
    ============================================================ */
+const DEFAULT_KPI_RESET_TIME='05:00';
+const normalizeKpiResetTime=value=>typeof value==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)?value:DEFAULT_KPI_RESET_TIME;
 const STATE = {
   expenses:[], envelopes:[], categories:[], wallets:[], paymentMethods:[], recurring:[], backups:[], learningRules:[],
-  settings:{ language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false },
+  settings:{ language:'vi', currency:'VND', theme:'light', sidebarCollapsed:false, kpiResetTime:DEFAULT_KPI_RESET_TIME },
   ui:{ currentView:'dashboard', listViewMode:'card', search:'', envelopeSearch:'', sort:{field:'dueDate',dir:'asc'},
        filters:{category:'all', wallet:'all', period:'all', minAmount:'', maxAmount:''},
        calDate:new Date(), historyDay:null, pendingDrawerId:null, pendingDeleteId:null,
@@ -1749,9 +1755,10 @@ async function loadAllState(){
   STATE.recurring = recurring;
   STATE.backups = backups.sort((a,b)=> b.createdAt - a.createdAt);
   STATE.learningRules = learningRules.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-  window.loadKpiSettings?.(settingsRows);
   const appSettings = settingsRows.find(s=>s.key==='app');
   if(appSettings) Object.assign(STATE.settings, appSettings);
+  STATE.settings.kpiResetTime=normalizeKpiResetTime(appSettings?.kpiResetTime);
+  window.loadKpiSettings?.(settingsRows);
 }
 async function saveSettings(){
   await dbPut('settings', Object.assign({key:'app'}, STATE.settings));
@@ -3169,6 +3176,7 @@ function renderStats(){
    MODULE 27 — SETTINGS: GENERAL + MANAGE (categories/wallets/payment/recurring)
    ============================================================ */
 function renderSettings(){
+  document.getElementById('kpiResetTime').value=normalizeKpiResetTime(STATE.settings.kpiResetTime);
   document.getElementById('currencySelect').value = STATE.settings.currency;
   applyTheme();
   renderCategoryManageList();
@@ -3442,6 +3450,24 @@ document.getElementById('settingsNav').addEventListener('click',(e)=>{
   document.querySelectorAll('.settings-panel').forEach(p=>p.classList.add('hidden'));
   document.getElementById('panel-'+btn.dataset.panel).classList.remove('hidden');
   if(btn.dataset.panel==='backup')renderBackupView();
+});
+document.getElementById('kpiResetTime').addEventListener('change',async event=>{
+  const input=event.currentTarget;
+  const previous=normalizeKpiResetTime(STATE.settings.kpiResetTime);
+  const next=normalizeKpiResetTime(input.value);
+  input.value=next;
+  if(previous===next) return;
+  const owner=requireUid();
+  STATE.settings.kpiResetTime=next;
+  try{
+    await trackWrite(window.FB.setDoc(storeDoc('settings','app'),{key:'app',kpiResetTime:next},{merge:true}));
+    if(window.FB.currentUser?.uid===owner&&STATE.settings.kpiResetTime===next) showToast('Đã lưu giờ bắt đầu ngày KPI');
+  }catch(error){
+    if(window.FB.currentUser?.uid!==owner||STATE.settings.kpiResetTime!==next) return;
+    STATE.settings.kpiResetTime=previous;
+    input.value=previous;
+    dbFail(error);
+  }
 });
 document.getElementById('currencySelect').addEventListener('change', e=>setCurrency(e.target.value));
 document.querySelectorAll('.theme-opt').forEach(opt=>opt.addEventListener('click', ()=>setTheme(opt.dataset.themeOpt)));
@@ -5036,10 +5062,10 @@ if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(r=>{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') r.update().catch(()=>{}); }); }).catch(()=>{}); });
 }
 </script>
-<script src="./envelopes.js?v=86"></script>
-<link rel="stylesheet" href="./layout.css?v=86">
-<script src="./layout.js?v=86"></script>
-<script src="./voice-expense.js?v=86"></script>
-<script src="./kpi.js?v=86"></script>
+<script src="./envelopes.js?v=87"></script>
+<link rel="stylesheet" href="./layout.css?v=87">
+<script src="./layout.js?v=87"></script>
+<script src="./voice-expense.js?v=87"></script>
+<script src="./kpi.js?v=87"></script>
 </body>
 </html>
